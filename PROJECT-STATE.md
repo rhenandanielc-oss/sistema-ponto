@@ -16,10 +16,11 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: production deployment, security hardening and immutable history` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: single-notebook Windows installation` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Instalar no servidor da empresa seguindo `DEPLOY.md` e `KIOSK.md`; nas primeiras semanas,
-calibrar o reconhecimento facial com os funcionários reais (`BIOMETRICS.md` §11).
+**Próxima ação:** Instalar no notebook Windows do restaurante seguindo `INSTALACAO-WINDOWS.md` (primeira
+instalação acompanhada, §9); nas primeiras semanas, calibrar o reconhecimento facial com os funcionários reais
+(`BIOMETRICS.md` §11).
 
 ---
 
@@ -345,6 +346,16 @@ backup diário, restauração, limpeza agendada.
 
 **Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly, só para administradores; kiosk com token de dispositivo; funcionário identificado por token de identificação de 60 s emitido após o reconhecimento facial. `SECURITY.md`.
 
+### 2026-10-01 — Instalação: notebook Windows único (definição do responsável)
+
+**Contexto:** restaurante, uma unidade, 3–4 funcionários, notebook Windows com câmera, sem custo de URL; o notebook
+é desligado ao fechar.
+**Decisão:** modo "um computador só" (`docker-compose.local.yml`): o notebook é servidor e terminal; acesso só em
+`http://localhost` (o navegador libera a câmera em localhost sem certificado; nada fica exposto na rede). Scripts
+`windows/` (instalação, abertura do terminal ao ligar, restauração); backups a cada 4 h na pasta do OneDrive.
+Aviso no terminal quando o relógio do servidor difere do aparelho (risco do Docker no Windows após suspensão).
+**Impacto:** batidas só com o notebook ligado (esquecimentos via "Incluir batida esquecida").
+
 ### 2026-10-01 — Definições do responsável (alteram o MASTER-PROMPT)
 
 **Problema:** o MASTER-PROMPT prevê perfis/permissões genéricos, jornadas com horários e rota `/jornadas`.
@@ -564,6 +575,9 @@ Possíveis categorias:
 * **Fase 5 concluída:** reconhecimento facial e terminal. Testes acharam e corrigiram: corrida ao abrir a câmera em
   remontagem (React StrictMode) que desabilitava o botão "Tirar foto"; conflito de nome `update` no serviço de
   funcionários (lint).
+* Instalação em notebook Windows único: `docker-compose.local.yml`, `windows/`, `INSTALACAO-WINDOWS.md`,
+  `.gitattributes`; aviso de relógio no terminal. Teste achou e corrigiu: o primeiro backup saía antes das
+  migrations (vazio) — o serviço de backup agora espera o backend.
 * **Fase 6 concluída:** produção (Caddy/HTTPS, backup, limpeza diária, logs JSON), histórico imutável no banco
   (`0006`), correção da "bomba" de imagem, relatórios ~40% mais rápidos, `DEPLOY.md`. 250 testes no backend.
 * **Fase 4 concluída:** painel web do administrador (React). Testes de navegador acharam e corrigiram: CSP

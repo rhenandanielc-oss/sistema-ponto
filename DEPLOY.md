@@ -5,6 +5,7 @@
 > **Status:** Fase 6. Validado em 2026-10-01 com a pilha completa (`docker-compose.prod.yml`) em modo
 > `TLS_MODE=internal`: HTTPS, login, relatórios, kiosk no navegador, backup e restauração.
 > Instalação dos terminais: `KIOSK.md`.
+> **Um único notebook com Windows (servidor e terminal juntos, sem domínio):** `INSTALACAO-WINDOWS.md`.
 
 ---
 
@@ -91,7 +92,7 @@ docker compose -f docker-compose.prod.yml exec backend python -m app.cli create-
     --email voce@empresa.com.br --name "Seu nome"   # a senha é pedida no terminal
 ```
 
-Abra `https://DOMAIN/login`. Depois: cadastre os terminais em **Administração → Dispositivos** e siga o `KIOSK.md`.
+Abra `https://DOMAIN/login`. Depois: cadastre os terminais em **Administração → Terminais** e siga o `KIOSK.md`.
 
 A aplicação **recusa iniciar** em produção se `JWT_SECRET` ou `BIOMETRIC_KEY` estiverem vazios, fracos ou com valor
 de exemplo — veja `docker compose -f docker-compose.prod.yml logs backend`.

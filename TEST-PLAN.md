@@ -182,3 +182,5 @@ Salvo indicação, os exemplos usam:
 | S07 | Limpeza diária | `test_kiosk_biometrics.py`, `test_cli.py` | expurga templates excluídos há 30+ dias e identificações vencidas há 7+ dias; auditada |
 | S08 | Pilha de produção (manual, 2026-10-01) | `docker-compose.prod.yml` | HTTPS + HSTS, HTTP → HTTPS, login, relatórios, kiosk sem erro de CSP, backup diário, restauração com `deploy/restore.sh`, `X-Forwarded-For` falso não burla o limite de login |
 | S09 | Desempenho (manual) | `DEPLOY.md` §9 | 200 funcionários: relatórios em até ~1,6 s |
+| S10 | Aviso de relógio do servidor diferente do aparelho | `src/kiosk/clock.test.ts` + manual | aviso acima de 2 min; nenhum aviso até 2 min |
+| S11 | Modo de um computador só (manual, Linux equivalente) | `docker-compose.local.yml`, `windows/*.ps1` (PowerShell 7) | sistema só em `localhost`; sessão mantida com cookie seguro em `http://localhost`; câmera abre; backup em pasta com espaços; primeiro backup já com tabelas; restauração com `restaurar-backup.ps1` |

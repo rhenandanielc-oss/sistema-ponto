@@ -2,10 +2,12 @@
 # Restaura um backup no banco de produção. APAGA os dados atuais do banco.
 # Uso (na pasta do projeto, com o sistema no ar):
 #   sh deploy/restore.sh ponto-20261001-030000.dump
+# Modo de um computador só (docker-compose.local.yml): COMPOSE_FILE=docker-compose.local.yml sh deploy/restore.sh ...
+# No Windows use windows\restaurar-backup.cmd.
 set -eu
 
 file="${1:?informe o nome do arquivo de backup (ex.: ponto-20261001-030000.dump)}"
-compose="docker compose -f docker-compose.prod.yml"
+compose="docker compose -f ${COMPOSE_FILE:-docker-compose.prod.yml}"
 
 printf 'Isto substitui TODOS os dados atuais pelo backup %s. Digite RESTAURAR para continuar: ' "$file"
 read -r answer

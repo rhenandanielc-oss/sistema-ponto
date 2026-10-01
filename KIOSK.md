@@ -3,7 +3,8 @@
 # Terminal de ponto (kiosk)
 
 > **Status:** tela do terminal implementada na Fase 5 (`/kiosk`). Este documento descreve como preparar o
-> equipamento. Instalação do servidor (HTTPS, backup): `DEPLOY.md`.
+> equipamento. Instalação do servidor (HTTPS, backup): `DEPLOY.md`. Notebook único com Windows (servidor e
+> terminal no mesmo aparelho): `INSTALACAO-WINDOWS.md`, que já cria os atalhos e a abertura automática.
 
 ---
 

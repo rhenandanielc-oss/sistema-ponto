@@ -238,3 +238,4 @@ threads do FastAPI.
 | 2026-10-01 | Funcionário consulta o próprio banco de horas no kiosk pelo rosto | `BUSINESS-RULES.md` §9.1 |
 | 2026-10-01 | Produção com Caddy (TLS automático), um processo uvicorn, limpeza e backup em contêineres próprios | §1, `DEPLOY.md` |
 | 2026-10-01 | Histórico imutável garantido por triggers no banco | `DATABASE.md`, `SECURITY.md` §8 |
+| 2026-10-01 | Modo "um computador só" (`docker-compose.local.yml`): notebook Windows é servidor e terminal, acesso só por `http://localhost` | `INSTALACAO-WINDOWS.md` |

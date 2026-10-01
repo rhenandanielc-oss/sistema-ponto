@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import { ApiError, type Schemas } from "../api/client";
 import { CameraError, captureFrame, openCamera, stopCamera } from "../kiosk/camera";
+import { clockSkewMinutes, clockWarning } from "../kiosk/clock";
 import { analyzeFrame, framingMessage, loadFaceDetector } from "../kiosk/faceDetector";
 import { getDeviceToken, kioskApi, setDeviceToken } from "../kiosk/api";
 import { RECORD_TYPE_LABELS, formatDate, formatMinutes, formatTime } from "../lib/format";
@@ -24,6 +25,7 @@ const IDLE_MS = 15_000; // sem toque na tela de botões, volta ao início
 const DONE_MS = 5_000;
 const ERROR_RETRY_MS = 3_000;
 const STABLE_FRAMES = 3; // quadros bons seguidos antes de enviar
+const CLOCK_CHECK_MS = 5 * 60_000; // confere o relógio do servidor a cada 5 min
 
 /** Mensagem amigável para cada erro devolvido pela API (BIOMETRICS.md §9). */
 function friendly(error: unknown): string {
@@ -49,6 +51,7 @@ export function KioskPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState<string | null>(null);
   const [clock, setClock] = useState(() => new Date());
+  const [clockAlert, setClockAlert] = useState<string | null>(null);
   const busy = useRef(false);
 
   const reset = useCallback(() => setState({ kind: "scanning", hint: "Olhe para a câmera" }), []);
@@ -68,11 +71,18 @@ export function KioskPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  // Confere o terminal ao iniciar.
+  // Confere o terminal ao iniciar e, periodicamente, se o relógio do servidor bate com o deste aparelho.
   const active = state.kind !== "setup";
   useEffect(() => {
     if (!active) return;
-    kioskApi.ping().then((p) => setDeviceName(p.device), handleError);
+    const check = () =>
+      kioskApi.ping().then((p) => {
+        setDeviceName(p.device);
+        setClockAlert(clockWarning(clockSkewMinutes(p.server_time, Date.now())));
+      }, handleError);
+    void check();
+    const id = window.setInterval(() => void check(), CLOCK_CHECK_MS);
+    return () => window.clearInterval(id);
   }, [active, handleError]);
 
   // Câmera ligada enquanto o terminal estiver configurado.
@@ -213,6 +223,12 @@ export function KioskPage() {
             <div className="h-3/4 w-2/5 rounded-[50%] border-4 border-white/60" />
           </div>
         </div>
+
+        {clockAlert && (
+          <p role="alert" className="max-w-xl rounded-lg bg-amber-500 px-6 py-3 text-center text-lg text-black">
+            {clockAlert}
+          </p>
+        )}
 
         {cameraError && (
           <p role="alert" className="rounded-lg bg-red-600 px-6 py-4 text-xl">

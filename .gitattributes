@@ -1,0 +1,8 @@
+# Finais de linha: LF para tudo que roda dentro dos contêineres (scripts sh, Caddyfile, nginx)
+# mesmo quando o repositório é clonado no Windows; CRLF para os scripts do Windows.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.onnx binary
