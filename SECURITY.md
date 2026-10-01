@@ -2,131 +2,117 @@
 
 # Segurança
 
-> **Status:** projetado na Fase 0. Implementação: autenticação/autorização na Fase 1, kiosk na Fase 2/5,
-> endurecimento e revisão final na Fase 6.
+> **Status:** projetado na Fase 0 (revisado em 2026-10-01). Implementação: autenticação do administrador na Fase 1,
+> dispositivos na Fase 2, kiosk/biometria na Fase 5, revisão final na Fase 6.
 
 ---
 
-## 1. Ameaças consideradas
+## 1. Perfis de acesso
 
-| Ameaça | Mitigação principal |
+| Perfil | Como acessa | O que pode fazer |
+|---|---|---|
+| **Administrador** | `/login` com e-mail e **senha** | Tudo: funcionários, carga horária, biometria, feriados, histórico, ajustes, banco de horas de todos, dispositivos, configurações, auditoria, outros administradores |
+| **Funcionário** | **Rosto**, no kiosk — sem senha | Registrar a própria batida (escolhendo o tipo) e consultar o **próprio** banco de horas |
+
+Não existem outros perfis. Toda rota administrativa exige administrador autenticado e ativo.
+
+---
+
+## 2. Ameaças consideradas
+
+| Ameaça | Mitigação |
 |---|---|
-| Funcionário registra ponto por outro ("ponto amigo") | Reconhecimento facial no kiosk; auditoria com score e dispositivo; limitações em `BIOMETRICS.md` |
-| Manipulação do horário pelo cliente | Horário oficial definido pelo servidor |
-| Alteração retroativa de registros | Registros imutáveis; ajustes com justificativa, autor e auditoria |
-| Acesso indevido a dados de outros funcionários | RBAC + escopo por gestor; checagem em todo endpoint |
-| Roubo de sessão | Access token curto, refresh em cookie `HttpOnly`, rotação com detecção de reuso |
-| Força bruta de senha | Bloqueio progressivo + limitação de taxa |
-| Kiosk roubado / token vazado | Token de dispositivo revogável; escopo limitado; auditoria de `last_seen_at` e IP |
+| Funcionário bate ponto por outro | Identificação facial no servidor; auditoria com score e dispositivo; limitações em `BIOMETRICS.md` |
+| Funcionário vê o banco de horas de outro | O endpoint do kiosk não recebe id de funcionário: devolve apenas os dados de quem o servidor reconheceu |
+| Manipulação do horário | Horário oficial definido pelo servidor |
+| Alteração retroativa de registros | Registros imutáveis; ajustes só pelo administrador, com justificativa e auditoria |
+| Roubo de sessão do administrador | Access token curto, refresh em cookie `HttpOnly`, rotação com detecção de reuso |
+| Força bruta de senha | Bloqueio após falhas + limitação de taxa |
+| Kiosk roubado / token vazado | Token de dispositivo revogável e limitado a endpoints do kiosk |
 | Vazamento de dados biométricos | Sem imagens armazenadas; templates cifrados; chave fora do banco |
-| Segredos no Git | `.env` ignorado; `.env.example` sem valores; revisão antes de commit |
+| Segredos no Git | `.env` ignorado; `.env.example` sem valores |
+
+**Risco aceito:** como o funcionário não tem senha, alguém com uma foto/vídeo de um colega poderia tentar enganar a
+câmera (ver `BIOMETRICS.md` §8). O impacto na consulta é limitado (somente leitura do banco de horas daquele
+funcionário); no registro de ponto, a auditoria permite investigação.
 
 ---
 
-## 2. Autenticação de usuários
+## 3. Autenticação do administrador
 
 * Login: `POST /api/v1/auth/login` com e-mail e senha.
-* Senhas com **argon2id** (parâmetros padrão do `argon2-cffi`). Mínimo de 10 caracteres.
-* **Access token:** JWT HS256, validade **15 min**, claims `sub`, `roles`, `exp`, `iat`, `jti`.
-  Enviado no header `Authorization: Bearer`. Mantido **apenas em memória** no frontend (nunca em `localStorage`).
-* **Refresh token:** valor aleatório de 256 bits, em cookie `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`,
-  validade **8 horas** (configurável). Armazenado como hash SHA-256. **Rotação** a cada uso; se um token já
-  rotacionado for reutilizado, toda a família é revogada (indício de roubo).
-* Logout revoga o refresh token atual.
-* Usuário desativado: refresh tokens revogados imediatamente; access tokens expiram em até 15 min.
-* **Bloqueio:** 5 falhas consecutivas ⇒ bloqueio de 15 min. Mensagem de erro genérica ("credenciais inválidas")
-  para não revelar se o e-mail existe.
-* Login, falha de login, logout e bloqueio são auditados.
+* Senhas com **argon2id**; mínimo de 10 caracteres.
+* **Access token:** JWT HS256, validade **15 min**, mantido **só em memória** no frontend (nunca em `localStorage`).
+* **Refresh token:** aleatório de 256 bits, cookie `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`,
+  validade **8 h** (configurável), armazenado como hash, **rotacionado** a cada uso; reuso de token antigo revoga a família.
+* Logout revoga o refresh token.
+* Administrador desativado: refresh tokens revogados imediatamente.
+* **Bloqueio:** 5 falhas consecutivas ⇒ 15 min. Mensagem genérica ("credenciais inválidas").
+* Login, falha, bloqueio e logout auditados.
+* O primeiro administrador é criado por comando de linha no servidor; não há senha padrão.
 
 ### CSRF
-O refresh token é o único dado enviado por cookie, com `SameSite=Strict` e restrito ao caminho `/auth`.
-As demais rotas usam `Authorization`, que não é enviado automaticamente pelo navegador.
+Só o refresh token vai por cookie (`SameSite=Strict`, caminho `/auth`); as demais rotas usam o header `Authorization`.
 
 ---
 
-## 3. Autenticação de dispositivos (kiosk)
+## 4. Dispositivo (kiosk)
 
-* Administrador cadastra o dispositivo e recebe um token aleatório (256 bits) **exibido uma única vez**.
-* O kiosk envia `Authorization: Device <token>`. O banco guarda só o hash.
-* O token de dispositivo **só** acessa endpoints `/api/v1/kiosk/*`.
-* Desativar o dispositivo invalida o token imediatamente.
-* No terminal, o token fica armazenado no navegador do kiosk (procedimento de instalação na Fase 5/6).
+* O administrador cadastra o terminal e recebe um token aleatório (256 bits) **exibido uma única vez**.
+* O kiosk envia `Authorization: Device <token>`; o banco guarda só o hash.
+* O token de dispositivo **só** acessa `/api/v1/kiosk/*`. Desativar o dispositivo invalida o token.
 
----
+## 5. Identificação do funcionário (rosto)
 
-## 4. Autorização (RBAC)
-
-Perfis iniciais e permissões:
-
-| Permissão | ADMIN | HR | MANAGER | EMPLOYEE |
-|---|:-:|:-:|:-:|:-:|
-| `users:read` / `users:write` | ✔ | | | |
-| `roles:write` | ✔ | | | |
-| `devices:write` | ✔ | | | |
-| `settings:write` | ✔ | | | |
-| `audit:read` | ✔ | ✔ | | |
-| `employees:read` | ✔ | ✔ | escopo | próprio |
-| `employees:write` | ✔ | ✔ | | |
-| `schedules:read` | ✔ | ✔ | ✔ | |
-| `schedules:write` | ✔ | ✔ | | |
-| `holidays:write` | ✔ | ✔ | | |
-| `records:read` | ✔ | ✔ | escopo | próprio |
-| `records:create_web` | ✔ | ✔ | | |
-| `records:adjust` | ✔ | ✔ | escopo | |
-| `hour_bank:read` | ✔ | ✔ | escopo | próprio |
-| `hour_bank:adjust` | ✔ | ✔ | | |
-| `biometrics:enroll` | ✔ | ✔ | | |
-
-* **escopo:** apenas funcionários com `manager_user_id` = usuário logado.
-* **próprio:** apenas o funcionário vinculado ao usuário (`employees.user_id`).
-* Ninguém ajusta os próprios registros nem o próprio banco de horas.
-* A checagem acontece no backend em **todo** endpoint (dependência FastAPI), nunca só no frontend.
-* Acesso negado retorna 403 e é auditado para endpoints administrativos.
+* `POST /kiosk/identify` (com token de dispositivo) recebe um frame, e o **servidor** decide quem é.
+* Se reconhecido, o servidor emite um **token de identificação**: aleatório, guardado só em memória do servidor
+  (ou como hash no banco), vinculado ao funcionário e ao dispositivo, válido por **60 s**.
+* Com esse token o kiosk pode:
+  * registrar **uma** batida (o token é consumido);
+  * consultar o banco de horas **daquele** funcionário enquanto o token for válido.
+* Nenhum endpoint do kiosk aceita id de funcionário vindo do cliente.
 
 ---
 
-## 5. Proteção da API
+## 6. Proteção da API
 
-* HTTPS obrigatório em produção (HSTS no proxy).
+* HTTPS obrigatório em produção (HSTS no proxy). A câmera do kiosk também exige HTTPS.
 * CORS restrito à origem do frontend.
-* Limitação de taxa (por IP e por usuário/dispositivo) em login e endpoints do kiosk.
-* Tamanho máximo de corpo: 1 MB (frames do kiosk são JPEG pequenos).
-* Erros nunca expõem stack trace nem SQL (formato padrão em `API.md`).
-* Cabeçalhos de segurança: `X-Content-Type-Options`, `Referrer-Policy`, `Content-Security-Policy` no frontend.
-* Consultas apenas via ORM/parâmetros (sem SQL concatenado).
+* Limitação de taxa em login e endpoints do kiosk.
+* Tamanho máximo de corpo: 1 MB.
+* Erros sem stack trace nem SQL (formato em `API.md`).
+* Cabeçalhos de segurança e CSP no frontend.
+* Consultas somente via ORM/parâmetros.
 
 ---
 
-## 6. Segredos
+## 7. Segredos
 
-* Configuração via variáveis de ambiente (`pydantic-settings`), carregadas de `.env` local.
-* `.env.example` lista as variáveis **sem valores reais**: `DATABASE_URL`, `JWT_SECRET`, `BIOMETRIC_KEY`, etc.
-* A aplicação **recusa iniciar** em produção se `JWT_SECRET` ou `BIOMETRIC_KEY` estiverem ausentes,
-  com o valor de exemplo ou com menos de 32 bytes.
+* Configuração por variáveis de ambiente, carregadas de `.env` local.
+* `.env.example` lista as variáveis **sem valores reais** (`DATABASE_URL`, `JWT_SECRET`, `BIOMETRIC_KEY`, ...).
+* A aplicação **recusa iniciar** em produção se `JWT_SECRET` ou `BIOMETRIC_KEY` estiverem ausentes, com valor de
+  exemplo ou com menos de 32 bytes.
 * Nunca registrar em log: senhas, tokens, cookies, imagens, templates biométricos, CPF completo.
 
 ---
 
-## 7. Auditoria
+## 8. Auditoria
 
 Eventos auditados (mínimo):
 
-* autenticação: login, falha, bloqueio, logout, reuso de refresh token;
-* usuários, papéis, dispositivos, configurações: criar/alterar/desativar;
-* funcionários e jornadas: criar/alterar/ativar/desativar (com antes/depois);
+* login do administrador: sucesso, falha, bloqueio, logout, reuso de refresh token;
+* administradores, dispositivos, configurações: criar/alterar/desativar;
+* funcionários e carga horária: criar/alterar/ativar/desativar (antes/depois);
 * registros: criado, **rejeitado** (com motivo), ajustado, anulado;
+* consulta do banco de horas no kiosk (funcionário, dispositivo, horário);
 * banco de horas: lançamentos;
-* feriados: criar/alterar/excluir;
+* feriados;
 * biometria: consentimento, cadastro, exclusão, identificação falha (sem imagem e sem template).
-
-A tabela de auditoria é somente inserção (ver `DATABASE.md`).
 
 ---
 
-## 8. LGPD
+## 9. LGPD
 
-* Dados pessoais tratados: identificação, jornada e — sensível — biometria facial.
-* Detalhes de base legal, consentimento, retenção e exclusão da biometria em `BIOMETRICS.md`.
-* Funcionário tem acesso aos próprios registros e banco de horas (perfil EMPLOYEE).
-* Retenção de registros de ponto: definida pela empresa considerando obrigações trabalhistas
-  (pendente de decisão — ver `PROJECT-STATE.md`).
+* Dados pessoais: identificação, jornada e — sensível — biometria facial.
+* Base legal, consentimento, retenção e exclusão da biometria em `BIOMETRICS.md`.
+* O funcionário tem acesso aos próprios dados de ponto pelo kiosk (§5).

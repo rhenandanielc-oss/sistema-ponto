@@ -2,7 +2,7 @@
 
 # Reconhecimento Facial — Avaliação e Decisão
 
-> **Status:** decisão de arquitetura tomada na Fase 0. Implementação na Fase 5.
+> **Status:** decisão de arquitetura tomada na Fase 0 (revisada em 2026-10-01). Implementação na Fase 5.
 > Biometria é **dado pessoal sensível** (LGPD art. 5º, II). Toda escolha abaixo prioriza privacidade e segurança
 > sobre facilidade de implementação.
 
@@ -10,7 +10,8 @@
 
 ## 1. Requisitos
 
-* Identificação **1:N** no kiosk (o funcionário não digita nada; o sistema descobre quem é).
+* Identificação **1:N** no kiosk: o funcionário não digita nada e **não tem senha** — o rosto é a única forma de
+  identificação. Depois de reconhecido, ele só escolhe o tipo de batida ou consulta o próprio banco de horas.
 * Funcionar no navegador do terminal (câmera via `getUserMedia`, HTTPS).
 * Processamento **local na infraestrutura da empresa**, sem enviar rostos a terceiros.
 * Não armazenar imagens faciais.
@@ -47,10 +48,27 @@
    * compara com os templates **ativos** de funcionários **ativos** (similaridade de cosseno);
    * aceita se `melhor ≥ limiar` **e** `melhor − segundo melhor ≥ margem` (evita confusão entre pessoas parecidas);
    * descarta a imagem da memória; nada é gravado em disco.
-4. Resposta ao kiosk: funcionário identificado (id, nome, próximo tipo de registro esperado) ou erro tipado.
-5. O registro de ponto é uma **segunda chamada**, após a confirmação na tela, levando um
-   **token de identificação** de uso único e curta validade (60 s) emitido pelo backend na etapa 4 —
-   o kiosk não pode registrar ponto para um funcionário que não foi identificado pelo servidor.
+4. Resposta ao kiosk: nome do funcionário, tipos de batida permitidos e um **token de identificação**
+   (validade 60 s), ou erro tipado.
+5. O funcionário toca no tipo de batida **ou** em "Ver meu banco de horas". O kiosk envia a ação junto com o
+   token de identificação. O kiosk nunca informa qual funcionário é — o servidor usa o vinculado ao token, de modo que
+   não é possível registrar ponto ou ver dados de alguém que não foi reconhecido pelo servidor.
+
+### 3.1 Fluxo na tela do kiosk
+
+```
+[Câmera ativa — "Olhe para a câmera"]
+        │ rosto detectado (navegador) → frame enviado → servidor reconhece
+        ▼
+[Olá, Maria Souza]
+  ( Entrada )  ( Saída para almoço )  ( Retorno do almoço )  ( Saída )   ← só os permitidos ficam habilitados
+  ( Ver meu banco de horas )                                  ( Cancelar )
+        │
+        ├─ batida → [Entrada registrada às 08:02 ✔] → volta ao início após 5 s
+        └─ banco  → [Saldo, horas extras e faltantes do mês, detalhe diário] → fecha em 30 s ou em "Sair"
+```
+
+Sem toque em 15 s na tela "Olá", o fluxo volta ao início e o token é descartado.
 
 **Motivos:** processamento local (sem terceiros e sem depender da internet), decisão de identidade em ambiente
 controlado, licenças permissivas, custo zero e desempenho suficiente em CPU para a escala esperada
@@ -63,16 +81,16 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 
 ## 4. Cadastro (enrollment)
 
-* Feito por usuário com `biometrics:enroll`, presencialmente, com o funcionário.
+* Feito pelo **administrador**, presencialmente com o funcionário, na tela de cadastro do funcionário
+  (câmera do computador do administrador ou do próprio kiosk).
 * **Pré-requisito: consentimento registrado** (termo versionado, data, quem registrou) — `biometric_consents`.
 * Captura de 3 a 5 frames de boa qualidade; cada um gera um embedding; armazena-se cada embedding como template
   (ou a média normalizada — decidido na calibração).
 * Nenhuma imagem é armazenada; as imagens de cadastro existem só em memória durante a requisição.
 
-### Alternativa para quem não consentir
-O funcionário que não consentir com a biometria **não pode ficar sem forma de registrar ponto**.
-**Proposta (pendente de aprovação do responsável):** registro web/kiosk por matrícula + PIN, com
-`identification_method=MANUAL`, auditado e sinalizado nos relatórios. Registrado em `PROJECT-STATE.md`.
+* Por decisão do responsável (2026-10-01), **não há forma alternativa de identificação** (sem PIN/senha para
+  funcionários). Funcionário sem rosto cadastrado não consegue bater ponto no kiosk; nesses casos o administrador
+  registra por ajuste.
 
 ---
 
@@ -105,7 +123,7 @@ O funcionário que não consentir com a biometria **não pode ficar sem forma de
 
 * Nenhum endpoint devolve templates ou embeddings.
 * Apenas o serviço de biometria lê `biometric_templates`.
-* Cadastro e exclusão exigem `biometrics:enroll` e são auditados.
+* Cadastro e exclusão somente pelo administrador, auditados.
 
 ---
 

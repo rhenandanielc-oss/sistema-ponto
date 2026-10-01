@@ -14,8 +14,8 @@
 │ Frontend (SPA)           │ ──────────────────────────────▶ │ Backend (API REST)        │
 │ React + TS + Vite        │                                 │ Python 3.12 + FastAPI     │
 │                          │ ◀────────────────────────────── │                           │
-│ • Painel administrativo  │                                 │ • Autenticação / RBAC     │
-│ • Kiosk (/kiosk)         │   frame JPEG do rosto (kiosk)   │ • Funcionários / jornadas │
+│ • Painel administrativo  │                                 │ • Login do administrador  │
+│ • Kiosk (/kiosk)         │   frame JPEG do rosto (kiosk)   │ • Funcionários / carga    │
 │   - câmera (getUserMedia)│ ──────────────────────────────▶ │ • Registros de ponto      │
 │   - detecção local (UX)  │                                 │ • Motor de cálculo        │
 └──────────────────────────┘                                 │ • Biometria (ONNX local)  │
@@ -77,7 +77,7 @@ qualquer forma.
 
 * React 18 + TypeScript + Vite;
 * Tailwind CSS;
-* React Router (rotas: `/login`, `/kiosk`, `/historico`, `/banco-de-horas`, `/funcionarios`, `/jornadas`, `/admin`);
+* React Router;
 * TanStack React Query (cache e estado de servidor);
 * Interface em português.
 
@@ -88,6 +88,20 @@ Regras:
 * nenhum segredo no bundle; somente a URL pública da API em variável `VITE_*`.
 
 O kiosk é a mesma SPA na rota `/kiosk`, autenticada com **credencial de dispositivo** (não de usuário).
+
+### 3.1 Rotas
+
+| Rota | Quem usa | Conteúdo |
+|---|---|---|
+| `/kiosk` | Funcionário (rosto) | Reconhecimento facial → escolher tipo de batida ou ver o próprio banco de horas |
+| `/login` | Administrador | E-mail e senha |
+| `/funcionarios` | Administrador | Cadastro, edição, ativação/desativação, pesquisa, **carga horária diária e dias trabalhados**, cadastro do rosto |
+| `/historico` | Administrador | Batidas com filtros (funcionário, hoje, semana, mês, período) e ajustes |
+| `/banco-de-horas` | Administrador | Banco de horas de qualquer funcionário, por período, com detalhe diário |
+| `/admin` | Administrador | Feriados, dispositivos (kiosks), administradores, configurações, auditoria |
+
+A rota `/jornadas` prevista no `MASTER-PROMPT.md` foi incorporada a `/funcionarios`: a carga horária é informada
+no cadastro do funcionário (decisão do responsável, 2026-10-01).
 
 ---
 
@@ -102,7 +116,7 @@ sistema-ponto/
 │   │   ├── db/                  # engine, sessão, base declarativa
 │   │   ├── models/              # modelos SQLAlchemy
 │   │   ├── schemas/             # modelos Pydantic (entrada/saída)
-│   │   ├── api/                 # routers por recurso (auth, employees, schedules, ...)
+│   │   ├── api/                 # routers por recurso (auth, employees, workloads, kiosk, ...)
 │   │   ├── services/            # regras de negócio e transações
 │   │   ├── calculation/         # motor de cálculo de jornada (funções puras, sem I/O)
 │   │   └── biometrics/          # detecção, extração de template, matching
@@ -154,11 +168,13 @@ Decisão crítica para um sistema de ponto:
 
 ## 6. Autenticação (resumo — detalhes em `SECURITY.md`)
 
-* **Usuários:** login com e-mail + senha → access token JWT curto (15 min) + refresh token opaco
-  em cookie `HttpOnly`, `Secure`, `SameSite=Strict`, armazenado com hash no banco e rotacionado.
+* **Dois perfis apenas:** Administrador e Funcionário.
+* **Administrador:** único com senha. Login com e-mail + senha → access token JWT curto (15 min) + refresh token
+  opaco em cookie `HttpOnly`, `Secure`, `SameSite=Strict`, armazenado com hash e rotacionado.
+* **Funcionário:** sem senha. É identificado pelo rosto no kiosk; o servidor emite um token de identificação de 60 s
+  que permite registrar a batida ou consultar o próprio banco de horas.
 * **Kiosks:** cada terminal é um **dispositivo** cadastrado pelo administrador, com token próprio
-  (exibido uma única vez, armazenado com hash). O token de dispositivo só acessa os endpoints do kiosk.
-* **Autorização:** RBAC por permissões (ver `SECURITY.md`).
+  (exibido uma única vez, armazenado com hash), que só acessa os endpoints do kiosk.
 
 ---
 
@@ -188,3 +204,6 @@ Decisão crítica para um sistema de ponto:
 | 2026-10-01 | Kiosk autenticado por token de dispositivo, não por usuário | §6 |
 | 2026-10-01 | Registros imutáveis; correção por ajuste auditado | §7, `BUSINESS-RULES.md` |
 | 2026-10-01 | Reconhecimento facial processado no servidor com modelo local | `BIOMETRICS.md` |
+| 2026-10-01 | Perfis: somente Administrador (senha) e Funcionário (rosto) | §6, `SECURITY.md` |
+| 2026-10-01 | Carga horária diária no cadastro do funcionário, sem horário fixo; `/jornadas` incorporada a `/funcionarios` | §3.1, `BUSINESS-RULES.md` §3 |
+| 2026-10-01 | Funcionário consulta o próprio banco de horas no kiosk pelo rosto | `BUSINESS-RULES.md` §9.1 |

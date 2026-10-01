@@ -2,9 +2,9 @@
 
 # Regras de Negócio — Sistema de Ponto
 
-> **Status:** projetado na Fase 0. As regras abaixo são a especificação que as Fases 1 e 2 devem implementar.
+> **Status:** projetado na Fase 0 (revisado em 2026-10-01 com as definições do responsável).
+> As regras abaixo são a especificação que as Fases 1 e 2 devem implementar.
 > Valores marcados como **configurável** ficam em configuração da empresa (tabela `settings`), com o padrão indicado.
-> Este sistema **não substitui** a análise jurídica/contábil da empresa; ver §11 (conformidade).
 
 ---
 
@@ -12,55 +12,64 @@
 
 | Termo | Definição |
 |---|---|
-| **Registro (marcação)** | Um evento de ponto: `ENTRY`, `LUNCH_EXIT`, `LUNCH_RETURN` ou `EXIT`, com horário oficial do servidor. |
-| **Dia de jornada (workday)** | A data (no fuso da empresa) à qual um conjunto de registros pertence. Para jornada noturna, é a data da **entrada**. |
-| **Jornada (work schedule)** | Modelo que define, por dia, horário de início, fim, intervalo e carga planejada. |
-| **Carga planejada** | Minutos que o funcionário deveria trabalhar no dia. |
+| **Administrador** | Único perfil com login e senha. Gerencia funcionários, cargas horárias, feriados, ajustes, dispositivos e relatórios. |
+| **Funcionário** | Não tem login nem senha. É identificado **somente pelo rosto** no kiosk, onde registra o ponto e consulta o próprio banco de horas. |
+| **Registro (batida)** | Um evento de ponto: `ENTRY`, `LUNCH_EXIT`, `LUNCH_RETURN` ou `EXIT`, com horário oficial do servidor. |
+| **Dia de jornada (workday)** | A data (no fuso da empresa) à qual um conjunto de registros pertence. Para turno noturno, é a data da **entrada**. |
+| **Carga horária** | Minutos que o funcionário deve trabalhar em cada dia da semana, informados no cadastro. |
 | **Minutos trabalhados** | Soma dos períodos efetivamente trabalhados (excluindo intervalo). |
 | **Saldo diário** | `trabalhado − planejado`, após aplicação da tolerância. |
-| **Banco de horas** | Saldo acumulado dos dias fechados + lançamentos manuais. |
+| **Banco de horas** | Saldo acumulado dos dias fechados + lançamentos manuais do administrador. |
 
 ---
 
 ## 2. Funcionários
 
-* Campos mínimos: nome, matrícula (única), CPF (único, opcional na v1), e-mail opcional, data de admissão,
-  data de desligamento opcional, situação (`ACTIVE`/`INACTIVE`), gestor responsável opcional.
-* **Desativação** não apaga dados: o funcionário deixa de poder registrar ponto e de ser identificado
-  pela biometria. Histórico e banco de horas permanecem consultáveis.
+* Cadastro feito pelo administrador. Campos: nome, matrícula (única), CPF (opcional, único), data de admissão,
+  data de desligamento (opcional), situação (`ACTIVE`/`INACTIVE`) e **carga horária** (§3).
+* O cadastro biométrico (rosto) é feito pelo administrador junto com o funcionário (ver `BIOMETRICS.md`).
+* **Desativação** não apaga dados: o funcionário deixa de ser reconhecido no kiosk e não registra ponto.
+  Histórico e banco de horas continuam consultáveis pelo administrador.
 * Dias anteriores à admissão ou posteriores ao desligamento têm carga planejada **zero**.
-* Toda alteração cadastral gera entrada de auditoria com valores antes/depois (é o "histórico" do funcionário).
+* Toda alteração cadastral gera auditoria com valores antes/depois (é o "histórico" do funcionário).
 
 ---
 
-## 3. Jornadas
+## 3. Carga horária
 
-### 3.1 Tipos
+O responsável ainda não conhece os horários de cada funcionário; por isso o sistema **não exige horário de
+entrada/saída**. Cada funcionário tem apenas:
 
-| Tipo | Descrição | Exemplo |
-|---|---|---|
-| `FIXED` | Horários fixos por dia da semana. Cada dia: início, fim, duração do intervalo (ou início/fim do intervalo). Dias sem definição são folga. | Seg–Sex 08:00–17:00, 1 h de almoço; Sáb 08:00–12:00 |
-| `FLEXIBLE` | Apenas carga diária por dia da semana, sem horário de início. Não há cálculo de atraso/saída antecipada, apenas saldo. | Seg–Sex 8 h/dia |
-| `ROTATING` | Escala cíclica de N dias a partir de uma data de referência; cada posição do ciclo é trabalho (com horários) ou folga. | 12x36: dia 1 trabalha 19:00–07:00, dia 2 folga |
+* **carga diária** (ex.: 8 h = 480 min);
+* **dias da semana trabalhados** (padrão: segunda a sexta).
 
-Uma jornada pode atravessar a meia-noite (fim < início ⇒ termina no dia seguinte).
+Na tela de cadastro o administrador informa uma carga diária e marca os dias trabalhados; o sistema grava a
+carga por dia da semana, o que permite, se necessário, um valor diferente em algum dia (ex.: sábado com 4 h).
+Dias não marcados são folga.
 
-### 3.2 Associação ao funcionário
+### 3.1 Vigência
 
-* O funcionário recebe jornada por **vigência** (`valid_from`, `valid_to` opcional). Vigências do mesmo
-  funcionário não podem se sobrepor.
-* O cálculo de um dia usa a jornada vigente **naquele dia** — trocar a jornada hoje não altera o passado.
-* Funcionário ativo sem jornada vigente não pode registrar ponto (erro `NO_APPLICABLE_SCHEDULE`).
+* A carga horária tem **vigência** (`valid_from`, `valid_to` opcional). Ao alterar a carga, o administrador
+  informa a partir de quando vale; a anterior é encerrada no dia anterior. Vigências não se sobrepõem.
+* O cálculo de um dia usa a carga vigente **naquele dia** — alterar a carga hoje não muda o passado.
+* A primeira vigência começa na data de admissão (obrigatória no cadastro).
+
+### 3.2 Consequências de não haver horário fixo
+
+* **Atraso** e **saída antecipada** não são calculados separadamente (não há horário de referência).
+  Eles aparecem como **horas faltantes** do dia (`missing_minutes`), reduzindo o saldo.
+* A tolerância é aplicada sobre o saldo do dia (§6).
+* Se no futuro horários fixos forem necessários, o modelo pode ser estendido sem perder dados.
 
 ---
 
 ## 4. Registros de ponto
 
-### 4.1 Horário oficial
+### 4.1 Horário oficial e origem
 
-* Definido pelo servidor (`now()` da transação). Qualquer horário enviado pelo cliente é ignorado.
-* Registro guarda também: origem (`KIOSK`, `WEB`, `ADJUSTMENT`), dispositivo, usuário autor (se houver),
-  método de identificação (`FACE`, `MANUAL`), score biométrico (se houver), IP.
+* Definido pelo servidor (`now()` da transação). O kiosk não envia horário.
+* O registro normal acontece **apenas no kiosk**, após reconhecimento facial. O funcionário só escolhe o tipo de batida.
+* Cada registro guarda: origem (`KIOSK` ou `ADJUSTMENT`), dispositivo, método (`FACE`), score biométrico, IP.
 
 ### 4.2 Sequência válida dentro de um dia de jornada
 
@@ -78,28 +87,24 @@ Uma jornada pode atravessar a meia-noite (fim < início ⇒ termina no dia segui
 | `LUNCH_RETURN` | `EXIT` |
 | `EXIT` | nenhum (dia fechado) |
 
-* Na v1 há **um ciclo por dia de jornada** (uma entrada e uma saída). Múltiplos intervalos ficam fora do escopo
-  e devem ser tratados por ajuste.
-* Tipo fora da sequência ⇒ erro `INVALID_SEQUENCE` (inclui o próximo tipo esperado na resposta).
+* O kiosk mostra os quatro botões, habilitando apenas os tipos permitidos no momento.
+* Um ciclo por dia de jornada na v1.
+* Tipo fora da sequência ⇒ erro `INVALID_SEQUENCE`.
 
 ### 4.3 Duplicidade
 
 * Um mesmo tipo não pode existir duas vezes no mesmo dia de jornada ⇒ `DUPLICATE_RECORD`
   (garantido também por restrição única no banco).
-* **Intervalo mínimo entre marcações:** dois registros do mesmo funcionário com menos de
-  **2 minutos** (configurável) de diferença são rejeitados ⇒ `DUPLICATE_RECORD`. Protege contra toque duplo no kiosk.
+* Dois registros do mesmo funcionário com menos de **2 minutos** (configurável) de diferença ⇒ `DUPLICATE_RECORD`.
 
-### 4.4 Atribuição ao dia de jornada (inclui jornada noturna)
+### 4.4 Atribuição ao dia de jornada (inclui turno noturno)
 
 Ao receber um registro no instante `t`:
 
 1. Se existe um ciclo **aberto** (tem `ENTRY` e não tem `EXIT`) cujo `ENTRY` ocorreu há no máximo
    **16 horas** (configurável, `max_shift_hours`), o registro pertence a esse dia de jornada.
 2. Caso contrário, só `ENTRY` é aceito, e o dia de jornada é a **data local de `t`**.
-   Exceção: se `t` cai até **4 horas antes** (configurável, `early_entry_window_hours`) do início de um turno
-   planejado para o dia seguinte local, o dia de jornada é o dia do turno.
-3. Um ciclo aberto há mais de `max_shift_hours` é considerado **incompleto** e não aceita mais registros;
-   a correção é por ajuste.
+3. Um ciclo aberto há mais de `max_shift_hours` é considerado **incompleto**; a correção é por ajuste do administrador.
 
 Exemplo: entrada 22:00 de 10/09 e saída 06:00 de 11/09 ⇒ ambos pertencem ao dia de jornada **10/09**.
 
@@ -108,127 +113,107 @@ Exemplo: entrada 22:00 de 10/09 e saída 06:00 de 11/09 ⇒ ambos pertencem ao d
 | Validação | Erro |
 |---|---|
 | Funcionário existe | `EMPLOYEE_NOT_FOUND` (404) |
-| Funcionário ativo | `EMPLOYEE_INACTIVE` (409) |
-| Jornada vigente | `NO_APPLICABLE_SCHEDULE` (409) |
+| Funcionário ativo e dentro do período de admissão/desligamento | `EMPLOYEE_INACTIVE` (409) |
+| Carga horária vigente | `NO_APPLICABLE_WORKLOAD` (409) |
+| Funcionário identificado pelo servidor (token de identificação válido) | `IDENTIFICATION_REQUIRED` (401) |
 | Sequência | `INVALID_SEQUENCE` (409) |
 | Duplicidade | `DUPLICATE_RECORD` (409) |
-| Dispositivo ativo e autorizado (kiosk) | `DEVICE_NOT_AUTHORIZED` (403) |
-| Data dentro da admissão/desligamento | `EMPLOYEE_INACTIVE` (409) |
+| Dispositivo ativo | `DEVICE_NOT_AUTHORIZED` (403) |
 
 Todo registro aceito **e** toda tentativa rejeitada geram auditoria.
 
 ### 4.6 Imutabilidade e ajustes
 
 * Registros nunca são editados nem excluídos fisicamente.
-* Correções são feitas por **ajuste** (`time_record_adjustments`): incluir registro faltante ou anular
-  um registro existente, sempre com justificativa, autor e data.
-* Ajuste exige permissão `records:adjust`. Um usuário não pode ajustar os próprios registros.
-* O registro anulado continua visível no histórico, marcado como anulado, com link para o ajuste.
-* Registros incluídos por ajuste têm origem `ADJUSTMENT` e o horário informado pelo responsável
-  (não o horário do servidor) — o horário de criação real fica no ajuste.
+* Correções são feitas pelo **administrador** por **ajuste**: incluir registro faltante (ex.: esqueceu de bater a saída)
+  ou anular um registro existente, sempre com justificativa.
+* O registro anulado continua visível no histórico, marcado como anulado.
+* Registros incluídos por ajuste têm origem `ADJUSTMENT` e o horário informado pelo administrador;
+  o horário real da inclusão fica no ajuste.
 
 ---
 
 ## 5. Motor de cálculo — resultado por dia
 
-Para cada dia `d` do período consultado (**inclusivo** nas duas pontas), o motor produz:
+Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 
 | Campo | Regra |
 |---|---|
-| `day_type` | `WORKDAY`, `DAY_OFF` (folga/fim de semana sem jornada), `HOLIDAY`, `NOT_EMPLOYED` |
-| `planned_minutes` | Carga da jornada vigente; **0** em `DAY_OFF`, `HOLIDAY`, `NOT_EMPLOYED` |
+| `day_type` | `WORKDAY`, `DAY_OFF` (dia não trabalhado na carga), `HOLIDAY`, `NOT_EMPLOYED` |
+| `planned_minutes` | Carga vigente daquele dia da semana; **0** em `DAY_OFF`, `HOLIDAY`, `NOT_EMPLOYED` |
 | `worked_minutes` | `(LUNCH_EXIT − ENTRY) + (EXIT − LUNCH_RETURN)`, ou `EXIT − ENTRY` sem intervalo |
 | `break_minutes` | `LUNCH_RETURN − LUNCH_EXIT` (0 se não houve intervalo) |
-| `late_minutes` | `max(0, ENTRY − início planejado)` — só `FIXED`/`ROTATING` |
-| `early_leave_minutes` | `max(0, fim planejado − EXIT)` — só `FIXED`/`ROTATING` |
-| `overtime_minutes` | `max(0, saldo)` |
-| `night_minutes` | Minutos trabalhados entre 22:00 e 05:00 (ver §7) |
+| `missing_minutes` | `max(0, −saldo)` — horas faltantes (cobre atraso e saída antecipada) |
+| `overtime_minutes` | `max(0, saldo)` — horas extras |
+| `night_minutes` | Minutos trabalhados entre 22:00 e 05:00 (§7) |
 | `balance_minutes` | `worked − planned`, após tolerância (§6) |
-| `status` | `OK`, `ABSENT`, `INCOMPLETE`, `INSUFFICIENT_BREAK` (pode acumular flags) |
+| `status` | `OK`, `ABSENT`, `INCOMPLETE`, `INSUFFICIENT_BREAK`, `IN_PROGRESS` |
 | `counts_for_bank` | Se o saldo entra no banco de horas |
 
 ### 5.1 Casos especiais
 
-* **Falta:** dia `WORKDAY` sem nenhum registro ⇒ `status=ABSENT`, `worked=0`, `balance=−planned`, entra no banco.
-* **Registro incompleto:** falta `EXIT`, ou `LUNCH_EXIT` sem `LUNCH_RETURN`:
-  `status=INCOMPLETE`, `worked` = soma apenas dos pares fechados, `counts_for_bank=false`
-  até que um ajuste complete o dia. O dia corrente com ciclo aberto aparece como "em andamento", não incompleto.
-* **Final de semana / folga trabalhada:** `planned=0`, todo minuto trabalhado é hora extra.
-* **Feriado:** `planned=0`; trabalho no feriado é hora extra, marcada `holiday_work=true`.
-* **Intervalo insuficiente:** se `worked > 6 h` e `break < 60 min`, ou `4 h < worked ≤ 6 h` e `break < 15 min`
-  (CLT art. 71), marca `INSUFFICIENT_BREAK`. O sistema **sinaliza**; o pagamento do intervalo suprimido é
-  tratamento de folha, fora do escopo.
-* **Jornada `FLEXIBLE`:** sem atraso/saída antecipada; somente saldo.
+* **Falta:** dia `WORKDAY` passado sem nenhum registro ⇒ `ABSENT`, `worked=0`, `balance=−planned`, entra no banco.
+* **Registro incompleto:** falta `EXIT`, ou `LUNCH_EXIT` sem `LUNCH_RETURN` ⇒ `INCOMPLETE`;
+  `worked` soma só os pares fechados; `counts_for_bank=false` até o administrador completar por ajuste.
+* **Dia em andamento:** o dia de hoje (ou turno aberto dentro de `max_shift_hours`) ⇒ `IN_PROGRESS`, fora do banco.
+* **Folga trabalhada / fim de semana:** `planned=0`, todo minuto trabalhado é hora extra.
+* **Feriado:** `planned=0`; trabalho no feriado é hora extra, marcado `holiday_work=true`.
+* **Intervalo insuficiente:** `worked > 6 h` e `break < 60 min`, ou `4 h < worked ≤ 6 h` e `break < 15 min`
+  (CLT art. 71) ⇒ sinaliza `INSUFFICIENT_BREAK`. O saldo continua sendo o tempo real trabalhado.
 
 ---
 
-## 6. Tolerância (CLT art. 58 §1º)
+## 6. Tolerância
 
-* Variações de até **5 minutos por marcação**, com limite de **10 minutos no dia**, não são computadas
-  (configuráveis: `tolerance_per_mark_minutes`, `tolerance_daily_minutes`).
-* Regra aplicada (somente `FIXED`/`ROTATING`, dias `WORKDAY` completos):
-  1. Calcula-se o desvio absoluto de cada marcação em relação ao horário planejado
-     (entrada, saída e, se a jornada definir horário fixo de intervalo, as marcações do intervalo).
-  2. Se **todo** desvio ≤ 5 min **e** a soma dos desvios ≤ 10 min ⇒ `balance=0`, `late=0`, `early_leave=0`, `overtime=0`.
-  3. Caso contrário, os minutos são computados **integralmente** (não se desconta a tolerância).
-* Para `FLEXIBLE`, a tolerância diária se aplica ao saldo: `|balance| ≤ 10` ⇒ `balance=0`.
+* Como não há horário fixo, a tolerância é aplicada ao **saldo diário**: se `|balance| ≤ 10 min`
+  (configurável, `tolerance_daily_minutes`) ⇒ `balance = 0`.
+* Acima do limite, o saldo é computado **integralmente** (não se desconta a tolerância) — mesmo critério do
+  CLT art. 58 §1º.
+* Aplica-se somente a dias `WORKDAY` completos.
 
 ---
 
 ## 7. Trabalho noturno
 
 * Período noturno: **22:00 às 05:00** no fuso da empresa (configurável).
-* O motor informa `night_minutes` (minutos reais) e `night_minutes_reduced`
-  (`night_minutes × 60 / 52,5`, hora noturna reduzida — CLT art. 73).
-* **Decisão:** o saldo e o banco de horas usam **minutos reais**. Os minutos noturnos e a hora reduzida
-  são informados para a folha (adicional noturno é tratamento de folha, fora do escopo).
+* O motor informa `night_minutes` (reais) e `night_minutes_reduced` (`× 60 / 52,5`, hora noturna reduzida — CLT art. 73).
+* O saldo e o banco de horas usam **minutos reais**; os minutos noturnos são informativos para a folha.
+* Turno noturno conta no dia da **entrada**: o dia da semana da entrada precisa estar marcado como dia trabalhado
+  na carga do funcionário.
 
 ---
 
 ## 8. Feriados
 
-* Cadastro: data, nome, abrangência (`NATIONAL`, `STATE`, `MUNICIPAL`, `COMPANY`).
-* Feriados recorrentes (mesmo dia/mês todo ano) podem ser marcados como `recurring`.
-* Na v1 a empresa tem um único calendário (sem calendários por filial).
-* Em feriado: carga planejada zero, mesmo que a jornada preveja trabalho naquele dia da semana.
-* Jornada `ROTATING` (ex.: 12x36): **decisão padrão** — o feriado também zera a carga planejada;
-  configurável por jornada (`holidays_apply=false` mantém a escala normal).
+* Cadastrados pelo administrador: data, nome, `recurring` (repete todo ano no mesmo dia/mês).
+* Um único calendário para a empresa.
+* Em feriado a carga planejada é zero.
 
 ---
 
 ## 9. Banco de horas
 
-* **Saldo acumulado em uma data `D`** = saldo inicial (abertura) + Σ `balance` dos dias com
-  `counts_for_bank=true` até `D` + Σ lançamentos manuais até `D`.
-* **Lançamentos manuais** (`hour_bank_entries`): crédito ou débito em minutos, com tipo
-  (`OPENING_BALANCE`, `COMPENSATION`, `PAYOUT`, `CORRECTION`), justificativa e autor. Exigem `hour_bank:adjust`.
-* A consulta por período (inclusivo) retorna: saldo anterior ao período, detalhamento diário,
-  totais do período (planejado, trabalhado, extra, atraso, saldo) e saldo final.
-* Prazo de compensação (CLT art. 59: 6 meses por acordo individual, 1 ano por acordo coletivo) é **configurável**
-  (`hour_bank_expiration_months`). Na v1 o sistema **alerta** sobre saldos que estão vencendo; não zera automaticamente.
+* **Saldo acumulado em uma data `D`** = Σ `balance` dos dias com `counts_for_bank=true` até `D`
+  + Σ lançamentos manuais até `D`.
+* **Lançamentos manuais** (somente administrador): crédito ou débito em minutos, com tipo
+  (`OPENING_BALANCE`, `COMPENSATION`, `PAYOUT`, `CORRECTION`) e justificativa. Ex.: saldo trazido de controle anterior.
+* Consulta por período (inclusivo): saldo anterior ao período, detalhamento diário, totais (planejado,
+  trabalhado, extras, faltantes, saldo) e saldo final.
+
+### 9.1 Consulta pelo funcionário (kiosk)
+
+* O funcionário consulta o **próprio** banco de horas no kiosk, identificado pelo rosto (sem senha).
+* O servidor só devolve dados do funcionário reconhecido — o kiosk não informa de quem é o banco.
+* Mostra: saldo acumulado até hoje, horas extras e faltantes do mês atual e o detalhamento diário do mês.
+* A tela fecha sozinha após **30 segundos** (configurável) ou ao tocar em "Sair".
+* Cada consulta é auditada.
 
 ---
 
 ## 10. Períodos de consulta
 
 * Sempre **inclusivos**: `01/09/2026 a 30/09/2026` inclui os dias 01 e 30.
-* Atalhos:
-  * **hoje:** data local atual;
-  * **semana:** segunda a domingo da semana atual;
-  * **mês:** dia 1 ao último dia do mês atual.
-* Na API, `date_from` e `date_to` são datas (`YYYY-MM-DD`) interpretadas no fuso da empresa. Internamente,
-  o filtro por instante é `[início do date_from, início do dia seguinte a date_to)`.
-* Período máximo por consulta de cálculo: **366 dias** (proteção de performance).
-
----
-
-## 11. Conformidade legal (pendente de decisão do responsável)
-
-A Portaria MTP nº 671/2021 regula sistemas de registro eletrônico de ponto (REP-C, REP-A, REP-P).
-Um sistema de ponto usado para controle oficial de jornada normalmente precisa atender a ela
-(ex.: comprovante de registro ao trabalhador, arquivo AFD/AEJ, inalterabilidade dos registros, atestado técnico).
-
-**O escopo atual do `MASTER-PROMPT.md` não inclui esses requisitos.** As decisões de arquitetura
-(registros imutáveis, ajustes auditados, horário do servidor) foram tomadas para não impedir uma
-adequação futura, mas **o sistema não deve ser declarado conforme à Portaria 671** sem uma fase específica
-e validação jurídica. Registrado como risco em `PROJECT-STATE.md`.
+* Atalhos: **hoje**; **semana** (segunda a domingo); **mês** (dia 1 ao último dia).
+* Na API, `date_from`/`date_to` são datas no fuso da empresa; internamente o filtro é
+  `[início de date_from, início do dia seguinte a date_to)`.
+* Período máximo por consulta de cálculo: **366 dias**.

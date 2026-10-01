@@ -16,9 +16,9 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `docs: define phase 0 architecture` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `docs: apply owner decisions to phase 0` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Revisar as decisões pendentes (seção DECISÕES PENDENTES) e iniciar a Fase 1.
+**Próxima ação:** Iniciar a Fase 1 — Backend base.
 
 ---
 
@@ -43,10 +43,10 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 * [x] `ARCHITECTURE.md` — stack, camadas, estrutura de pastas, timezone, concorrência
 * [x] `DATABASE.md` — tabelas por fase, restrições de integridade e duplicidade
 * [x] `API.md` — convenções (paginação, filtros, ordenação, erros) e endpoints por fase
-* [x] `SECURITY.md` — ameaças, autenticação, kiosk, matriz RBAC, segredos, auditoria
-* [x] `BUSINESS-RULES.md` — sequência, duplicidade, dia de jornada, motor de cálculo, tolerância, noturno, feriados, banco de horas
+* [x] `SECURITY.md` — perfis (Administrador/Funcionário), ameaças, autenticação, kiosk, segredos, auditoria
+* [x] `BUSINESS-RULES.md` — carga horária, sequência, duplicidade, dia de jornada, motor de cálculo, tolerância, noturno, feriados, banco de horas, consulta pelo kiosk
 * [x] `BIOMETRICS.md` — comparação de alternativas, decisão, armazenamento, retenção, riscos
-* [x] `TEST-PLAN.md` — estratégia e casos obrigatórios com exemplos numéricos (C01–C24, R01–R17, A01–A12)
+* [x] `TEST-PLAN.md` — estratégia e casos obrigatórios com exemplos numéricos (C01–C24, R01–R17, A01–A13)
 
 ### Testes
 
@@ -69,11 +69,11 @@ Ver seção DECISÕES TÉCNICAS.
 * [ ] Docker
 * [ ] migrations
 * [ ] modelos
-* [ ] usuários
+* [ ] administradores (único perfil com senha)
 * [ ] autenticação
 * [ ] autorização
 * [ ] funcionários
-* [ ] jornadas
+* [ ] carga horária diária no cadastro do funcionário
 
 ### Testes
 
@@ -100,7 +100,7 @@ Pendente.
 * [ ] banco de horas
 * [ ] feriados
 * [ ] finais de semana
-* [ ] jornadas especiais
+* [ ] turno noturno
 
 ### Testes
 
@@ -116,13 +116,13 @@ Pendente.
 
 * [ ] autenticação
 * [ ] funcionários
-* [ ] jornadas
+* [ ] carga horária
 * [ ] registros
 * [ ] histórico
 * [ ] cálculos
 * [ ] banco de horas
-* [ ] usuários
-* [ ] permissões
+* [ ] administradores
+* [ ] kiosk (identificação, batida, consulta do banco de horas)
 * [ ] auditoria
 * [ ] feriados
 * [ ] filtros
@@ -145,14 +145,14 @@ Pendente.
 * [ ] `/historico`
 * [ ] `/banco-de-horas`
 * [ ] `/funcionarios`
-* [ ] `/jornadas`
+* [ ] ~~`/jornadas`~~ (incorporada a `/funcionarios` — decisão de 2026-10-01)
 * [ ] `/admin`
 
 ### Funcionalidades
 
 * [ ] login
 * [ ] gerenciamento de funcionários
-* [ ] gerenciamento de jornadas
+* [ ] carga horária no cadastro do funcionário
 * [ ] histórico
 * [ ] banco de horas
 * [ ] administração
@@ -169,7 +169,8 @@ Pendente.
 * [ ] documentação
 * [ ] câmera
 * [ ] detecção facial
-* [ ] identificação
+* [ ] registro (funcionário só escolhe o tipo de batida)
+* [ ] consulta do próprio banco de horas pelo rosto
 * [ ] registro
 * [ ] confirmação
 * [ ] tratamento de erros
@@ -235,16 +236,25 @@ Pendente.
 
 ### 2026-10-01 — Autenticação
 
-**Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly; kiosk com token de dispositivo; RBAC com perfis ADMIN, HR, MANAGER, EMPLOYEE. `SECURITY.md`.
+**Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly, só para administradores; kiosk com token de dispositivo; funcionário identificado por token de identificação de 60 s emitido após o reconhecimento facial. `SECURITY.md`.
+
+### 2026-10-01 — Definições do responsável (alteram o MASTER-PROMPT)
+
+**Problema:** o MASTER-PROMPT prevê perfis/permissões genéricos, jornadas com horários e rota `/jornadas`.
+**Decisão do responsável:**
+1. Apenas dois perfis: **Administrador** (único com senha) e **Funcionário** (sem senha, identificado pelo rosto).
+2. No kiosk o funcionário é reconhecido pela face e **só escolhe o tipo de batida**.
+3. O funcionário consulta o **próprio banco de horas** no kiosk, também pelo rosto; o servidor só devolve os dados de quem reconheceu.
+4. Os horários dos funcionários não são conhecidos: o cadastro do funcionário recebe a **carga horária diária** e os dias trabalhados (com vigência). Sem horário fixo, atraso e saída antecipada aparecem como "horas faltantes" e a tolerância (10 min) se aplica ao saldo do dia.
+5. Portaria MTP 671/2021 e alternativa à biometria (PIN) **não serão tratadas**.
+**Impacto:** tabelas `roles`/`permissions` removidas (há só `admins`); jornadas FIXED/ROTATING removidas; `/jornadas` incorporada a `/funcionarios`; registro web removido (só kiosk + ajuste do administrador). Documentos atualizados: todos os da Fase 0. `MASTER-PROMPT.md` não foi editado; esta decisão prevalece sobre ele.
 
 ---
 
 # DECISÕES PENDENTES (precisam do responsável pelo projeto)
 
-1. **Portaria MTP 671/2021 (REP-P):** o sistema precisa ser um REP-P conforme (comprovante, AFD/AEJ, atestado técnico)? Hoje está **fora do escopo**; a arquitetura não impede. `BUSINESS-RULES.md` §11.
-2. **Alternativa à biometria** para quem não consentir: proposta de matrícula + PIN auditado. `BIOMETRICS.md` §4.
-3. **Retenção** dos registros de ponto e da auditoria (prazo legal/contábil da empresa). `SECURITY.md` §8.
-4. **Valores padrão** a confirmar: tolerância 5/10 min, intervalo mínimo entre marcações 2 min, `max_shift_hours` 16 h, prazo de banco de horas, feriado zerar escala 12x36.
+1. **Retenção** dos registros de ponto e da auditoria (prazo da empresa). Não bloqueia a Fase 1.
+2. **Valores padrão** (configuráveis, podem ser ajustados depois): tolerância diária 10 min, intervalo mínimo entre batidas 2 min, `max_shift_hours` 16 h, tela do banco de horas no kiosk fecha em 30 s.
 
 Formato recomendado:
 
@@ -324,7 +334,7 @@ Status:
 
 * [ ] autenticação
 * [ ] funcionários
-* [ ] jornadas
+* [ ] carga horária
 * [ ] registros
 * [ ] cálculos
 * [ ] histórico
@@ -370,7 +380,7 @@ Formato:
 | biometria | Fraude com foto/vídeo (sem detecção de vivacidade) | Kiosk supervisionado, auditoria, avaliar anti-spoofing com licença compatível na Fase 5 |
 | biometria | Licenças dos modelos (YuNet/SFace) | Confirmar licença dos arquivos exatos na Fase 5 antes de usar |
 | privacidade | Biometria é dado sensível (LGPD) | Consentimento, sem imagens, templates cifrados, exclusão e expurgo |
-| conformidade | Portaria 671/2021 não contemplada | Decisão pendente nº 1; não declarar conformidade |
+| acesso | Funcionário sem senha: foto/vídeo de colega poderia ser usado para ver o banco de horas dele | Somente leitura dos dados daquele funcionário; auditoria das consultas; anti-spoofing avaliado na Fase 5 |
 | timezone | Erros em turnos noturnos e horário de verão | `zoneinfo`, casos C17/R13/R14 |
 | concorrência | Registros simultâneos duplicados | `SELECT ... FOR UPDATE` + índice único parcial; teste R08 |
 | kiosk | Câmera/rede instáveis | Tratamento de erros e reconexão (Fase 5) |
@@ -398,6 +408,8 @@ Possíveis categorias:
 * Arquivos: `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `SECURITY.md`, `BUSINESS-RULES.md`, `BIOMETRICS.md`, `TEST-PLAN.md`, `PROJECT-STATE.md`.
 * Testes: não aplicável (sem código).
 * Resultado: arquitetura definida; 4 decisões pendentes listadas.
+* Revisão com as definições do responsável: perfis Administrador/Funcionário, kiosk só com escolha de batida,
+  consulta do banco de horas pelo rosto, carga horária diária no cadastro do funcionário; pontos de Portaria 671 e PIN descartados.
 
 Formato:
 
@@ -445,10 +457,10 @@ Ao iniciar uma nova sessão:
 **Status:** Concluída.
 
 * Lidos `MASTER-PROMPT.md` e `PROJECT-STATE.md`; repositório sem código.
-* Executada a Fase 0 (documentação de arquitetura).
+* Executada a Fase 0 (documentação de arquitetura) e revisada com as definições do responsável.
 * Próxima sessão: resolver/confirmar as DECISÕES PENDENTES e iniciar a **Fase 1 — Backend base**
   (estrutura `backend/`, Docker Compose com PostgreSQL, Alembic, modelos da Fase 1 em `DATABASE.md` §3,
-  autenticação/autorização, usuários, funcionários, jornadas e testes A01–A12 e seção 6 do `TEST-PLAN.md`).
+  login do administrador, administradores, funcionários com carga horária e testes A01–A10 e seção 6 do `TEST-PLAN.md`).
 
 ---
 
