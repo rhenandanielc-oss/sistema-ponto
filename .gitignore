@@ -244,3 +244,7 @@ backup/
 
 *.local
 !.env.example
+
+# Modelos de reconhecimento facial (baixados por "python -m app.cli download-models")
+backend/models/
+frontend/public/mediapipe/

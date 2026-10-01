@@ -2,9 +2,8 @@
 
 # Plano de Testes
 
-> **Status:** Fases 1–4 implementadas. Backend: C01–C24, R01–R18, A01–A10, §6, testes da API e do pagamento (201 testes).
-> Frontend: Vitest (12 testes) e Playwright E2E (login, cadastro, histórico, ajustes, banco de horas, administração).
-> A11–A13 e §7: Fase 5.
+> **Status:** Fases 1–5 implementadas. Backend: 230 testes (2 deles só com os modelos reais: `REAL_FACE_MODELS_DIR`).
+> Frontend: Vitest (13) e Playwright E2E (3: administrador, login errado, terminal com câmera simulada).
 
 ---
 
@@ -134,7 +133,7 @@ Salvo indicação, os exemplos usam:
 
 ---
 
-## 7. Kiosk e biometria (Fase 5)
+## 7. Kiosk e biometria (Fase 5) — implementado em `tests/integration/test_kiosk_biometrics.py`, `tests/unit/test_biometrics.py`, `tests/unit/test_face_engine_real.py`, `frontend/e2e/kiosk.spec.ts`
 
 * Identificação: 0 faces, 2 faces, baixa qualidade, não reconhecido, reconhecido.
 * Funcionário inativo não é identificado.

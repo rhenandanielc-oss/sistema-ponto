@@ -1173,6 +1173,301 @@
     }
    }
   },
+  "/api/v1/employees/{employee_id}/biometric-status": {
+   "get": {
+    "tags": [
+     "biometria"
+    ],
+    "summary": "Biometric Status",
+    "operationId": "biometric_status_api_v1_employees__employee_id__biometric_status_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BiometricStatusOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/biometric-consent": {
+   "post": {
+    "tags": [
+     "biometria"
+    ],
+    "summary": "Grant Consent",
+    "description": "Registra que o funcionário consentiu com o uso da biometria facial (LGPD).",
+    "operationId": "grant_consent_api_v1_employees__employee_id__biometric_consent_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BiometricStatusOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "biometria"
+    ],
+    "summary": "Revoke Consent",
+    "description": "Revoga o consentimento e exclui as fotos cadastradas.",
+    "operationId": "revoke_consent_api_v1_employees__employee_id__biometric_consent_delete",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/biometric-templates": {
+   "post": {
+    "tags": [
+     "biometria"
+    ],
+    "summary": "Enroll",
+    "description": "Cadastra uma foto do rosto. Só o vetor numérico cifrado é guardado.",
+    "operationId": "enroll_api_v1_employees__employee_id__biometric_templates_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_enroll_api_v1_employees__employee_id__biometric_templates_post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BiometricStatusOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "biometria"
+    ],
+    "summary": "Delete Templates",
+    "operationId": "delete_templates_api_v1_employees__employee_id__biometric_templates_delete",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/employees/{employee_id}/workdays": {
    "get": {
     "tags": [
@@ -3029,6 +3324,186 @@
     }
    }
   },
+  "/api/v1/kiosk/identify": {
+   "post": {
+    "tags": [
+     "kiosk"
+    ],
+    "summary": "Identify",
+    "description": "Reconhece o funcionário pelo rosto. A imagem é descartada ao fim da requisição.",
+    "operationId": "identify_api_v1_kiosk_identify_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_identify_api_v1_kiosk_identify_post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IdentifyOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/kiosk/records": {
+   "post": {
+    "tags": [
+     "kiosk"
+    ],
+    "summary": "Create Record",
+    "description": "Registra a batida escolhida. O horário é o do servidor; o token é consumido.",
+    "operationId": "create_record_api_v1_kiosk_records_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/KioskRecordIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KioskRecordOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/kiosk/hour-bank": {
+   "post": {
+    "tags": [
+     "kiosk"
+    ],
+    "summary": "Own Hour Bank",
+    "description": "Banco de horas do funcionário reconhecido — e somente dele (BUSINESS-RULES.md §9.1).",
+    "operationId": "own_hour_bank_api_v1_kiosk_hour_bank_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/KioskHourBankIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KioskHourBankOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/hour-bank/summary": {
    "get": {
     "tags": [
@@ -3575,6 +4050,90 @@
     ],
     "title": "AuditLogOut"
    },
+   "BiometricStatusOut": {
+    "properties": {
+     "consent": {
+      "type": "boolean",
+      "title": "Consent"
+     },
+     "consent_granted_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Consent Granted At"
+     },
+     "term_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Term Version"
+     },
+     "templates": {
+      "type": "integer",
+      "title": "Templates",
+      "description": "Fotos de rosto cadastradas (só o vetor cifrado, nunca a imagem)"
+     },
+     "max_templates": {
+      "type": "integer",
+      "title": "Max Templates",
+      "default": 5
+     },
+     "ready": {
+      "type": "boolean",
+      "title": "Ready",
+      "description": "Pode bater ponto pelo rosto"
+     }
+    },
+    "type": "object",
+    "required": [
+     "consent",
+     "consent_granted_at",
+     "term_version",
+     "templates",
+     "ready"
+    ],
+    "title": "BiometricStatusOut"
+   },
+   "Body_enroll_api_v1_employees__employee_id__biometric_templates_post": {
+    "properties": {
+     "image": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "Image",
+      "description": "Foto do rosto (JPEG/PNG, até 1 MB)"
+     }
+    },
+    "type": "object",
+    "required": [
+     "image"
+    ],
+    "title": "Body_enroll_api_v1_employees__employee_id__biometric_templates_post"
+   },
+   "Body_identify_api_v1_kiosk_identify_post": {
+    "properties": {
+     "image": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "Image",
+      "description": "Um quadro da câmera (JPEG/PNG, até 1 MB)"
+     }
+    },
+    "type": "object",
+    "required": [
+     "image"
+    ],
+    "title": "Body_identify_api_v1_kiosk_identify_post"
+   },
    "CompanySettings": {
     "properties": {
      "tolerance_per_mark_minutes": {
@@ -3742,6 +4301,18 @@
     },
     "type": "object",
     "title": "CompanySettingsUpdate"
+   },
+   "ConsentIn": {
+    "properties": {
+     "term_version": {
+      "type": "string",
+      "maxLength": 20,
+      "title": "Term Version",
+      "default": "v1"
+     }
+    },
+    "type": "object",
+    "title": "ConsentIn"
    },
    "DayOut": {
     "properties": {
@@ -4611,6 +5182,240 @@
      "incomplete_days"
     ],
     "title": "HourBankSummaryItem"
+   },
+   "IdentifyOut": {
+    "properties": {
+     "identification_token": {
+      "type": "string",
+      "title": "Identification Token"
+     },
+     "expires_in": {
+      "type": "integer",
+      "title": "Expires In"
+     },
+     "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+     },
+     "workday_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Workday Date"
+     },
+     "allowed_types": {
+      "items": {
+       "type": "string",
+       "enum": [
+        "ENTRY",
+        "LUNCH_EXIT",
+        "LUNCH_RETURN",
+        "EXIT"
+       ]
+      },
+      "type": "array",
+      "title": "Allowed Types",
+      "description": "Botões de batida que devem ficar habilitados"
+     },
+     "hour_bank_screen_seconds": {
+      "type": "integer",
+      "title": "Hour Bank Screen Seconds"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identification_token",
+     "expires_in",
+     "employee_name",
+     "workday_date",
+     "allowed_types",
+     "hour_bank_screen_seconds"
+    ],
+    "title": "IdentifyOut"
+   },
+   "KioskDay": {
+    "properties": {
+     "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "worked_minutes": {
+      "type": "integer",
+      "title": "Worked Minutes"
+     },
+     "balance_minutes": {
+      "type": "integer",
+      "title": "Balance Minutes"
+     },
+     "counts_for_bank": {
+      "type": "boolean",
+      "title": "Counts For Bank"
+     }
+    },
+    "type": "object",
+    "required": [
+     "date",
+     "status",
+     "worked_minutes",
+     "balance_minutes",
+     "counts_for_bank"
+    ],
+    "title": "KioskDay"
+   },
+   "KioskHourBankIn": {
+    "properties": {
+     "identification_token": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 10,
+      "title": "Identification Token"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identification_token"
+    ],
+    "title": "KioskHourBankIn"
+   },
+   "KioskHourBankOut": {
+    "properties": {
+     "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+     },
+     "balance_minutes": {
+      "type": "integer",
+      "title": "Balance Minutes",
+      "description": "Saldo acumulado do banco de horas até hoje"
+     },
+     "month_start": {
+      "type": "string",
+      "format": "date",
+      "title": "Month Start"
+     },
+     "month_overtime_minutes": {
+      "type": "integer",
+      "title": "Month Overtime Minutes"
+     },
+     "month_missing_minutes": {
+      "type": "integer",
+      "title": "Month Missing Minutes"
+     },
+     "month_absences": {
+      "type": "integer",
+      "title": "Month Absences"
+     },
+     "pay_period_start": {
+      "type": "string",
+      "format": "date",
+      "title": "Pay Period Start"
+     },
+     "pay_period_end": {
+      "type": "string",
+      "format": "date",
+      "title": "Pay Period End"
+     },
+     "pay_period_overtime_minutes": {
+      "type": "integer",
+      "title": "Pay Period Overtime Minutes"
+     },
+     "pay_period_missing_minutes": {
+      "type": "integer",
+      "title": "Pay Period Missing Minutes"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/KioskDay"
+      },
+      "type": "array",
+      "title": "Days"
+     },
+     "screen_seconds": {
+      "type": "integer",
+      "title": "Screen Seconds"
+     }
+    },
+    "type": "object",
+    "required": [
+     "employee_name",
+     "balance_minutes",
+     "month_start",
+     "month_overtime_minutes",
+     "month_missing_minutes",
+     "month_absences",
+     "pay_period_start",
+     "pay_period_end",
+     "pay_period_overtime_minutes",
+     "pay_period_missing_minutes",
+     "days",
+     "screen_seconds"
+    ],
+    "title": "KioskHourBankOut"
+   },
+   "KioskRecordIn": {
+    "properties": {
+     "identification_token": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 10,
+      "title": "Identification Token"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "ENTRY",
+       "LUNCH_EXIT",
+       "LUNCH_RETURN",
+       "EXIT"
+      ],
+      "title": "Type"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identification_token",
+     "type"
+    ],
+    "title": "KioskRecordIn"
+   },
+   "KioskRecordOut": {
+    "properties": {
+     "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "ENTRY",
+       "LUNCH_EXIT",
+       "LUNCH_RETURN",
+       "EXIT"
+      ],
+      "title": "Type"
+     },
+     "recorded_at": {
+      "type": "string",
+      "title": "Recorded At"
+     },
+     "workday_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Workday Date"
+     }
+    },
+    "type": "object",
+    "required": [
+     "employee_name",
+     "type",
+     "recorded_at",
+     "workday_date"
+    ],
+    "title": "KioskRecordOut"
    },
    "LoginRequest": {
     "properties": {
@@ -5645,6 +6450,10 @@
   {
    "name": "auditoria",
    "description": "Trilha de ações relevantes (somente leitura)."
+  },
+  {
+   "name": "biometria",
+   "description": "Consentimento e cadastro do rosto (só vetores cifrados, nunca imagens)."
   },
   {
    "name": "kiosk",

@@ -56,12 +56,42 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "export-openapi", help="Imprime o OpenAPI (usado para gerar os tipos do frontend)"
     )
+    models = sub.add_parser(
+        "download-models", help="Baixa e confere os modelos de reconhecimento facial"
+    )
+    models.add_argument("--dir", default=None, help="Pasta de destino (padrão: FACE_MODELS_DIR)")
+    sub.add_parser("purge-biometrics", help="Apaga de vez templates excluídos há mais de 30 dias")
     args = parser.parse_args(argv)
     if args.command == "create-admin":
         return create_admin(args.email, args.name, args.password_stdin)
     if args.command == "export-openapi":
         return export_openapi()
+    if args.command == "download-models":
+        return download_models(args.dir)
+    if args.command == "purge-biometrics":
+        return purge_biometrics()
     return 2
+
+
+def download_models(directory: str | None) -> int:
+    from pathlib import Path
+
+    from app.biometrics import model_files
+    from app.core.config import get_settings
+
+    target = Path(directory or get_settings().face_models_dir)
+    for path in model_files.download(target):
+        print(f"ok {path}")
+    return 0
+
+
+def purge_biometrics() -> int:
+    from app.services import biometric_service
+
+    with get_sessionmaker()() as db:
+        removed = biometric_service.purge_deleted(db)
+    print(f"{removed} template(s) apagado(s) definitivamente.")
+    return 0
 
 
 def export_openapi() -> int:

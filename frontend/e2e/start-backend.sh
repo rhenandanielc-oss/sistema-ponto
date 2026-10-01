@@ -5,6 +5,8 @@ set -eu
 : "${E2E_DATABASE_URL:?defina E2E_DATABASE_URL (banco exclusivo para testes E2E)}"
 cd "$(dirname "$0")/../../backend"
 export DATABASE_URL="$E2E_DATABASE_URL" ENVIRONMENT=development COOKIE_SECURE=false RATE_LIMIT_ENABLED=false
+# Motor facial falso: a câmera simulada do Chromium não tem rosto. Proibido em produção pela configuração.
+export FACE_ENGINE=fake
 export JWT_SECRET="e2e-only-jwt-key-0123456789abcdef0123456789"
 uv run python -c "
 from sqlalchemy import create_engine, text

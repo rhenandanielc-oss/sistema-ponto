@@ -2,8 +2,8 @@
 
 # Segurança
 
-> **Status:** Fases 1–4 implementadas: autenticação do administrador, dispositivos, limitação de taxa, cabeçalhos,
-> auditoria e painel web com token só em memória e CSP. Pendentes: kiosk/biometria (Fase 5), revisão final (Fase 6).
+> **Status:** Fases 1–5 implementadas (inclui terminal e biometria — `BIOMETRICS.md`). Pendente: revisão final de
+> produção (Fase 6) e anti-spoofing (`BIOMETRICS.md` §11).
 
 ---
 
@@ -65,8 +65,8 @@ Só o refresh token vai por cookie (`SameSite=Strict`, caminho `/auth`); as dema
 ## 5. Identificação do funcionário (rosto)
 
 * `POST /kiosk/identify` (com token de dispositivo) recebe um frame, e o **servidor** decide quem é.
-* Se reconhecido, o servidor emite um **token de identificação**: aleatório, guardado só em memória do servidor
-  (ou como hash no banco), vinculado ao funcionário e ao dispositivo, válido por **60 s**.
+* Se reconhecido, o servidor emite um **token de identificação**: aleatório, guardado como hash no banco
+  (`kiosk_identifications`), vinculado ao funcionário e ao dispositivo, válido por **60 s**.
 * Com esse token o kiosk pode:
   * registrar **uma** batida (o token é consumido);
   * consultar o banco de horas **daquele** funcionário enquanto o token for válido.

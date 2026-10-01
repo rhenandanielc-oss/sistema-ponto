@@ -2,8 +2,7 @@
 
 # API REST — v1
 
-> **Status:** endpoints das Fases 1, 2 e 3 **implementados**. Faltam os da Fase 5 (identificação facial e biometria).
-> O OpenAPI gerado pelo FastAPI
+> **Status:** todos os endpoints abaixo estão **implementados** (Fases 1–5). O OpenAPI gerado pelo FastAPI
 > (`/api/v1/openapi.json`, UI em `/api/docs`) é a referência detalhada dos campos.
 
 ---
@@ -47,8 +46,8 @@ Parâmetros por recurso. Períodos: `date_from`, `date_to`, **inclusivos**.
 | 401 | `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `IDENTIFICATION_REQUIRED` |
 | 403 | `FORBIDDEN`, `DEVICE_NOT_AUTHORIZED` |
 | 404 | `NOT_FOUND`, `EMPLOYEE_NOT_FOUND` |
-| 409 | `DUPLICATE_RECORD`, `INVALID_SEQUENCE`, `EMPLOYEE_INACTIVE`, `NO_APPLICABLE_SCHEDULE`, `SCHEDULE_OVERLAP`, `CONFLICT` |
-| 422 | `VALIDATION_ERROR`, `FACE_NOT_FOUND`, `MULTIPLE_FACES`, `LOW_QUALITY` |
+| 409 | `DUPLICATE_RECORD`, `INVALID_SEQUENCE`, `EMPLOYEE_INACTIVE`, `NO_APPLICABLE_SCHEDULE`, `SCHEDULE_OVERLAP`, `CONSENT_REQUIRED`, `CONFLICT` |
+| 422 | `VALIDATION_ERROR`, `FACE_NOT_FOUND`, `MULTIPLE_FACES`, `LOW_QUALITY`, `INVALID_IMAGE` |
 | 423 | `ACCOUNT_LOCKED` |
 | 429 | `RATE_LIMITED` |
 | 500 | `INTERNAL_ERROR` |
@@ -147,8 +146,8 @@ O cadastro (`POST /employees`) exige `payday` (1 a 31); `PATCH /employees/{id}` 
 ### Biometria
 | Método | Rota | Fase |
 |---|---|---|
-| POST / DELETE | `/employees/{id}/biometric-consent` | 5 |
-| POST | `/employees/{id}/biometric-templates` (frames de cadastro) | 5 |
+| POST / DELETE | `/employees/{id}/biometric-consent` (DELETE revoga e exclui as fotos) | 5 |
+| POST | `/employees/{id}/biometric-templates` (`multipart`, campo `image`: **uma** foto JPEG/PNG por chamada, até 5 por funcionário; exige consentimento) | 5 |
 | DELETE | `/employees/{id}/biometric-templates` | 5 |
 | GET | `/employees/{id}/biometric-status` (consentimento e quantidade de templates; nunca os dados) | 5 |
 
@@ -159,9 +158,9 @@ O cadastro (`POST /employees`) exige `payday` (1 a 31); `PATCH /employees/{id}` 
 | Método | Rota | Descrição | Fase |
 |---|---|---|---|
 | GET | `/kiosk/ping` | Valida o dispositivo; retorna horário do servidor para exibição | 2 |
-| POST | `/kiosk/identify` | `multipart` com 1 frame JPEG → `{identification_token, expires_in, employee: {name}, allowed_types}` | 5 |
+| POST | `/kiosk/identify` | `multipart` (campo `image`, 1 quadro JPEG/PNG) → `{identification_token, expires_in, employee_name, workday_date, allowed_types, hour_bank_screen_seconds}` | 5 |
 | POST | `/kiosk/records` | `{identification_token, type}` → batida criada com horário oficial; consome o token | 5 |
-| POST | `/kiosk/hour-bank` | `{identification_token, date_from?, date_to?}` (padrão: mês atual) → banco de horas **do funcionário identificado** | 5 |
+| POST | `/kiosk/hour-bank` | `{identification_token}` → saldo acumulado, extras/faltantes/faltas do mês, extras/faltantes do ciclo de pagamento e dias do mês — **só do funcionário identificado**; não consome o token | 5 |
 
 Nenhum endpoint do kiosk recebe id de funcionário.
 

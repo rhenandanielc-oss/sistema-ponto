@@ -280,6 +280,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/employees/{employee_id}/biometric-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Biometric Status */
+        get: operations["biometric_status_api_v1_employees__employee_id__biometric_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/employees/{employee_id}/biometric-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant Consent
+         * @description Registra que o funcionário consentiu com o uso da biometria facial (LGPD).
+         */
+        post: operations["grant_consent_api_v1_employees__employee_id__biometric_consent_post"];
+        /**
+         * Revoke Consent
+         * @description Revoga o consentimento e exclui as fotos cadastradas.
+         */
+        delete: operations["revoke_consent_api_v1_employees__employee_id__biometric_consent_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/employees/{employee_id}/biometric-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enroll
+         * @description Cadastra uma foto do rosto. Só o vetor numérico cifrado é guardado.
+         */
+        post: operations["enroll_api_v1_employees__employee_id__biometric_templates_post"];
+        /** Delete Templates */
+        delete: operations["delete_templates_api_v1_employees__employee_id__biometric_templates_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/employees/{employee_id}/workdays": {
         parameters: {
             query?: never;
@@ -587,6 +649,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kiosk/identify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Identify
+         * @description Reconhece o funcionário pelo rosto. A imagem é descartada ao fim da requisição.
+         */
+        post: operations["identify_api_v1_kiosk_identify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kiosk/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Record
+         * @description Registra a batida escolhida. O horário é o do servidor; o token é consumido.
+         */
+        post: operations["create_record_api_v1_kiosk_records_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kiosk/hour-bank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Own Hour Bank
+         * @description Banco de horas do funcionário reconhecido — e somente dele (BUSINESS-RULES.md §9.1).
+         */
+        post: operations["own_hour_bank_api_v1_kiosk_hour_bank_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/hour-bank/summary": {
         parameters: {
             query?: never;
@@ -748,6 +870,46 @@ export interface components {
             /** Request Id */
             request_id: string | null;
         };
+        /** BiometricStatusOut */
+        BiometricStatusOut: {
+            /** Consent */
+            consent: boolean;
+            /** Consent Granted At */
+            consent_granted_at: string | null;
+            /** Term Version */
+            term_version: string | null;
+            /**
+             * Templates
+             * @description Fotos de rosto cadastradas (só o vetor cifrado, nunca a imagem)
+             */
+            templates: number;
+            /**
+             * Max Templates
+             * @default 5
+             */
+            max_templates: number;
+            /**
+             * Ready
+             * @description Pode bater ponto pelo rosto
+             */
+            ready: boolean;
+        };
+        /** Body_enroll_api_v1_employees__employee_id__biometric_templates_post */
+        Body_enroll_api_v1_employees__employee_id__biometric_templates_post: {
+            /**
+             * Image
+             * @description Foto do rosto (JPEG/PNG, até 1 MB)
+             */
+            image: string;
+        };
+        /** Body_identify_api_v1_kiosk_identify_post */
+        Body_identify_api_v1_kiosk_identify_post: {
+            /**
+             * Image
+             * @description Um quadro da câmera (JPEG/PNG, até 1 MB)
+             */
+            image: string;
+        };
         /** CompanySettings */
         CompanySettings: {
             /**
@@ -811,6 +973,14 @@ export interface components {
             night_end?: string | null;
             /** Kiosk Hour Bank Screen Seconds */
             kiosk_hour_bank_screen_seconds?: number | null;
+        };
+        /** ConsentIn */
+        ConsentIn: {
+            /**
+             * Term Version
+             * @default v1
+             */
+            term_version: string;
         };
         /** DayOut */
         DayOut: {
@@ -1149,6 +1319,114 @@ export interface components {
             absences: number;
             /** Incomplete Days */
             incomplete_days: number;
+        };
+        /** IdentifyOut */
+        IdentifyOut: {
+            /** Identification Token */
+            identification_token: string;
+            /** Expires In */
+            expires_in: number;
+            /** Employee Name */
+            employee_name: string;
+            /**
+             * Workday Date
+             * Format: date
+             */
+            workday_date: string;
+            /**
+             * Allowed Types
+             * @description Botões de batida que devem ficar habilitados
+             */
+            allowed_types: ("ENTRY" | "LUNCH_EXIT" | "LUNCH_RETURN" | "EXIT")[];
+            /** Hour Bank Screen Seconds */
+            hour_bank_screen_seconds: number;
+        };
+        /** KioskDay */
+        KioskDay: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Status */
+            status: string;
+            /** Worked Minutes */
+            worked_minutes: number;
+            /** Balance Minutes */
+            balance_minutes: number;
+            /** Counts For Bank */
+            counts_for_bank: boolean;
+        };
+        /** KioskHourBankIn */
+        KioskHourBankIn: {
+            /** Identification Token */
+            identification_token: string;
+        };
+        /** KioskHourBankOut */
+        KioskHourBankOut: {
+            /** Employee Name */
+            employee_name: string;
+            /**
+             * Balance Minutes
+             * @description Saldo acumulado do banco de horas até hoje
+             */
+            balance_minutes: number;
+            /**
+             * Month Start
+             * Format: date
+             */
+            month_start: string;
+            /** Month Overtime Minutes */
+            month_overtime_minutes: number;
+            /** Month Missing Minutes */
+            month_missing_minutes: number;
+            /** Month Absences */
+            month_absences: number;
+            /**
+             * Pay Period Start
+             * Format: date
+             */
+            pay_period_start: string;
+            /**
+             * Pay Period End
+             * Format: date
+             */
+            pay_period_end: string;
+            /** Pay Period Overtime Minutes */
+            pay_period_overtime_minutes: number;
+            /** Pay Period Missing Minutes */
+            pay_period_missing_minutes: number;
+            /** Days */
+            days: components["schemas"]["KioskDay"][];
+            /** Screen Seconds */
+            screen_seconds: number;
+        };
+        /** KioskRecordIn */
+        KioskRecordIn: {
+            /** Identification Token */
+            identification_token: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "ENTRY" | "LUNCH_EXIT" | "LUNCH_RETURN" | "EXIT";
+        };
+        /** KioskRecordOut */
+        KioskRecordOut: {
+            /** Employee Name */
+            employee_name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "ENTRY" | "LUNCH_EXIT" | "LUNCH_RETURN" | "EXIT";
+            /** Recorded At */
+            recorded_at: string;
+            /**
+             * Workday Date
+             * Format: date
+             */
+            workday_date: string;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -2240,6 +2518,175 @@ export interface operations {
             };
         };
     };
+    biometric_status_api_v1_employees__employee_id__biometric_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BiometricStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_consent_api_v1_employees__employee_id__biometric_consent_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BiometricStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_consent_api_v1_employees__employee_id__biometric_consent_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enroll_api_v1_employees__employee_id__biometric_templates_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_enroll_api_v1_employees__employee_id__biometric_templates_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BiometricStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_templates_api_v1_employees__employee_id__biometric_templates_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     workdays_api_v1_employees__employee_id__workdays_get: {
         parameters: {
             query: {
@@ -3041,6 +3488,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    identify_api_v1_kiosk_identify_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_identify_api_v1_kiosk_identify_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentifyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_record_api_v1_kiosk_records_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskRecordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskRecordOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    own_hour_bank_api_v1_kiosk_hour_bank_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskHourBankIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskHourBankOut"];
                 };
             };
             /** @description Validation Error */

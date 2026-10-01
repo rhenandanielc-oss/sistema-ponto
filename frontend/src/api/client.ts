@@ -96,7 +96,8 @@ interface RequestOptions {
 
 export async function api<T>(path: string, options: RequestOptions = {}, retry = true): Promise<T> {
   const headers: Record<string, string> = {};
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  const isForm = options.body instanceof FormData; // envio de arquivo (ex.: foto do rosto)
+  if (options.body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   let response: Response;
@@ -104,7 +105,7 @@ export async function api<T>(path: string, options: RequestOptions = {}, retry =
     response = await fetch(buildUrl(path, options.query), {
       method: options.method ?? "GET",
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: isForm ? (options.body as FormData) : options.body !== undefined ? JSON.stringify(options.body) : undefined,
       credentials: "same-origin",
     });
   } catch {

@@ -16,7 +16,12 @@ export default defineConfig({
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
     trace: "retain-on-failure",
-    launchOptions: executablePath ? { executablePath } : {},
+    // Câmera simulada: o Chromium gera um vídeo sintético (sem rosto real).
+    permissions: ["camera"],
+    launchOptions: {
+      ...(executablePath ? { executablePath } : {}),
+      args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+    },
   },
   webServer: [
     {

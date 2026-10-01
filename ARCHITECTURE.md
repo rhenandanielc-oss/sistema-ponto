@@ -2,8 +2,8 @@
 
 # Arquitetura — Sistema de Ponto Eletrônico
 
-> **Status:** backend (Fases 1–3) e painel do administrador (Fase 4) implementados.
-> Kiosk com reconhecimento facial (Fase 5) e preparação para produção (Fase 6) ainda não implementados.
+> **Status:** Fases 1–5 implementadas: backend, painel do administrador, terminal de ponto com reconhecimento facial.
+> Preparação para produção (Fase 6) pendente. Instalação do terminal: `KIOSK.md`.
 
 ---
 
@@ -119,7 +119,7 @@ Detalhes do funcionário em `/funcionarios/:id`; banco de horas de um funcionár
 
 ## 4. Organização do repositório
 
-`backend/` existe desde a Fase 1 e `frontend/` desde a Fase 4; `app/biometrics/` e `src/kiosk/` são planejados (Fase 5).
+`backend/` (Fase 1), `frontend/` (Fase 4), `backend/app/biometrics/` e `frontend/src/kiosk/` (Fase 5).
 
 ```
 sistema-ponto/

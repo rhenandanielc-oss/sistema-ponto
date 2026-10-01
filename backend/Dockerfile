@@ -17,6 +17,10 @@ COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app
 
+# Modelos de reconhecimento facial (YuNet MIT, SFace Apache 2.0), conferidos por SHA-256.
+ENV FACE_MODELS_DIR=/app/models
+RUN uv run --no-sync python -m app.cli download-models --dir /app/models
+
 RUN useradd --system --uid 10001 ponto
 USER ponto
 

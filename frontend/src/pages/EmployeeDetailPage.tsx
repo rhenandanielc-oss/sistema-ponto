@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 
 import { api, type Schemas } from "../api/client";
+import { BiometricsPanel } from "../components/BiometricsPanel";
 import { DEFAULT_SCHEDULE, ScheduleFields, scheduleToApi, type ScheduleForm } from "../components/ScheduleFields";
 import { Badge, ErrorMessage, Loading, Modal, PageHeader } from "../components/ui";
 import { WEEKDAYS, formatDate, formatDateTime, formatDecimalHours, formatMinutes, shortTime } from "../lib/format";
@@ -123,7 +124,6 @@ export function EmployeeDetailPage() {
               </Link>
             </div>
           )}
-          <p className="pt-2 text-xs text-slate-500">Rosto para o terminal: disponível na Fase 5.</p>
         </section>
 
         <section className="card lg:col-span-2">
@@ -150,6 +150,8 @@ export function EmployeeDetailPage() {
           )}
         </section>
       </div>
+
+      <BiometricsPanel employeeId={e.id} active={active} />
 
       <section className="card mt-6">
         <h2 className="mb-3 font-semibold text-slate-800">Histórico de alterações</h2>

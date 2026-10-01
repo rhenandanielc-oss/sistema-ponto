@@ -3,7 +3,7 @@
 # Modelo de Dados — PostgreSQL 16
 
 > **Status:** §3 **implementada** (migrations `0001`, `0002`, `0004`); §4 **implementada** na Fase 2 (migration `0003`).
-> §5 entra na Fase 5.
+> §5 **implementada** na Fase 5 (migration `0005`).
 > Este documento deve ser atualizado a cada migration.
 
 ---
@@ -211,22 +211,37 @@ Se a performance exigir (Fase 6), adicionar cache `daily_summaries` invalidado p
 
 ## 5. Tabelas — Fase 5 (biometria)
 
-Detalhes em `BIOMETRICS.md`.
+Detalhes em `BIOMETRICS.md`. Migration `0005`.
 
 ### biometric_consents
-`id`, `employee_id`, `granted_at`, `revoked_at`, `term_version`, `recorded_by_admin_id`.
+`id`, `employee_id`, `term_version`, `granted_at`, `revoked_at`, `recorded_by_admin_id`.
+Índice único parcial: no máximo um consentimento vigente (`revoked_at IS NULL`) por funcionário.
 
 ### biometric_templates
 | Coluna | Tipo | Regras |
 |---|---|---|
 | id | bigint PK | |
 | employee_id | FK employees | |
-| model_version | text | templates de modelos diferentes não são comparáveis |
-| ciphertext | bytea | embedding cifrado (AES-256-GCM) |
-| nonce | bytea | 12 bytes |
-| key_id | text | rotação de chave |
-| quality_score | real | |
+| model_version | text | ex.: `sface-2021dec`; templates de modelos diferentes não são comparáveis |
+| ciphertext | bytea | embedding float32 (128) cifrado com AES-256-GCM; id do funcionário como dado associado |
+| nonce | bytea | 12 bytes aleatórios |
+| key_id | text | identifica a chave (`BIOMETRIC_KEY_ID`) |
+| quality_score | real | informativo |
 | created_at | timestamptz | |
-| deleted_at | timestamptz | exclusão lógica imediata + expurgo físico |
+| deleted_at | timestamptz | exclusão lógica imediata; expurgo físico após 30 dias (`purge-biometrics`) |
 
-**Nunca** existe coluna de imagem facial.
+Índice parcial `(employee_id) WHERE deleted_at IS NULL`. **Nunca** existe coluna de imagem facial.
+
+### kiosk_identifications
+Token de identificação emitido após o reconhecimento facial.
+
+| Coluna | Tipo | Regras |
+|---|---|---|
+| id | bigint PK | |
+| token_hash | text | SHA-256 do token; único |
+| employee_id | FK employees | funcionário reconhecido |
+| device_id | FK devices | só vale neste terminal |
+| score | real | similaridade do reconhecimento (copiada para a batida) |
+| expires_at | timestamptz | criação + 60 s |
+| used_at | timestamptz | preenchido quando uma batida consome o token |
+| created_at | timestamptz | |

@@ -12,13 +12,13 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Status:** EM ANDAMENTO
 
-**Fase atual:** Fase 4 — Frontend (CONCLUÍDA) → próxima: Fase 5 — Biometria e Kiosk
+**Fase atual:** Fase 5 — Biometria e Kiosk (CONCLUÍDA) → próxima: Fase 6 — Auditoria e produção
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: payable hours (fixed + overtime - missing)` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: facial recognition kiosk and biometric enrollment` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Iniciar a Fase 5 — reconhecimento facial e terminal de ponto (kiosk).
+**Próxima ação:** Iniciar a Fase 6 — auditoria final, produção (HTTPS, backup, deploy, agendamentos).
 
 ---
 
@@ -216,23 +216,52 @@ estáveis no Vite e também contra o build servido pelo nginx com CSP). Backend:
 
 # Fase 5 — Biometria e Kiosk
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Objetivos
 
-* [ ] decisão da tecnologia biométrica
-* [ ] documentação
-* [ ] câmera
-* [ ] detecção facial
-* [ ] identificação
-* [ ] registro (funcionário só escolhe o tipo de batida)
-* [ ] consulta do próprio banco de horas pelo rosto
-* [ ] confirmação
-* [ ] tratamento de erros
-* [ ] modo kiosk
-* [ ] reconexão
-* [ ] HTTPS
-* [ ] inicialização automática
+* [x] decisão da tecnologia biométrica (Fase 0) e **licenças confirmadas**: YuNet MIT, SFace Apache 2.0, MediaPipe Apache 2.0
+* [x] documentação (`BIOMETRICS.md` §10–§11, `KIOSK.md`)
+* [x] câmera (navegador, `getUserMedia`; tratamento de câmera indisponível/permissão negada)
+* [x] detecção facial: no navegador só para enquadramento (MediaPipe, servido localmente); no servidor, YuNet
+* [x] identificação 1:N no servidor (SFace, limiar + margem), templates cifrados AES-256-GCM, sem imagens guardadas
+* [x] consentimento obrigatório antes do cadastro; revogar ou desativar o funcionário exclui os templates;
+  expurgo físico após 30 dias (`python -m app.cli purge-biometrics`)
+* [x] cadastro do rosto na ficha do funcionário (até 5 fotos pela câmera)
+* [x] registro: o funcionário só escolhe o tipo de batida (só a próxima válida fica habilitada); token de 60 s,
+  consumido pela batida, preso ao terminal
+* [x] consulta do próprio banco de horas pelo rosto (fecha sozinha)
+* [x] confirmação e volta automática ao início
+* [x] tratamento de erros: nenhum rosto, vários rostos, baixa qualidade, não reconhecido, inativo, rede, duplicado
+* [x] modo kiosk, inicialização automática, permissões e prevenção de acesso: documentados em `KIOSK.md`
+* [x] reconexão: erro de rede volta ao início e tenta de novo; terminal desativado volta à configuração
+* [ ] HTTPS de produção → Fase 6 (a câmera exige HTTPS)
+
+### Decisões
+
+* Identificação no servidor com modelos locais; o resultado do navegador nunca identifica ninguém.
+* Sem cache de templates em memória (decifra a cada identificação) — simples e sempre coerente com exclusões.
+* Testes com motor facial falso (`FACE_ENGINE=fake`, proibido em produção); motor real validado com teste de
+  fumaça opcional e no contêiner (230 testes).
+* Templates presos ao funcionário pela cifragem (dado associado = id do funcionário).
+* Botão "Identificar" sempre disponível no terminal, além da captura automática.
+
+### Arquivos importantes
+
+* Backend: `app/biometrics/` (`engine.py`, `model_files.py`, `crypto.py`, `matcher.py`),
+  `app/services/biometric_service.py`, `app/api/biometrics.py`, `app/api/kiosk.py`, migration `0005`
+* Frontend: `src/pages/KioskPage.tsx`, `src/kiosk/`, `src/components/BiometricsPanel.tsx`,
+  `scripts/prepare-face-detector.mjs`, `e2e/kiosk.spec.ts`
+* `KIOSK.md`
+
+### Testes
+
+Backend 230 passando no contêiner (inclui os 2 do motor real). Frontend: 13 Vitest, 3 E2E (5 execuções seguidas
+estáveis no Vite; também contra nginx com CSP de produção, verificando que o detector carrega).
+
+### Pendências
+
+* Calibração do limiar com os funcionários reais; anti-spoofing não implementado (`BIOMETRICS.md` §11).
 
 ---
 
@@ -502,6 +531,10 @@ Possíveis categorias:
 * Cadastro aceita dias por nome. **Fase 3 concluída:** auditoria consultável, resumo do banco de horas, limites de
   requisição, cabeçalhos de segurança, OpenAPI. A auditoria passou a usar o relógio do backend. 179 testes passando.
 * Dia do pagamento e horas por ciclo de pagamento (`/pagamento`); migration `0004`. 201 testes no backend.
+* Horas a pagar (fixas + extras − faltantes) na página Pagamento e na ficha.
+* **Fase 5 concluída:** reconhecimento facial e terminal. Testes acharam e corrigiram: corrida ao abrir a câmera em
+  remontagem (React StrictMode) que desabilitava o botão "Tirar foto"; conflito de nome `update` no serviço de
+  funcionários (lint).
 * **Fase 4 concluída:** painel web do administrador (React). Testes de navegador acharam e corrigiram: CSP
   descartada pelo nginx (`add_header` em `location`) e um teste instável (corrigido no teste).
 
@@ -531,13 +564,15 @@ E2E_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_e2e npm r
 ```
 
 **Resultado:**
-Backend: 201 passed; ruff, mypy (strict). Frontend: eslint, tsc, 12 testes Vitest, build, 2 testes E2E
-(Playwright/Chromium) estáveis em 6 execuções; E2E também contra nginx + build de produção.
+Backend: 230 passed (local: 228 + 2 skipped sem os modelos; no contêiner com os modelos reais: 230 passed);
+ruff, mypy (strict), `alembic check` sem diferenças (0001 → 0005). Frontend: eslint, tsc, 13 testes Vitest,
+build, 3 testes E2E (Playwright/Chromium com câmera simulada), também contra o build no nginx com CSP.
 
 **Falhas:**
-Fase 4: nginx descartava os cabeçalhos de segurança (CSP) por causa de `add_header` dentro de `location`
-(corrigido); teste E2E instável por não esperar a troca de página (corrigido no teste); classes `@apply` do
-Tailwind 4 (corrigido).
+Fase 5: corrida na abertura da câmera (corrigido); `update` do SQLAlchemy escondendo a função `update` do serviço
+(corrigido); ruído mal dimensionado nos dados sintéticos de um teste do matcher (corrigido no teste).
+Docker Hub limitou downloads (429) neste ambiente: a imagem nova não foi reconstruída do zero; dependências,
+download dos modelos e testes foram validados dentro da imagem anterior.
 
 ---
 
@@ -572,12 +607,11 @@ Ao iniciar uma nova sessão:
   trabalho em dia fora da escala é hora extra. A API passou a aceitar os dias por nome.
 * Executada a **Fase 3 — API completa** (ver seção da fase).
 * Executada a **Fase 4 — Frontend** (ver seção da fase).
-* Próxima sessão: **Fase 5 — Biometria e Kiosk** (`BIOMETRICS.md`): confirmar licenças de YuNet/SFace; serviço
-  `app/biometrics/` (detecção, qualidade, embedding, matching com limiar e margem); tabelas `biometric_consents` e
-  `biometric_templates` com AES-256-GCM (`BIOMETRIC_KEY`); endpoints `/kiosk/identify`, `/kiosk/records`,
-  `/kiosk/hour-bank` (token de identificação de 60 s) e de cadastro do rosto; tela `/kiosk` (câmera, MediaPipe para
-  enquadramento, botões de batida, consulta do próprio banco de horas); cadastro do rosto em `/funcionarios/:id`;
-  testes A11–A13 e §7 do `TEST-PLAN.md` (E2E com câmera simulada).
+* Executada a **Fase 5 — Biometria e Kiosk** (ver seção da fase).
+* Próxima sessão: **Fase 6 — Auditoria e produção**: revisão de segurança e desempenho; HTTPS (proxy de borda,
+  ex.: Caddy) para o painel e o kiosk; `uvicorn --proxy-headers`; agendamentos (expurgo biométrico diário);
+  permissões de banco somente-inserção em `audit_logs`; backup do PostgreSQL e guarda da `BIOMETRIC_KEY`;
+  logs estruturados; configuração de produção do compose; documentação de deploy; reconstruir as imagens.
 
 ---
 

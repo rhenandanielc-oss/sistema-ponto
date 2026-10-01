@@ -7,6 +7,8 @@ os.environ["DATABASE_URL"] = os.environ.get(
 )
 os.environ["COOKIE_SECURE"] = "false"
 os.environ["JWT_SECRET"] = "test-only-jwt-key-0123456789abcdef0123456789"
+# Motor facial determinístico: os testes não usam rostos reais (ver test_face_engine_real.py).
+os.environ["FACE_ENGINE"] = "fake"
 
 from collections.abc import Iterator
 from typing import Any

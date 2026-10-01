@@ -202,7 +202,7 @@ function CreateEmployeeModal({ onClose }: { onClose: () => void }) {
         <h3 className="border-t border-slate-200 pt-4 font-semibold text-slate-800">Horário fixo</h3>
         <ScheduleFields value={schedule} onChange={setSchedule} />
         <p className="rounded-md bg-slate-50 p-3 text-xs text-slate-500">
-          O cadastro do rosto para o terminal de ponto será feito nesta tela a partir da Fase 5.
+          Depois de cadastrar, registre o consentimento e o rosto na ficha do funcionário.
         </p>
         <div className="flex justify-end gap-2">
           <button type="button" className="btn-secondary" onClick={onClose}>

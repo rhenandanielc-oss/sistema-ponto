@@ -4,12 +4,19 @@ from datetime import date, timedelta
 from typing import Any, Literal
 
 from sqlalchemy import func, or_, select
+from sqlalchemy import update as sql_update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.clock import today_local
+from app.core.clock import now_utc, today_local
 from app.core.errors import AppError, conflict, not_found
-from app.models import AuditLog, Employee, EmployeeSchedule, EmployeeScheduleDay
+from app.models import (
+    AuditLog,
+    BiometricTemplate,
+    Employee,
+    EmployeeSchedule,
+    EmployeeScheduleDay,
+)
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate, ScheduleCreate, ScheduleDaysIn
 from app.services import audit
 
@@ -244,6 +251,18 @@ def set_active(db: Session, employee_id: int, active: bool, actor: audit.Actor) 
         return employee
     before = _snapshot(employee)
     employee.status = status
+    after = _snapshot(employee)
+    if not active:
+        # Funcionário desativado deixa de ser reconhecido: templates excluídos (BIOMETRICS.md §6).
+        result = db.execute(
+            sql_update(BiometricTemplate)
+            .where(
+                BiometricTemplate.employee_id == employee.id,
+                BiometricTemplate.deleted_at.is_(None),
+            )
+            .values(deleted_at=now_utc())
+        )
+        after["biometric_templates_deleted"] = int(result.rowcount or 0)  # type: ignore[attr-defined]
     audit.record(
         db,
         actor=actor,
@@ -251,7 +270,7 @@ def set_active(db: Session, employee_id: int, active: bool, actor: audit.Actor) 
         entity_type="employee",
         entity_id=employee.id,
         before=before,
-        after=_snapshot(employee),
+        after=after,
     )
     db.commit()
     return employee

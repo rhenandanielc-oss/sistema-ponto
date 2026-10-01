@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     admins,
     auth,
+    biometrics,
     devices,
     employees,
     health,
@@ -51,6 +52,10 @@ TAGS = [
     {"name": "dispositivos", "description": "Terminais de ponto autorizados."},
     {"name": "configurações", "description": "Tolerâncias e parâmetros da empresa."},
     {"name": "auditoria", "description": "Trilha de ações relevantes (somente leitura)."},
+    {
+        "name": "biometria",
+        "description": "Consentimento e cadastro do rosto (só vetores cifrados, nunca imagens).",
+    },
     {"name": "kiosk", "description": "Endpoints usados pelo terminal de ponto."},
     {"name": "saúde", "description": "Verificações para o orquestrador."},
 ]
@@ -86,6 +91,7 @@ def create_app() -> FastAPI:
         auth,
         admins,
         employees,
+        biometrics,
         hour_bank,
         time_records,
         audit_api,

@@ -2,7 +2,7 @@
 
 # Reconhecimento Facial — Avaliação e Decisão
 
-> **Status:** decisão de arquitetura tomada na Fase 0 (revisada em 2026-10-01). Implementação na Fase 5.
+> **Status:** **implementado na Fase 5** (2026-10-01). Detalhes da implementação em §10; pendências em §8 e §11.
 > Biometria é **dado pessoal sensível** (LGPD art. 5º, II). Toda escolha abaixo prioriza privacidade e segurança
 > sobre facilidade de implementação.
 
@@ -40,8 +40,8 @@
 1. **Navegador (kiosk) — MediaPipe Face Detector**, apenas para **experiência do usuário**:
    detectar se há 0, 1 ou várias faces, verificar enquadramento/tamanho/iluminação e só então capturar um frame.
    O resultado do navegador **não é confiável** para identificação — serve para evitar envios inúteis.
-2. **Kiosk envia ao backend** um único frame JPEG (recortado ao redor do rosto, ~640 px, qualidade 85),
-   via HTTPS, autenticado com o token do dispositivo.
+2. **Kiosk envia ao backend** um único quadro JPEG (até 640 px de largura, qualidade 85 — o quadro inteiro, sem
+   recorte), via HTTPS, autenticado com o token do dispositivo.
 3. **Backend**:
    * revalida a detecção (YuNet) — rejeita 0 ou >1 face e baixa qualidade (tamanho mínimo da face, nitidez, brilho);
    * extrai o embedding (SFace, 128 dimensões);
@@ -84,8 +84,8 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 * Feito pelo **administrador**, presencialmente com o funcionário, na tela de cadastro do funcionário
   (câmera do computador do administrador ou do próprio kiosk).
 * **Pré-requisito: consentimento registrado** (termo versionado, data, quem registrou) — `biometric_consents`.
-* Captura de 3 a 5 frames de boa qualidade; cada um gera um embedding; armazena-se cada embedding como template
-  (ou a média normalizada — decidido na calibração).
+* O administrador tira de 1 a 5 fotos (recomendado: 3, com pequenas variações) pela câmera do computador.
+  **Cada foto gera um template**; na identificação vale a melhor similaridade entre os templates de cada pessoa.
 * Nenhuma imagem é armazenada; as imagens de cadastro existem só em memória durante a requisição.
 
 * Por decisão do responsável (2026-10-01), **não há forma alternativa de identificação** (sem PIN/senha para
@@ -100,8 +100,8 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 |---|---|
 | O que é armazenado | Apenas embeddings (vetores numéricos) — **nunca imagens** |
 | Onde | Tabela `biometric_templates` no PostgreSQL (ver `DATABASE.md`) |
-| Criptografia | AES-256-GCM por template, nonce aleatório; chave `BIOMETRIC_KEY` fora do banco (variável de ambiente / secret do Docker); `key_id` permite rotação |
-| Em memória | Templates decifrados ficam em cache em memória do processo, invalidado em cadastro/exclusão/desativação |
+| Criptografia | AES-256-GCM por template, nonce aleatório, **id do funcionário como dado associado** (um template copiado para outro funcionário não decifra); chave `BIOMETRIC_KEY` fora do banco (variável de ambiente / secret do Docker); `key_id` identifica a chave. A aplicação recusa iniciar em produção com a chave de desenvolvimento |
+| Em memória | Sem cache: a cada identificação os templates ativos são decifrados, comparados e descartados (simples e sempre coerente com exclusões; reavaliar se houver milhares de funcionários) |
 | Em trânsito | HTTPS entre kiosk e backend |
 | Logs | Nunca contêm imagem, embedding ou score associado a nome fora da auditoria |
 | Backups | Contêm templates cifrados; a chave **não** vai no mesmo backup |
@@ -114,7 +114,8 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 * Templates são mantidos **enquanto o funcionário estiver ativo e o consentimento vigente**.
 * **Exclusão imediata** (lógica, deixa de ser usado no matching) quando: consentimento revogado,
   funcionário desativado/desligado, ou pedido do titular.
-* **Expurgo físico** dos templates excluídos em até 30 dias (tarefa agendada, Fase 6), e não podem ser restaurados.
+* **Expurgo físico** dos templates excluídos há mais de 30 dias: comando `python -m app.cli purge-biometrics`
+  (implementado; o agendamento diário é da Fase 6). Templates expurgados não podem ser restaurados.
 * A auditoria registra os eventos (cadastro, exclusão), **sem** o template.
 
 ---
@@ -131,7 +132,7 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 
 | Risco | Situação | Mitigação |
 |---|---|---|
-| **Ataque de apresentação** (foto ou vídeo na frente da câmera) | O SFace não tem detecção de vivacidade | Kiosk em local visível/supervisionado; auditoria com dispositivo e horário; avaliar modelo anti-spoofing com licença compatível na Fase 5 (ex.: modelos de "face anti-spoofing" do OpenCV Zoo/Silent-Face — **licenças a verificar**). Não declarar o sistema "à prova de fraude". |
+| **Ataque de apresentação** (foto ou vídeo na frente da câmera) | **Sem detecção de vivacidade** (o SFace não tem; nenhum modelo anti-spoofing foi avaliado/adotado na Fase 5) | Kiosk em local visível/supervisionado; auditoria com dispositivo, horário e score; avaliar anti-spoofing com licença compatível (pendência §11). Não declarar o sistema "à prova de fraude". |
 | Falso positivo (identificar a pessoa errada) | Possível com limiar baixo | Limiar + margem; tela de confirmação com nome antes de registrar |
 | Viés demográfico do modelo | Possível | Calibrar com o grupo real de funcionários; acompanhar taxa de não-reconhecimento |
 | Iluminação/câmera ruim | Provável em terminal | Verificação de qualidade no navegador e no servidor; orientação na instalação do kiosk |
@@ -150,3 +151,54 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 | Funcionário inativo | Servidor (inativos nem entram no matching; se o token expirar entre etapas, o registro é rejeitado) | "Cadastro inativo. Procure o RH." |
 | Erro de rede | Navegador | "Sem conexão. Tentando novamente…" |
 | Registro duplicado | Servidor | "Registro já efetuado." |
+
+---
+
+## 10. Implementação (Fase 5)
+
+| Item | Onde |
+|---|---|
+| Motor facial (YuNet + SFace via OpenCV, CPU) | `backend/app/biometrics/engine.py` (`OpenCVFaceEngine`) |
+| Modelos e integridade (URL fixa + SHA-256) | `backend/app/biometrics/model_files.py`; `python -m app.cli download-models` (rodado no build da imagem) |
+| Cifragem AES-256-GCM | `backend/app/biometrics/crypto.py` |
+| Comparação 1:N (limiar + margem) | `backend/app/biometrics/matcher.py` |
+| Consentimento, cadastro, identificação, tokens | `backend/app/services/biometric_service.py` |
+| Rotas | `backend/app/api/biometrics.py` (administrador), `backend/app/api/kiosk.py` (terminal) |
+| Tela do terminal | `frontend/src/pages/KioskPage.tsx`, `frontend/src/kiosk/` |
+| Cadastro do rosto | `frontend/src/components/BiometricsPanel.tsx` (ficha do funcionário) |
+| Detector do navegador (MediaPipe BlazeFace, Apache 2.0) | servido localmente: `npm run prepare:face` copia o WASM e baixa o modelo com SHA-256 |
+
+**Licenças confirmadas em 2026-10-01:** YuNet — MIT; SFace — Apache 2.0 (repositório `opencv/opencv_zoo`);
+MediaPipe Tasks Vision e BlazeFace — Apache 2.0.
+
+**Parâmetros (configuráveis por variável de ambiente):**
+
+| Parâmetro | Padrão | Significado |
+|---|---|---|
+| `FACE_MATCH_THRESHOLD` | 0,363 | similaridade de cosseno mínima (referência do SFace) |
+| `FACE_MATCH_MARGIN` | 0,05 | distância mínima para a segunda pessoa mais parecida |
+| `FACE_MIN_SIZE_PX` | 80 | tamanho mínimo do rosto na imagem (senão "Aproxime-se") |
+| `KIOSK_IDENTIFICATION_SECONDS` | 60 | validade do token de identificação |
+| Brilho do rosto | 40–220 | fora disso: "Iluminação inadequada" |
+| Nitidez (variância do Laplaciano) | ≥ 25 | abaixo: "Imagem tremida ou desfocada" |
+
+**Token de identificação:** guardado como hash na tabela `kiosk_identifications`, vale só no terminal que o emitiu,
+expira em 60 s; a **batida o consome** (não serve para uma segunda batida); a consulta ao banco de horas não o
+consome. Se a batida for recusada (ex.: fora de sequência), o token continua válido para o funcionário escolher o
+botão certo.
+
+**Testes:** os testes automatizados usam um motor falso determinístico (`FACE_ENGINE=fake`, proibido em produção
+pela configuração), porque o repositório não deve conter rostos reais. O motor real tem um teste de fumaça
+(`tests/unit/test_face_engine_real.py`) que roda quando `REAL_FACE_MODELS_DIR` (e, para o caso com rosto,
+`REAL_FACE_SAMPLE`) são informados. Validação feita em 2026-10-01 com uma imagem pública de exemplo do OpenCV:
+detecção correta e similaridade 0,84 entre a imagem original e uma versão alterada (escala e brilho) da mesma pessoa.
+
+---
+
+## 11. Pendências
+
+1. **Calibração com os funcionários reais** (limiar e margem): acompanhar, nas primeiras semanas, as falhas
+   `FACE_NOT_RECOGNIZED` na auditoria e os scores das batidas aceitas (no histórico).
+2. **Anti-spoofing** (foto/vídeo na frente da câmera): não implementado; avaliar modelo com licença compatível.
+3. **Agendamento** do expurgo diário (`purge-biometrics`) e da rotação de chave — Fase 6.
+
