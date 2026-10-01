@@ -12,16 +12,11 @@ from app.core import clock
 
 EMPLOYEES = "/api/v1/employees"
 
-STANDARD_DAY = {
-    "start_time": "08:00",
-    "lunch_start": "12:00",
-    "lunch_end": "13:00",
-    "end_time": "17:00",
-}
+STANDARD_DAY = {"start_time": "08:00", "end_time": "17:00", "lunch_minutes": 60}
 
 
 def week(**overrides: Any) -> dict[str, Any]:
-    """Segunda a sexta 08:00–12:00 / 13:00–17:00, com sobrescritas por campo."""
+    """Segunda a sexta 08:00–17:00 com 1 h de almoço, com sobrescritas por campo."""
     return {"days": [{"weekday": w, **STANDARD_DAY, **overrides} for w in range(5)]}
 
 
@@ -56,24 +51,36 @@ def test_create_employee_with_fixed_schedule(client: TestClient, auth_headers) -
     assert schedule["days"][0] == {
         "weekday": 0,
         "start_time": "08:00:00",
-        "lunch_start": "12:00:00",
-        "lunch_end": "13:00:00",
         "end_time": "17:00:00",
+        "lunch_minutes": 60,
         "planned_minutes": 480,
     }
+
+
+def test_simple_schedule_form_like_joao(client: TestClient, auth_headers) -> None:
+    """Nome: João / Horário fixo: 08:00 - 16:00 (almoço padrão de 1 h, segunda a sexta)."""
+    response = create(
+        client, auth_headers, name="João", schedule={"start_time": "08:00", "end_time": "16:00"}
+    )
+    assert response.status_code == 201, response.text
+    days = response.json()["current_schedule"]["days"]
+    assert [d["weekday"] for d in days] == [0, 1, 2, 3, 4]
+    assert {
+        (d["start_time"], d["end_time"], d["lunch_minutes"], d["planned_minutes"]) for d in days
+    } == {("08:00:00", "16:00:00", 60, 420)}
+
+
+def test_simple_schedule_form_with_custom_days_and_lunch(client: TestClient, auth_headers) -> None:
+    schedule = {"start_time": "08:00", "end_time": "12:00", "lunch_minutes": 0, "weekdays": [5]}
+    days = create(client, auth_headers, schedule=schedule).json()["current_schedule"]["days"]
+    assert [(d["weekday"], d["planned_minutes"]) for d in days] == [(5, 240)]
 
 
 def test_planned_minutes_for_night_and_no_lunch_days(client: TestClient, auth_headers) -> None:
     schedule = {
         "days": [
-            {
-                "weekday": 0,
-                "start_time": "22:00",
-                "lunch_start": "02:00",
-                "lunch_end": "03:00",
-                "end_time": "06:00",
-            },
-            {"weekday": 5, "start_time": "08:00", "end_time": "12:00"},
+            {"weekday": 0, "start_time": "22:00", "end_time": "06:00"},
+            {"weekday": 5, "start_time": "08:00", "end_time": "12:00", "lunch_minutes": 0},
         ]
     }
     body = create(client, auth_headers, schedule=schedule).json()
@@ -92,12 +99,12 @@ def test_schedule_is_required_and_validated(client: TestClient, auth_headers) ->
     empty = create(client, auth_headers, schedule={"days": []})
     assert empty.status_code == 422
 
-    bad_lunch = create(client, auth_headers, schedule=week(lunch_start="18:00", lunch_end="19:00"))
-    assert bad_lunch.status_code == 422
-    assert "almoço" in str(bad_lunch.json()["error"]["details"])
+    lunch_too_long = create(client, auth_headers, schedule=week(lunch_minutes=540))
+    assert lunch_too_long.status_code == 422
+    assert "almoço" in str(lunch_too_long.json()["error"]["details"])
 
-    half_lunch = create(client, auth_headers, schedule=week(lunch_end=None))
-    assert half_lunch.status_code == 422
+    negative_lunch = create(client, auth_headers, schedule=week(lunch_minutes=-5))
+    assert negative_lunch.status_code == 422
 
     repeated = create(
         client,

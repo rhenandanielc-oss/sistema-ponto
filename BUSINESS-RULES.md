@@ -42,22 +42,28 @@ Cada funcionário tem um **horário fixo de trabalho**, informado pelo administr
 (junto com o nome e o rosto). O horário ainda não é conhecido hoje; por isso ele é um campo do cadastro, e não um
 valor fixo no sistema.
 
+Exemplo do cadastro: **Nome:** João — **Horário fixo:** 08:00 – 16:00.
+
 Para cada dia da semana trabalhado, o horário define:
 
 | Campo | Exemplo | Obrigatório |
 |---|---|---|
 | Entrada | 08:00 | sim |
-| Saída para almoço | 12:00 | não (dia sem intervalo) |
-| Retorno do almoço | 13:00 | sim, se houver saída para almoço |
-| Saída | 17:00 | sim |
+| Saída | 16:00 | sim |
+| Duração do almoço | 60 min | não — padrão **60 min**; pode ser 0 |
 
-* Na tela de cadastro o administrador preenche o horário uma vez e marca os dias da semana trabalhados
-  (padrão: segunda a sexta); se algum dia for diferente (ex.: sábado 08:00–12:00), ajusta só aquele dia.
+* **O almoço é livre** (decisão do responsável, 2026-10-01): o funcionário sai e volta do almoço quando quiser.
+  O sistema não guarda horário de almoço nem recusa almoço "fora de hora"; só usa a **duração prevista**
+  para calcular a carga do dia.
+* Na tela de cadastro o administrador digita o horário uma vez e marca os dias da semana trabalhados
+  (padrão: segunda a sexta); se algum dia for diferente (ex.: sábado 08:00–12:00 sem almoço), ajusta só aquele dia.
 * Dias não marcados são folga.
-* **Carga planejada do dia** = `(saída − entrada) − (retorno do almoço − saída para almoço)`.
-  Ex.: 08:00–12:00 / 13:00–17:00 ⇒ 480 min.
-* Saída menor que a entrada ⇒ o turno termina no dia seguinte (turno noturno, ex.: 22:00–06:00).
-  O intervalo precisa estar dentro do turno.
+* **Carga planejada do dia** = `(saída − entrada) − duração do almoço`.
+  Ex.: João, 08:00–16:00 com 60 min de almoço ⇒ **420 min (7 h)**.
+* O almoço real é medido pelas batidas (`LUNCH_RETURN − LUNCH_EXIT`): quem almoça menos que o previsto trabalha
+  mais e acumula hora extra; quem almoça mais acumula horas faltantes.
+* Saída menor ou igual à entrada ⇒ o turno termina no dia seguinte (turno noturno, ex.: 22:00–06:00).
+  Turno de até 16 h; almoço menor que o turno.
 
 ### 3.1 Vigência
 
@@ -150,13 +156,14 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 | `planned_minutes` | Carga do horário vigente naquele dia da semana; **0** em `DAY_OFF`, `HOLIDAY`, `NOT_EMPLOYED` |
 | `worked_minutes` | `(LUNCH_EXIT − ENTRY) + (EXIT − LUNCH_RETURN)`, ou `EXIT − ENTRY` sem intervalo |
 | `break_minutes` | `LUNCH_RETURN − LUNCH_EXIT` (0 se não houve intervalo) |
-| `late_minutes` | `max(0, ENTRY − entrada prevista)` — atraso |
-| `early_leave_minutes` | `max(0, saída prevista − EXIT)` — saída antecipada |
+| `late_minutes` | `max(0, ENTRY − entrada prevista)` — atraso (só em `WORKDAY`) |
+| `early_leave_minutes` | `max(0, saída prevista − EXIT)` — saída antecipada (só em `WORKDAY`) |
 | `missing_minutes` | `max(0, −saldo)` — horas faltantes no dia |
 | `overtime_minutes` | `max(0, saldo)` — horas extras |
 | `night_minutes` | Minutos trabalhados entre 22:00 e 05:00 (§7) |
 | `balance_minutes` | `worked − planned`, após tolerância (§6) |
-| `status` | `OK`, `ABSENT`, `INCOMPLETE`, `INSUFFICIENT_BREAK`, `IN_PROGRESS` |
+| `status` | `OK`, `ABSENT`, `INCOMPLETE`, `IN_PROGRESS`, `FUTURE`, `NONE` (folga/feriado sem batidas, fora do contrato) |
+| `flags` | Lista: `INSUFFICIENT_BREAK`, `HOLIDAY_WORK`, `DAY_OFF_WORK` |
 | `counts_for_bank` | Se o saldo entra no banco de horas |
 
 ### 5.1 Casos especiais
@@ -164,11 +171,14 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 * **Falta:** dia `WORKDAY` passado sem nenhum registro ⇒ `ABSENT`, `worked=0`, `balance=−planned`, entra no banco.
 * **Registro incompleto:** falta `EXIT`, ou `LUNCH_EXIT` sem `LUNCH_RETURN` ⇒ `INCOMPLETE`;
   `worked` soma só os pares fechados; `counts_for_bank=false` até o administrador completar por ajuste.
-* **Dia em andamento:** o dia de hoje (ou turno aberto dentro de `max_shift_hours`) ⇒ `IN_PROGRESS`, fora do banco.
+* **Dia em andamento:** turno aberto dentro de `max_shift_hours`, ou o dia de hoje ainda sem batidas ⇒ `IN_PROGRESS`,
+  fora do banco.
+* **Dia futuro:** `FUTURE`, mostra a carga planejada, fora do banco.
+* Minutos são contados em minutos inteiros (segundos são desprezados em cada período).
 * **Folga trabalhada / fim de semana:** `planned=0`, todo minuto trabalhado é hora extra.
-* **Feriado:** `planned=0`; trabalho no feriado é hora extra, marcado `holiday_work=true`.
+* **Feriado:** `planned=0`; trabalho no feriado é hora extra, com a flag `HOLIDAY_WORK`.
 * **Intervalo insuficiente:** `worked > 6 h` e `break < 60 min`, ou `4 h < worked ≤ 6 h` e `break < 15 min`
-  (CLT art. 71) ⇒ sinaliza `INSUFFICIENT_BREAK`. O saldo continua sendo o tempo real trabalhado.
+  (CLT art. 71) ⇒ flag `INSUFFICIENT_BREAK`. O saldo continua sendo o tempo real trabalhado.
 
 ---
 
@@ -177,10 +187,11 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 * Variações de até **5 minutos por batida**, com limite de **10 minutos no dia**, não são computadas
   (configuráveis: `tolerance_per_mark_minutes`, `tolerance_daily_minutes`).
 * Regra (somente dias `WORKDAY` completos):
-  1. Calcula-se o desvio absoluto de cada batida em relação ao horário previsto
-     (entrada, saída para almoço, retorno do almoço, saída).
-  2. Se **todo** desvio ≤ 5 min **e** a soma dos desvios ≤ 10 min ⇒ `balance=0`, `late=0`, `early_leave=0`,
-     `overtime=0`, `missing=0`.
+  1. Calcula-se o desvio absoluto da **entrada** e da **saída** em relação ao horário fixo
+     (o almoço é livre, então suas batidas não têm horário previsto).
+  2. Se cada desvio ≤ 5 min, a soma ≤ 10 min **e** `|trabalhado − planejado| ≤ 10 min`
+     ⇒ `balance=0`, `late=0`, `early_leave=0`, `overtime=0`, `missing=0`.
+     (A última condição impede que um almoço longo seja "perdoado" só porque entrada e saída foram pontuais.)
   3. Caso contrário, os minutos são computados **integralmente** (não se desconta a tolerância).
 
 ---
@@ -191,6 +202,7 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 * O motor informa `night_minutes` (reais) e `night_minutes_reduced` (`× 60 / 52,5`, hora noturna reduzida — CLT art. 73).
 * O saldo e o banco de horas usam **minutos reais**; os minutos noturnos são informativos para a folha.
 * Turno noturno conta no dia da **entrada** prevista (ex.: turno 22:00–06:00 de quinta conta na quinta).
+* Os períodos noturnos considerados são os que tocam o turno: 22:00 do dia anterior a 05:00, 22:00 a 05:00 do dia seguinte etc.
 
 ---
 

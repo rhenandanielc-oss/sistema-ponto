@@ -34,7 +34,7 @@ Regras:
 Salvo indicação, os exemplos usam:
 
 * Fuso: `America/Sao_Paulo`.
-* Funcionário **F1**: horário fixo de segunda a sexta — entrada 08:00, almoço 12:00–13:00, saída 17:00
+* Funcionário **F1**: horário fixo de segunda a sexta — 08:00–17:00 com 60 min de almoço (livre)
   (**480 min** planejados); sábado e domingo folga.
 * Tolerância: 5 min por batida, 10 min por dia.
 * Datas em setembro de 2026 (01/09/2026 é terça-feira; 07/09/2026 é feriado nacional, segunda-feira).
@@ -51,18 +51,20 @@ Salvo indicação, os exemplos usam:
 | C04 | Atraso | ENTRY 08:20, demais iguais a C01 | late 20, worked 460, missing 20, balance −20 |
 | C05 | Dentro da tolerância | ENTRY 08:04, EXIT 17:03 | desvios 4 e 3 (cada ≤ 5, soma 7 ≤ 10) ⇒ late 0, balance 0 |
 | C06 | Tolerância diária excedida | ENTRY 08:05, EXIT 16:54 | desvios 5 e 6 ⇒ computa tudo: late 5, early_leave 6, balance −11 |
+| C05b | Almoço longo com entrada/saída pontuais | ENTRY 08:00, LUNCH_EXIT 12:00, LUNCH_RETURN 13:30, EXIT 17:00 | worked 450, balance −30 (tolerância não se aplica) |
+| C05c | Almoço em qualquer horário | ENTRY 08:00, LUNCH_EXIT 10:15, LUNCH_RETURN 11:15, EXIT 17:00 | aceito; worked 480, balance 0 |
 | C07 | Saída antecipada | EXIT 16:00 | early_leave 60, worked 420, balance −60 |
 | C08 | Hora extra | EXIT 18:30 | worked 570, overtime 90, balance +90 |
 | C09 | Falta | 02/09 (quarta) sem registros | ABSENT, worked 0, balance −480, entra no banco |
 | C10 | Registro incompleto | 03/09: ENTRY 08:00, LUNCH_EXIT 12:00 | INCOMPLETE, worked 240, `counts_for_bank=false` |
-| C11 | Horário diferente | F2: seg–sex 09:00, almoço 12:00–12:15, saída 15:15 (360 min); batidas iguais ao horário | planned 360, worked 360, break 15, balance 0 |
-| C12 | Dias trabalhados diferentes | F3: horário de F1 + sábado 08:00–12:00 sem almoço; 05/09 (sábado) sem registros | ABSENT, balance −240 |
+| C11 | Horário diferente | F2: seg–sex 09:00–15:15 com 15 min de almoço (360 min); batidas 09:00 / 12:00 / 12:15 / 15:15 | planned 360, worked 360, break 15, balance 0 |
+| C12 | Dias trabalhados diferentes | F3: horário de F1 + sábado 08:00–12:00 com almoço 0; 05/09 (sábado) sem registros | ABSENT, balance −240 |
 | C13 | Final de semana trabalhado | F1, 05/09 (sábado) 08:00–12:00 | DAY_OFF, planned 0, overtime 240, balance +240 |
 | C14 | Final de semana sem trabalho | F1, 06/09 (domingo) sem registros | DAY_OFF, balance 0, **não** é falta |
 | C15 | Feriado sem trabalho | F1, 07/09 sem registros | HOLIDAY, planned 0, balance 0, não é falta |
 | C16 | Feriado trabalhado | F1, 07/09 08:00–12:00 | overtime 240, `holiday_work=true` |
-| C17 | Jornada atravessando a meia-noite | F4: seg–sex 22:00, almoço 02:00–03:00, saída 06:00 (420 min). ENTRY qui 10/09 22:00, LUNCH_EXIT 02:00, LUNCH_RETURN 03:00, EXIT sex 11/09 06:00 | workday_date 10/09, worked 420, balance 0, night_minutes 360, night_minutes_reduced ≈ 411 |
-| C18 | Troca de horário | F1 até 15/09; a partir de 16/09: 09:00, almoço 12:00–13:00, saída 16:00 | 15/09 planned 480; 16/09 planned 360 e atraso medido a partir de 09:00 |
+| C17 | Jornada atravessando a meia-noite | F4: seg–sex 22:00–06:00 com 60 min de almoço (420 min). ENTRY qui 10/09 22:00, LUNCH_EXIT 02:00, LUNCH_RETURN 03:00, EXIT sex 11/09 06:00 | workday_date 10/09, worked 420, balance 0, night_minutes 360, night_minutes_reduced ≈ 411 |
+| C18 | Troca de horário | F1 até 15/09; a partir de 16/09: 09:00–16:00 com 60 min de almoço | 15/09 planned 480; 16/09 planned 360 e atraso medido a partir de 09:00 |
 | C19 | Período de consulta inclusivo | 01/09/2026 a 30/09/2026 | **30** dias, primeiro 01/09, último 30/09 |
 | C20 | Período de um dia | 01/09 a 01/09 | 1 dia |
 | C21 | Banco de horas | OPENING_BALANCE +120; dias C04 (−20), C08 (+90), C10 (ignorado); COMPENSATION −60 | saldo final = 120 − 20 + 90 − 60 = **+130** |
@@ -120,8 +122,9 @@ Salvo indicação, os exemplos usam:
 ## 6. Funcionários e horário fixo (integração, Fase 1)
 
 * Cadastro exige horário inicial (pelo menos um dia trabalhado).
-* Validação do horário: almoço com início e fim juntos, dentro do turno; turno de até 16 h; dias da semana sem repetição.
-* Carga diária calculada: 08:00/12:00/13:00/17:00 ⇒ 480; 22:00/02:00/03:00/06:00 ⇒ 420; 08:00–12:00 sem almoço ⇒ 240.
+* Validação do horário: turno de até 16 h; almoço ≥ 0 e menor que o turno; dias da semana sem repetição.
+* Forma simples do cadastro (ex.: João 08:00–16:00) gera segunda a sexta com 60 min de almoço.
+* Carga diária calculada: 08:00–16:00 (60) ⇒ 420; 08:00–17:00 (60) ⇒ 480; 22:00–06:00 (60) ⇒ 420; 08:00–12:00 (0) ⇒ 240.
 * CRUD, pesquisa por nome/matrícula, paginação, ordenação.
 * Matrícula e CPF duplicados ⇒ 409.
 * Desativação mantém histórico.

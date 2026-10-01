@@ -104,13 +104,12 @@ Sem sobreposição por funcionário:
 | schedule_id | FK employee_schedules (on delete cascade) | |
 | weekday | smallint | 0=segunda … 6=domingo |
 | start_time | time | entrada prevista |
-| lunch_start | time | null = dia sem intervalo |
-| lunch_end | time | null se `lunch_start` nulo |
 | end_time | time | saída prevista; `end_time <= start_time` ⇒ termina no dia seguinte |
+| lunch_minutes | smallint | duração prevista do almoço (padrão 60, `>= 0`); o almoço é livre, sem horário |
 
 PK `(schedule_id, weekday)`. Dia ausente = folga. Toda vigência tem ao menos um dia.
-A carga planejada é **calculada** a partir dos horários (não é armazenada). O serviço valida: intervalo dentro do
-turno, `lunch_start < lunch_end`, turno com até 16 h.
+A carga planejada é **calculada** (`saída − entrada − almoço`), não armazenada. O serviço valida turno de até 16 h e
+almoço menor que o turno. Migration `0002` substituiu os antigos `lunch_start`/`lunch_end` por `lunch_minutes`.
 
 ### audit_logs
 | Coluna | Tipo | Regras |

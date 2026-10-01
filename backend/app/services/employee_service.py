@@ -39,9 +39,8 @@ def _schedule_snapshot(schedule: EmployeeSchedule) -> dict[str, Any]:
             {
                 "weekday": d.weekday,
                 "start_time": d.start_time,
-                "lunch_start": d.lunch_start,
-                "lunch_end": d.lunch_end,
                 "end_time": d.end_time,
+                "lunch_minutes": d.lunch_minutes,
             }
             for d in schedule.days
         ],
@@ -53,9 +52,8 @@ def _build_days(data: ScheduleDaysIn) -> list[EmployeeScheduleDay]:
         EmployeeScheduleDay(
             weekday=d.weekday,
             start_time=d.start_time,
-            lunch_start=d.lunch_start,
-            lunch_end=d.lunch_end,
             end_time=d.end_time,
+            lunch_minutes=d.lunch_minutes,
         )
         for d in sorted(data.days, key=lambda d: d.weekday)
     ]

@@ -1,5 +1,8 @@
 """Regras puras do horário fixo do funcionário (BUSINESS-RULES.md §3).
 
+O horário fixo é só entrada e saída (ex.: 08:00 - 16:00). O almoço é livre: o funcionário escolhe
+quando sair e voltar; o horário guarda apenas a duração prevista do almoço, descontada da carga.
+
 Sem acesso a banco ou relógio: recebe horários e devolve minutos ou erros de validação.
 """
 
@@ -8,6 +11,7 @@ from datetime import time
 
 MINUTES_PER_DAY = 24 * 60
 MAX_SHIFT_MINUTES = 16 * 60
+DEFAULT_LUNCH_MINUTES = 60
 
 WEEKDAY_NAMES = ("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")
 
@@ -17,27 +21,20 @@ class DaySchedule:
     weekday: int
     start_time: time
     end_time: time
-    lunch_start: time | None = None
-    lunch_end: time | None = None
+    lunch_minutes: int = DEFAULT_LUNCH_MINUTES
 
 
 @dataclass(frozen=True)
 class ShiftOffsets:
-    """Minutos relativos à meia-noite do dia de início do turno (podem passar de 1440)."""
+    """Entrada e saída em minutos a partir da meia-noite do início (saída pode passar de 1440)."""
 
     start: int
     end: int
-    lunch_start: int | None
-    lunch_end: int | None
+    lunch_minutes: int
 
     @property
     def planned_minutes(self) -> int:
-        lunch = (
-            self.lunch_end - self.lunch_start
-            if self.lunch_start is not None and self.lunch_end is not None
-            else 0
-        )
-        return self.end - self.start - lunch
+        return self.end - self.start - self.lunch_minutes
 
 
 class ScheduleError(ValueError):
@@ -50,35 +47,22 @@ def _minutes(t: time) -> int:
     return t.hour * 60 + t.minute
 
 
-def _after(value: int, reference: int) -> int:
-    """Desloca `value` para o dia seguinte se ele vier antes de `reference` (turno noturno)."""
-    return value + MINUTES_PER_DAY if value < reference else value
-
-
 def shift_offsets(day: DaySchedule) -> ShiftOffsets:
-    """Valida o horário de um dia e o converte em minutos contínuos a partir do início do turno."""
-    name = WEEKDAY_NAMES[day.weekday] if 0 <= day.weekday <= 6 else str(day.weekday)
+    """Valida o horário de um dia e o converte em minutos contínuos a partir da entrada."""
     if not 0 <= day.weekday <= 6:
         raise ScheduleError(f"Dia da semana inválido: {day.weekday}.")
-    if (day.lunch_start is None) != (day.lunch_end is None):
-        raise ScheduleError(f"{name}: informe saída e retorno do almoço, ou nenhum dos dois.")
+    name = WEEKDAY_NAMES[day.weekday]
 
     start = _minutes(day.start_time)
     end = _minutes(day.end_time)
-    end = end + MINUTES_PER_DAY if end <= start else end
+    end = end + MINUTES_PER_DAY if end <= start else end  # saída no dia seguinte (turno noturno)
     if end - start > MAX_SHIFT_MINUTES:
         raise ScheduleError(f"{name}: o turno não pode passar de 16 horas.")
-
-    lunch_start = lunch_end = None
-    if day.lunch_start is not None and day.lunch_end is not None:
-        lunch_start = _after(_minutes(day.lunch_start), start)
-        lunch_end = _after(_minutes(day.lunch_end), start)
-        if not start < lunch_start < lunch_end < end:
-            raise ScheduleError(
-                f"{name}: o almoço deve começar depois da entrada e terminar antes da saída."
-            )
-
-    return ShiftOffsets(start=start, end=end, lunch_start=lunch_start, lunch_end=lunch_end)
+    if day.lunch_minutes < 0:
+        raise ScheduleError(f"{name}: a duração do almoço não pode ser negativa.")
+    if day.lunch_minutes >= end - start:
+        raise ScheduleError(f"{name}: o almoço deve ser menor que o turno.")
+    return ShiftOffsets(start=start, end=end, lunch_minutes=day.lunch_minutes)
 
 
 def planned_minutes(day: DaySchedule) -> int:

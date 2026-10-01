@@ -78,7 +78,7 @@ class EmployeeScheduleDay(Base):
     __tablename__ = "employee_schedule_days"
     __table_args__ = (
         CheckConstraint("weekday BETWEEN 0 AND 6", name="weekday"),
-        CheckConstraint("(lunch_start IS NULL) = (lunch_end IS NULL)", name="lunch_pair"),
+        CheckConstraint("lunch_minutes >= 0", name="lunch_minutes"),
     )
 
     schedule_id: Mapped[int] = mapped_column(
@@ -86,8 +86,8 @@ class EmployeeScheduleDay(Base):
     )
     weekday: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
-    lunch_start: Mapped[time | None] = mapped_column(Time)
-    lunch_end: Mapped[time | None] = mapped_column(Time)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
+    # Almoço livre: guarda só a duração prevista, descontada da carga (BUSINESS-RULES.md §3).
+    lunch_minutes: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default="60")
 
     schedule: Mapped[EmployeeSchedule] = relationship(back_populates="days")

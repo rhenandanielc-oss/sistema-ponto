@@ -4,8 +4,17 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.calculation.schedule import DaySchedule, ScheduleError, planned_minutes, validate_week
+from app.calculation.schedule import (
+    DEFAULT_LUNCH_MINUTES,
+    MAX_SHIFT_MINUTES,
+    DaySchedule,
+    ScheduleError,
+    planned_minutes,
+    validate_week,
+)
 from app.schemas.common import ORMModel
+
+DEFAULT_WEEKDAYS = [0, 1, 2, 3, 4]  # segunda a sexta
 
 
 def normalize_cpf(value: str | None) -> str | None:
@@ -33,23 +42,49 @@ def _strip_required(value: str) -> str:
 
 class ScheduleDayIn(BaseModel):
     weekday: int = Field(ge=0, le=6, description="0 = segunda … 6 = domingo")
-    start_time: time
-    lunch_start: time | None = None
-    lunch_end: time | None = None
-    end_time: time
+    start_time: time = Field(description="Entrada prevista, ex.: 08:00")
+    end_time: time = Field(
+        description="Saída prevista, ex.: 16:00 (menor que a entrada = dia seguinte)"
+    )
+    lunch_minutes: int = Field(
+        default=DEFAULT_LUNCH_MINUTES, ge=0, le=MAX_SHIFT_MINUTES, description="Duração do almoço"
+    )
 
     def to_domain(self) -> DaySchedule:
         return DaySchedule(
             weekday=self.weekday,
             start_time=self.start_time,
             end_time=self.end_time,
-            lunch_start=self.lunch_start,
-            lunch_end=self.lunch_end,
+            lunch_minutes=self.lunch_minutes,
         )
 
 
 class ScheduleDaysIn(BaseModel):
+    """Horário fixo. Aceita a forma simples ou dia a dia.
+
+    Forma simples (mesmo horário em vários dias):
+        {"start_time": "08:00", "end_time": "16:00", "lunch_minutes": 60, "weekdays": [0, 1, 2]}
+    Dia a dia:
+        {"days": [{"weekday": 0, "start_time": "08:00", "end_time": "16:00"}, ...]}
+    """
+
     days: list[ScheduleDayIn] = Field(min_length=1, max_length=7)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _expand_simple_form(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "days" not in data and "start_time" in data:
+            weekdays = data.get("weekdays", DEFAULT_WEEKDAYS)
+            if not isinstance(weekdays, list):
+                raise ValueError("weekdays deve ser uma lista de dias (0 = segunda … 6 = domingo)")
+            common = {k: data[k] for k in ("start_time", "end_time", "lunch_minutes") if k in data}
+            rest = {
+                k: v
+                for k, v in data.items()
+                if k not in ("start_time", "end_time", "lunch_minutes", "weekdays")
+            }
+            return {**rest, "days": [{"weekday": w, **common} for w in weekdays]}
+        return data
 
     @model_validator(mode="after")
     def _validate_week(self) -> "ScheduleDaysIn":
@@ -67,9 +102,8 @@ class ScheduleCreate(ScheduleDaysIn):
 class ScheduleDayOut(ORMModel):
     weekday: int
     start_time: time
-    lunch_start: time | None
-    lunch_end: time | None
     end_time: time
+    lunch_minutes: int
     planned_minutes: int = 0
 
     @model_validator(mode="before")
@@ -81,15 +115,13 @@ class ScheduleDayOut(ORMModel):
             weekday=data.weekday,
             start_time=data.start_time,
             end_time=data.end_time,
-            lunch_start=data.lunch_start,
-            lunch_end=data.lunch_end,
+            lunch_minutes=data.lunch_minutes,
         )
         return {
             "weekday": data.weekday,
             "start_time": data.start_time,
-            "lunch_start": data.lunch_start,
-            "lunch_end": data.lunch_end,
             "end_time": data.end_time,
+            "lunch_minutes": data.lunch_minutes,
             "planned_minutes": planned_minutes(day),
         }
 

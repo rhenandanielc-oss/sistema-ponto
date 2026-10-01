@@ -259,6 +259,9 @@ Pendente.
 3. O funcionário consulta o **próprio banco de horas** no kiosk, também pelo rosto; o servidor só devolve os dados de quem reconheceu.
 4. Cada funcionário tem um **horário fixo** (entrada, almoço, retorno, saída por dia da semana), ainda desconhecido hoje: por isso é informado **no cadastro do funcionário**, junto com o nome e o rosto, com vigência. Com ele o sistema calcula atraso, saída antecipada, horas faltantes e horas extras (tolerância CLT 5/10 min por batida). *(Corrigido em 2026-10-01: a versão anterior falava em "carga horária diária sem horário fixo", por engano.)*
 5. Portaria MTP 671/2021 e alternativa à biometria (PIN) **não serão tratadas**.
+6. *(2026-10-01)* O horário fixo é **só entrada e saída** (ex.: João, 08:00 – 16:00). **O almoço é livre**: o funcionário
+   sai e volta quando quiser e o sistema não recusa almoço fora de hora. O cadastro guarda a **duração prevista do
+   almoço** (padrão 60 min, ajustável, pode ser 0), descontada da carga: 08:00–16:00 ⇒ 7 h. Migration `0002`.
 **Impacto:** tabelas `roles`/`permissions` removidas (há só `admins`); jornadas FIXED/ROTATING removidas; `/jornadas` incorporada a `/funcionarios`; registro web removido (só kiosk + ajuste do administrador). Documentos atualizados: todos os da Fase 0. `MASTER-PROMPT.md` não foi editado; esta decisão prevalece sobre ele.
 
 ---

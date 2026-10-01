@@ -84,7 +84,7 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | Método | Rota | Descrição | Fase |
 |---|---|---|---|
 | GET | `/employees` | Filtros: `q` (nome/matrícula), `status`. Ordenação: `name`, `registration_number`, `hire_date` | 1 |
-| POST | `/employees` | Cadastro **com horário fixo inicial**: `{name, registration_number, cpf?, hire_date, schedule: {days: [{weekday, start_time, lunch_start?, lunch_end?, end_time}]}}` (o rosto é cadastrado na mesma tela — endpoint de biometria, Fase 5) | 1 |
+| POST | `/employees` | Cadastro **com horário fixo inicial**: `{name, registration_number, cpf?, hire_date, schedule}`. `schedule` na forma simples `{start_time: "08:00", end_time: "16:00", lunch_minutes?: 60, weekdays?: [0,1,2,3,4]}` ou dia a dia `{days: [{weekday, start_time, end_time, lunch_minutes?}]}` (o rosto é cadastrado na mesma tela — endpoint de biometria, Fase 5) | 1 |
 | GET / PATCH | `/employees/{id}` | Detalhe (inclui horário vigente e carga diária calculada) / edição cadastral | 1 |
 | POST | `/employees/{id}/activate`, `/employees/{id}/deactivate` | | 1 |
 | GET | `/employees/{id}/history` | Alterações cadastrais (auditoria) | 1 |
