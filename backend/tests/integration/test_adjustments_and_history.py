@@ -82,19 +82,15 @@ def test_r16_adjustment_validations(client: TestClient, auth_headers, db: Sessio
     )
     assert future.status_code == 422
 
-    naive_time = client.post(
-        ADJUST,
-        json={**base, "type": "LUNCH_EXIT", "recorded_at": "2026-09-01T12:00:00"},
-        headers=auth_headers,
-    )
-    assert naive_time.status_code == 422
-
+    # Horário sem fuso (como o administrador digita) é interpretado no fuso da empresa.
     lunch = client.post(
         ADJUST,
-        json={**base, "type": "LUNCH_EXIT", "recorded_at": local(1, "12:00").isoformat()},
+        json={**base, "type": "LUNCH_EXIT", "recorded_at": "2026-09-01T12:00"},
         headers=auth_headers,
     )
     assert lunch.status_code == 201
+    record = client.get(f"{RECORDS}/{lunch.json()['record_id']}", headers=auth_headers).json()
+    assert record["recorded_at"] == "2026-09-01T12:00:00-03:00"
 
 
 def test_r17_void_keeps_record_in_history(client: TestClient, auth_headers, db: Session) -> None:

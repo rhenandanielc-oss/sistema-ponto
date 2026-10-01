@@ -1,3 +1,4 @@
+import io
 from collections.abc import Iterator
 
 import pytest
@@ -23,3 +24,12 @@ def test_create_admin_rejects_mismatch_and_short_password(monkeypatch: pytest.Mo
     monkeypatch.setattr(cli.getpass, "getpass", lambda _prompt: next(replies))
     assert cli.main(["create-admin", "--email", "a@empresa.com", "--name", "A"]) == 1
     assert cli.main(["create-admin", "--email", "a@empresa.com", "--name", "A"]) == 1
+
+
+def test_create_admin_with_password_from_stdin(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient
+) -> None:
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("senha-automatizada-1\n"))
+    args = ["create-admin", "--email", "auto@empresa.com", "--name", "Auto", "--password-stdin"]
+    assert cli.main(args) == 0
+    assert login(client, "auto@empresa.com", "senha-automatizada-1").status_code == 200

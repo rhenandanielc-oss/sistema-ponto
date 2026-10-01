@@ -12,7 +12,7 @@
 
 * Base: `/api/v1`. JSON UTF-8. Campos em `snake_case`.
 * Instantes ISO 8601 com fuso. Respostas sempre no fuso da empresa (`2026-09-01T08:02:13-03:00`);
-  entradas precisam informar o fuso (horário sem fuso é recusado). Datas `YYYY-MM-DD` (fuso da empresa).
+  em entradas, horário sem fuso é interpretado no fuso da empresa. Datas `YYYY-MM-DD` (fuso da empresa).
 * Durações em **minutos**.
 * Autenticação:
   * administrador: `Authorization: Bearer <access_token>`;

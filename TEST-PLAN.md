@@ -2,8 +2,9 @@
 
 # Plano de Testes
 
-> **Status:** Fases 1, 2 e 3 implementadas — C01–C24, R01–R18, A01–A10, §6 e testes da API (auditoria, resumo,
-> limites, cabeçalhos, OpenAPI, fluxo ponta a ponta) em `backend/tests/` (179 testes). A11–A13 e §7: Fase 5.
+> **Status:** Fases 1–4 implementadas. Backend: C01–C24, R01–R18, A01–A10, §6 e testes da API (180 testes).
+> Frontend: Vitest (11 testes) e Playwright E2E (login, cadastro, histórico, ajustes, banco de horas, administração).
+> A11–A13 e §7: Fase 5.
 
 ---
 
@@ -14,8 +15,8 @@
 | Unitário (backend) | pytest | Motor de cálculo (`app/calculation`), validação de sequência, atribuição de dia de jornada, tolerância, regras puras | 1–2 |
 | Integração (backend) | pytest + FastAPI `TestClient` + **PostgreSQL real** em contêiner | Endpoints, autenticação, autorização, transações, restrições do banco, concorrência | 1–3 |
 | Migrations | pytest | `alembic upgrade head` em banco vazio e `downgrade -1`/`upgrade` da última migration | 1+ |
-| Frontend | Vitest + Testing Library | Componentes, formulários, tratamento de erros | 4 |
-| E2E | Playwright | Login do administrador, cadastro, histórico, banco de horas, kiosk (batida e consulta do banco; câmera simulada com vídeo falso do Chromium) | 4–5 |
+| Frontend | Vitest + Testing Library | Cliente da API (renovação de sessão, erros), formatação, períodos, formulário de horário | 4 |
+| E2E | Playwright | Login (certo e errado), cadastro com dias/horário/almoço, validação vinda do backend, inclusão e anulação de batidas, banco de horas, feriado, terminal, auditoria, sessão após recarregar e logout; também contra o build no nginx. Kiosk na Fase 5 (câmera simulada) | 4–5 |
 | Biometria | pytest + conjunto de imagens **sintéticas/autorizadas fora do repositório** | Detecção, qualidade, matching, limiar | 5 |
 
 Regras:

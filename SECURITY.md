@@ -2,9 +2,8 @@
 
 # Segurança
 
-> **Status:** autenticação do administrador implementada na Fase 1 (§3, §6 parcial, §7, §8 para os eventos existentes).
-> Fase 2: dispositivos. Fase 3: limitação de taxa, cabeçalhos de segurança, limite de corpo, auditoria consultável.
-> Pendentes: kiosk/biometria (Fase 5), revisão final e permissões de banco (Fase 6).
+> **Status:** Fases 1–4 implementadas: autenticação do administrador, dispositivos, limitação de taxa, cabeçalhos,
+> auditoria e painel web com token só em memória e CSP. Pendentes: kiosk/biometria (Fase 5), revisão final (Fase 6).
 
 ---
 
@@ -84,8 +83,10 @@ Só o refresh token vai por cookie (`SameSite=Strict`, caminho `/auth`); as dema
   o uvicorn precisa de `--proxy-headers` para enxergar o IP real (revisar na Fase 6).
 * Tamanho máximo de corpo: 1 MB (`413 PAYLOAD_TOO_LARGE`), checado pelo `Content-Length`.
 * Erros sem stack trace nem SQL (formato em `API.md`).
-* Cabeçalhos de segurança em toda resposta da API (`nosniff`, `X-Frame-Options: DENY`, `no-referrer`, `no-store`);
-  CSP no frontend (Fase 4).
+* Cabeçalhos de segurança em toda resposta da API (`nosniff`, `X-Frame-Options: DENY`, `no-referrer`, `no-store`).
+* Frontend servido por nginx com **CSP** restritiva (`default-src 'self'`, sem scripts/estilos inline,
+  `frame-ancestors 'none'`) e os mesmos cabeçalhos (`frontend/nginx.conf`). Na Fase 5 a CSP precisará liberar o
+  WebAssembly do detector facial (`'wasm-unsafe-eval'`), se usado.
 * Consultas somente via ORM/parâmetros.
 
 ---

@@ -1,8 +1,10 @@
 from datetime import date as Date
+from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
+from app.core.config import get_settings
 from app.schemas.common import LocalDatetime, ORMModel
 
 RecordType = Literal["ENTRY", "LUNCH_EXIT", "LUNCH_RETURN", "EXIT"]
@@ -103,11 +105,19 @@ class AddRecordAdjustment(BaseModel):
     kind: Literal["ADD"]
     employee_id: int
     type: RecordType
-    recorded_at: AwareDatetime = Field(description="Horário da batida esquecida, com fuso")
+    recorded_at: datetime = Field(
+        description="Horário da batida esquecida. Sem fuso, é interpretado no fuso da empresa."
+    )
     workday_date: Date | None = Field(
         default=None, description="Dia de jornada. Padrão: data local de recorded_at"
     )
     reason: Reason
+
+    @field_validator("recorded_at")
+    @classmethod
+    def _company_timezone(cls, value: datetime) -> datetime:
+        # O administrador digita data e hora como vê no relógio da empresa.
+        return value if value.tzinfo else value.replace(tzinfo=get_settings().tz)
 
 
 class VoidRecordAdjustment(BaseModel):

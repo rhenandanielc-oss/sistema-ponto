@@ -12,13 +12,13 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Status:** EM ANDAMENTO
 
-**Fase atual:** Fase 3 — API completa (CONCLUÍDA) → próxima: Fase 4 — Frontend
+**Fase atual:** Fase 4 — Frontend (CONCLUÍDA) → próxima: Fase 5 — Biometria e Kiosk
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: complete API (audit, hour bank summary, rate limits)` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: implement admin web interface` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Iniciar a Fase 4 — frontend (React + TypeScript + Vite + Tailwind): login, funcionários, histórico, banco de horas, administração.
+**Próxima ação:** Iniciar a Fase 5 — reconhecimento facial e terminal de ponto (kiosk).
 
 ---
 
@@ -164,26 +164,51 @@ duas conexões), banco de horas via API, feriados, terminais e configurações.
 
 # Fase 4 — Frontend
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Rotas
 
-* [ ] `/login`
-* [ ] `/kiosk`
-* [ ] `/historico`
-* [ ] `/banco-de-horas`
-* [ ] `/funcionarios`
-* [ ] ~~`/jornadas`~~ (incorporada a `/funcionarios` — decisão de 2026-10-01)
-* [ ] `/admin`
+* [x] `/login`
+* [ ] `/kiosk` — página provisória; o terminal com reconhecimento facial é da **Fase 5**
+* [x] `/historico`
+* [x] `/banco-de-horas` e `/banco-de-horas/:id`
+* [x] `/funcionarios` e `/funcionarios/:id`
+* [x] ~~`/jornadas`~~ → redireciona para `/funcionarios` (decisão de 2026-10-01)
+* [x] `/admin` (abas: feriados, terminais, administradores, configurações, auditoria)
 
 ### Funcionalidades
 
-* [ ] login
-* [ ] gerenciamento de funcionários
-* [ ] cadastro do funcionário com nome, horário fixo e rosto
-* [ ] histórico
-* [ ] banco de horas
-* [ ] administração
+* [x] login / logout; sessão recuperada ao recarregar (cookie de refresh); renovação automática do token
+* [x] funcionários: lista com busca, situação e paginação; cadastro com **nome, matrícula, CPF, admissão,
+  dias de trabalho, entrada, saída e tempo de almoço**; edição; ativar/desativar; alterar horário com vigência;
+  histórico de alterações
+* [ ] cadastro do rosto → Fase 5
+* [x] histórico: filtros (funcionário, hoje/semana/mês/período, tipo, anuladas), paginação, detalhes,
+  incluir batida esquecida, anular batida
+* [x] banco de horas: resumo de todos; detalhe diário por funcionário (batidas, previsto, trabalhado, almoço,
+  atraso, saída antecipada, saldo, situação e alertas); lançamentos manuais
+* [x] administração: feriados, terminais (chave exibida uma vez, nova chave, ativar/desativar),
+  administradores, configurações, auditoria
+* [x] interface em português, funciona em desktop, tablet e celular
+
+### Decisões
+
+* Backend: `recorded_at` de ajuste **sem fuso** passa a ser interpretado no fuso da empresa (o navegador não
+  conhece o fuso da empresa; o administrador digita a hora do relógio da empresa).
+* CLI: `create-admin --password-stdin` (automação) e `export-openapi` (gera os tipos do frontend).
+* TypeScript fixado em 5.9 (o plugin de lint e o gerador de tipos ainda não suportam o 6).
+
+### Arquivos importantes
+
+* `frontend/src/api/client.ts`, `frontend/src/api/schema.d.ts` (gerado), `frontend/src/lib/auth.tsx`
+* `frontend/src/pages/*.tsx`, `frontend/src/components/*.tsx`
+* `frontend/e2e/app.spec.ts`, `frontend/e2e/start-backend.sh`, `frontend/playwright.config.ts`
+* `frontend/Dockerfile`, `frontend/nginx.conf`, serviço `frontend` no `docker-compose.yml` (porta 8080)
+
+### Testes
+
+Frontend: ESLint, `tsc`, Vitest (11 testes), build de produção, Playwright E2E (2 testes; 6 execuções seguidas
+estáveis no Vite e também contra o build servido pelo nginx com CSP). Backend: 180 testes.
 
 ---
 
@@ -467,6 +492,8 @@ Possíveis categorias:
   motor de cálculo, feriados, banco de horas, terminais, configurações. Migration `0003`. 165 testes passando.
 * Cadastro aceita dias por nome. **Fase 3 concluída:** auditoria consultável, resumo do banco de horas, limites de
   requisição, cabeçalhos de segurança, OpenAPI. A auditoria passou a usar o relógio do backend. 179 testes passando.
+* **Fase 4 concluída:** painel web do administrador (React). Testes de navegador acharam e corrigiram: CSP
+  descartada pelo nginx (`add_header` em `location`) e um teste instável (corrigido no teste).
 
 Formato:
 
@@ -487,15 +514,20 @@ cd backend
 TEST_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_test uv run pytest -q
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
 uv run alembic upgrade head / downgrade / upgrade / check   (0001 → 0003)
+
+cd frontend
+npm run lint && npm run typecheck && npm test && npm run build
+E2E_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_e2e npm run e2e
 ```
-Também executado na imagem Docker de testes (mesmos 165 testes).
 
 **Resultado:**
-179 passed; ruff e mypy (strict) sem erros; `alembic check` sem diferenças.
+Backend: 180 passed; ruff, mypy (strict). Frontend: eslint, tsc, 11 testes Vitest, build, 2 testes E2E
+(Playwright/Chromium) estáveis em 6 execuções; E2E também contra nginx + build de produção.
 
 **Falhas:**
-Fase 3: a auditoria gravava o horário do relógio do banco, não do backend (corrigido: `occurred_at = now_utc()`);
-um teste contava batidas errado (11 em vez de 15 — erro do teste).
+Fase 4: nginx descartava os cabeçalhos de segurança (CSP) por causa de `add_header` dentro de `location`
+(corrigido); teste E2E instável por não esperar a troca de página (corrigido no teste); classes `@apply` do
+Tailwind 4 (corrigido).
 
 ---
 
@@ -529,11 +561,13 @@ Ao iniciar uma nova sessão:
 * Definição do responsável: o administrador digita nome, dias de trabalho, horário fixo e tempo de almoço;
   trabalho em dia fora da escala é hora extra. A API passou a aceitar os dias por nome.
 * Executada a **Fase 3 — API completa** (ver seção da fase).
-* Próxima sessão: **Fase 4 — Frontend** em `frontend/` (React + TypeScript + Vite + Tailwind + React Router +
-  React Query), interface em português: `/login`, `/funcionarios` (cadastro com nome, dias, horário fixo, almoço),
-  `/historico` (filtros hoje/semana/mês/período, ajustes), `/banco-de-horas` (resumo + detalhe diário),
-  `/admin` (feriados, terminais, administradores, configurações, auditoria). Tipos gerados do OpenAPI.
-  O `/kiosk` fica para a Fase 5.
+* Executada a **Fase 4 — Frontend** (ver seção da fase).
+* Próxima sessão: **Fase 5 — Biometria e Kiosk** (`BIOMETRICS.md`): confirmar licenças de YuNet/SFace; serviço
+  `app/biometrics/` (detecção, qualidade, embedding, matching com limiar e margem); tabelas `biometric_consents` e
+  `biometric_templates` com AES-256-GCM (`BIOMETRIC_KEY`); endpoints `/kiosk/identify`, `/kiosk/records`,
+  `/kiosk/hour-bank` (token de identificação de 60 s) e de cadastro do rosto; tela `/kiosk` (câmera, MediaPipe para
+  enquadramento, botões de batida, consulta do próprio banco de horas); cadastro do rosto em `/funcionarios/:id`;
+  testes A11–A13 e §7 do `TEST-PLAN.md` (E2E com câmera simulada).
 
 ---
 

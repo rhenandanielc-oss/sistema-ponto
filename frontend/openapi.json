@@ -1,0 +1,5224 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Sistema de Ponto",
+  "description": "\nAPI do sistema de ponto eletrônico com reconhecimento facial.\n\n* **Administrador**: `Authorization: Bearer <token>` obtido em `/auth/login`.\n* **Terminal (kiosk)**: `Authorization: Device <token>` obtido ao cadastrar o dispositivo.\n* Instantes são devolvidos no fuso da empresa; períodos (`date_from`/`date_to`) são inclusivos.\n* Erros seguem o formato `{\"error\": {\"code\", \"message\", \"details\", \"request_id\"}}`.\n",
+  "version": "0.3.0"
+ },
+ "paths": {
+  "/api/v1/health/live": {
+   "get": {
+    "tags": [
+     "saúde"
+    ],
+    "summary": "Live",
+    "operationId": "live_api_v1_health_live_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "type": "object",
+         "title": "Response Live Api V1 Health Live Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/health/ready": {
+   "get": {
+    "tags": [
+     "saúde"
+    ],
+    "summary": "Ready",
+    "operationId": "ready_api_v1_health_ready_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/login": {
+   "post": {
+    "tags": [
+     "autenticação"
+    ],
+    "summary": "Login",
+    "operationId": "login_api_v1_auth_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/refresh": {
+   "post": {
+    "tags": [
+     "autenticação"
+    ],
+    "summary": "Refresh",
+    "operationId": "refresh_api_v1_auth_refresh_post",
+    "parameters": [
+     {
+      "name": "refresh_token",
+      "in": "cookie",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Refresh Token"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/logout": {
+   "post": {
+    "tags": [
+     "autenticação"
+    ],
+    "summary": "Logout",
+    "operationId": "logout_api_v1_auth_logout_post",
+    "parameters": [
+     {
+      "name": "refresh_token",
+      "in": "cookie",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Refresh Token"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/me": {
+   "get": {
+    "tags": [
+     "autenticação"
+    ],
+    "summary": "Me",
+    "operationId": "me_api_v1_auth_me_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admins": {
+   "get": {
+    "tags": [
+     "administradores"
+    ],
+    "summary": "List Admins",
+    "operationId": "list_admins_api_v1_admins_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AdminOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "administradores"
+    ],
+    "summary": "Create Admin",
+    "operationId": "create_admin_api_v1_admins_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admins/{admin_id}": {
+   "patch": {
+    "tags": [
+     "administradores"
+    ],
+    "summary": "Update Admin",
+    "operationId": "update_admin_api_v1_admins__admin_id__patch",
+    "parameters": [
+     {
+      "name": "admin_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Admin Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admins/{admin_id}/activate": {
+   "post": {
+    "tags": [
+     "administradores"
+    ],
+    "summary": "Activate Admin",
+    "operationId": "activate_admin_api_v1_admins__admin_id__activate_post",
+    "parameters": [
+     {
+      "name": "admin_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Admin Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admins/{admin_id}/deactivate": {
+   "post": {
+    "tags": [
+     "administradores"
+    ],
+    "summary": "Deactivate Admin",
+    "operationId": "deactivate_admin_api_v1_admins__admin_id__deactivate_post",
+    "parameters": [
+     {
+      "name": "admin_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Admin Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees": {
+   "get": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "List Employees",
+    "operationId": "list_employees_api_v1_employees_get",
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 100
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Nome ou matrícula",
+       "title": "Q"
+      },
+      "description": "Nome ou matrícula"
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "ACTIVE",
+          "INACTIVE"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "description": "name, registration_number ou hire_date; prefixo - inverte",
+       "default": "name",
+       "title": "Sort"
+      },
+      "description": "name, registration_number ou hire_date; prefixo - inverte"
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_EmployeeOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Create Employee",
+    "operationId": "create_employee_api_v1_employees_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EmployeeCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}": {
+   "get": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Get Employee",
+    "operationId": "get_employee_api_v1_employees__employee_id__get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Update Employee",
+    "operationId": "update_employee_api_v1_employees__employee_id__patch",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EmployeeUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/activate": {
+   "post": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Activate Employee",
+    "operationId": "activate_employee_api_v1_employees__employee_id__activate_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/deactivate": {
+   "post": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Deactivate Employee",
+    "operationId": "deactivate_employee_api_v1_employees__employee_id__deactivate_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/history": {
+   "get": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Employee History",
+    "operationId": "employee_history_api_v1_employees__employee_id__history_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AuditEntryOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/schedules": {
+   "get": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "List Schedules",
+    "operationId": "list_schedules_api_v1_employees__employee_id__schedules_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ScheduleOut"
+         },
+         "title": "Response List Schedules Api V1 Employees  Employee Id  Schedules Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "funcionários"
+    ],
+    "summary": "Add Schedule",
+    "operationId": "add_schedule_api_v1_employees__employee_id__schedules_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScheduleCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScheduleOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/workdays": {
+   "get": {
+    "tags": [
+     "cálculo e banco de horas"
+    ],
+    "summary": "Workdays",
+    "operationId": "workdays_api_v1_employees__employee_id__workdays_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "date",
+       "description": "Data inicial (inclusiva)",
+       "title": "Date From"
+      },
+      "description": "Data inicial (inclusiva)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "date",
+       "description": "Data final (inclusiva)",
+       "title": "Date To"
+      },
+      "description": "Data final (inclusiva)"
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkdaysOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/hour-bank": {
+   "get": {
+    "tags": [
+     "cálculo e banco de horas"
+    ],
+    "summary": "Hour Bank",
+    "operationId": "hour_bank_api_v1_employees__employee_id__hour_bank_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "date",
+       "description": "Data inicial (inclusiva)",
+       "title": "Date From"
+      },
+      "description": "Data inicial (inclusiva)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "date",
+       "description": "Data final (inclusiva)",
+       "title": "Date To"
+      },
+      "description": "Data final (inclusiva)"
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HourBankOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/hour-bank/entries": {
+   "get": {
+    "tags": [
+     "cálculo e banco de horas"
+    ],
+    "summary": "List Entries",
+    "operationId": "list_entries_api_v1_employees__employee_id__hour_bank_entries_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HourBankEntryOut"
+         },
+         "title": "Response List Entries Api V1 Employees  Employee Id  Hour Bank Entries Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "cálculo e banco de horas"
+    ],
+    "summary": "Add Entry",
+    "operationId": "add_entry_api_v1_employees__employee_id__hour_bank_entries_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HourBankEntryIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HourBankEntryOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/time-records": {
+   "get": {
+    "tags": [
+     "registros de ponto"
+    ],
+    "summary": "List Records",
+    "operationId": "list_records_api_v1_time_records_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Dia de jornada inicial (inclusivo)",
+       "title": "Date From"
+      },
+      "description": "Dia de jornada inicial (inclusivo)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Dia de jornada final (inclusivo)",
+       "title": "Date To"
+      },
+      "description": "Dia de jornada final (inclusivo)"
+     },
+     {
+      "name": "type",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "ENTRY",
+          "LUNCH_EXIT",
+          "LUNCH_RETURN",
+          "EXIT"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Type"
+      }
+     },
+     {
+      "name": "source",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "KIOSK",
+          "ADJUSTMENT"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Source"
+      }
+     },
+     {
+      "name": "device_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Device Id"
+      }
+     },
+     {
+      "name": "include_voided",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Include Voided"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "recorded_at",
+        "-recorded_at"
+       ],
+       "type": "string",
+       "default": "-recorded_at",
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_TimeRecordOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/time-records/adjustments": {
+   "get": {
+    "tags": [
+     "registros de ponto"
+    ],
+    "summary": "List Adjustments",
+    "operationId": "list_adjustments_api_v1_time_records_adjustments_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AdjustmentOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "registros de ponto"
+    ],
+    "summary": "Create Adjustment",
+    "description": "Inclui uma batida esquecida (ADD) ou anula uma batida errada (VOID), com justificativa.",
+    "operationId": "create_adjustment_api_v1_time_records_adjustments_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "oneOf": [
+         {
+          "$ref": "#/components/schemas/AddRecordAdjustment"
+         },
+         {
+          "$ref": "#/components/schemas/VoidRecordAdjustment"
+         }
+        ],
+        "discriminator": {
+         "propertyName": "kind",
+         "mapping": {
+          "ADD": "#/components/schemas/AddRecordAdjustment",
+          "VOID": "#/components/schemas/VoidRecordAdjustment"
+         }
+        },
+        "title": "Data"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdjustmentOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/time-records/{record_id}": {
+   "get": {
+    "tags": [
+     "registros de ponto"
+    ],
+    "summary": "Get Record",
+    "operationId": "get_record_api_v1_time_records__record_id__get",
+    "parameters": [
+     {
+      "name": "record_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Record Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TimeRecordDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/audit-logs": {
+   "get": {
+    "tags": [
+     "auditoria"
+    ],
+    "summary": "List Audit Logs",
+    "operationId": "list_audit_logs_api_v1_audit_logs_get",
+    "parameters": [
+     {
+      "name": "entity_type",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Entity Type"
+      }
+     },
+     {
+      "name": "entity_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Entity Id"
+      }
+     },
+     {
+      "name": "action",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Ação exata, ou prefixo terminado em \".\" (ex.: \"employee.\")",
+       "title": "Action"
+      },
+      "description": "Ação exata, ou prefixo terminado em \".\" (ex.: \"employee.\")"
+     },
+     {
+      "name": "actor_admin_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Actor Admin Id"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Data inicial (inclusiva)",
+       "title": "Date From"
+      },
+      "description": "Data inicial (inclusiva)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Data final (inclusiva)",
+       "title": "Date To"
+      },
+      "description": "Data final (inclusiva)"
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "occurred_at",
+        "-occurred_at"
+       ],
+       "type": "string",
+       "default": "-occurred_at",
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AuditLogOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/holidays": {
+   "get": {
+    "tags": [
+     "feriados"
+    ],
+    "summary": "List Holidays",
+    "operationId": "list_holidays_api_v1_holidays_get",
+    "parameters": [
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date From"
+      }
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date To"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HolidayOut"
+         },
+         "title": "Response List Holidays Api V1 Holidays Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "feriados"
+    ],
+    "summary": "Create Holiday",
+    "operationId": "create_holiday_api_v1_holidays_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HolidayIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HolidayOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/holidays/{holiday_id}": {
+   "patch": {
+    "tags": [
+     "feriados"
+    ],
+    "summary": "Update Holiday",
+    "operationId": "update_holiday_api_v1_holidays__holiday_id__patch",
+    "parameters": [
+     {
+      "name": "holiday_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Holiday Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HolidayUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HolidayOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "feriados"
+    ],
+    "summary": "Delete Holiday",
+    "operationId": "delete_holiday_api_v1_holidays__holiday_id__delete",
+    "parameters": [
+     {
+      "name": "holiday_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Holiday Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/devices": {
+   "get": {
+    "tags": [
+     "dispositivos"
+    ],
+    "summary": "List Devices",
+    "operationId": "list_devices_api_v1_devices_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DeviceOut"
+         },
+         "title": "Response List Devices Api V1 Devices Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "dispositivos"
+    ],
+    "summary": "Create Device",
+    "operationId": "create_device_api_v1_devices_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeviceIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviceWithToken"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/devices/{device_id}/rotate-token": {
+   "post": {
+    "tags": [
+     "dispositivos"
+    ],
+    "summary": "Rotate Token",
+    "operationId": "rotate_token_api_v1_devices__device_id__rotate_token_post",
+    "parameters": [
+     {
+      "name": "device_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Device Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviceWithToken"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/devices/{device_id}/activate": {
+   "post": {
+    "tags": [
+     "dispositivos"
+    ],
+    "summary": "Activate Device",
+    "operationId": "activate_device_api_v1_devices__device_id__activate_post",
+    "parameters": [
+     {
+      "name": "device_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Device Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/devices/{device_id}/deactivate": {
+   "post": {
+    "tags": [
+     "dispositivos"
+    ],
+    "summary": "Deactivate Device",
+    "operationId": "deactivate_device_api_v1_devices__device_id__deactivate_post",
+    "parameters": [
+     {
+      "name": "device_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Device Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/settings": {
+   "get": {
+    "tags": [
+     "configurações"
+    ],
+    "summary": "Get Settings",
+    "operationId": "get_settings_api_v1_settings_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CompanySettings"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "configurações"
+    ],
+    "summary": "Update Settings",
+    "operationId": "update_settings_api_v1_settings_patch",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CompanySettingsUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CompanySettings"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/kiosk/ping": {
+   "get": {
+    "tags": [
+     "kiosk"
+    ],
+    "summary": "Ping",
+    "description": "Confirma que o terminal está autorizado e devolve o horário do servidor para exibição.",
+    "operationId": "ping_api_v1_kiosk_ping_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PingOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/hour-bank/summary": {
+   "get": {
+    "tags": [
+     "cálculo e banco de horas"
+    ],
+    "summary": "Hour Bank Summary",
+    "description": "Saldo do banco de horas de todos os funcionários no período, ordenado por nome.",
+    "operationId": "hour_bank_summary_api_v1_hour_bank_summary_get",
+    "parameters": [
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "date",
+       "description": "Data inicial (inclusiva)",
+       "title": "Date From"
+      },
+      "description": "Data inicial (inclusiva)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "date",
+       "description": "Data final (inclusiva)",
+       "title": "Date To"
+      },
+      "description": "Data final (inclusiva)"
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 100
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Nome ou matrícula",
+       "title": "Q"
+      },
+      "description": "Nome ou matrícula"
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "ACTIVE",
+          "INACTIVE"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_HourBankSummaryItem_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AddRecordAdjustment": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "const": "ADD",
+      "title": "Kind"
+     },
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "ENTRY",
+       "LUNCH_EXIT",
+       "LUNCH_RETURN",
+       "EXIT"
+      ],
+      "title": "Type"
+     },
+     "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Recorded At",
+      "description": "Horário da batida esquecida. Sem fuso, é interpretado no fuso da empresa."
+     },
+     "workday_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Workday Date",
+      "description": "Dia de jornada. Padrão: data local de recorded_at"
+     },
+     "reason": {
+      "type": "string",
+      "maxLength": 1000,
+      "minLength": 10,
+      "title": "Reason",
+      "description": "Justificativa"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "employee_id",
+     "type",
+     "recorded_at",
+     "reason"
+    ],
+    "title": "AddRecordAdjustment"
+   },
+   "AdjustmentOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "ADD",
+       "VOID"
+      ],
+      "title": "Kind"
+     },
+     "record_id": {
+      "type": "integer",
+      "title": "Record Id"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "created_by_admin_id": {
+      "type": "integer",
+      "title": "Created By Admin Id"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "employee_id",
+     "kind",
+     "record_id",
+     "reason",
+     "created_by_admin_id",
+     "created_at"
+    ],
+    "title": "AdjustmentOut"
+   },
+   "AdminCreate": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "name": {
+      "type": "string",
+      "maxLength": 200,
+      "title": "Name"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 256,
+      "minLength": 10,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "name",
+     "password"
+    ],
+    "title": "AdminCreate"
+   },
+   "AdminOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "last_login_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "email",
+     "name",
+     "is_active",
+     "last_login_at"
+    ],
+    "title": "AdminOut"
+   },
+   "AdminUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "password": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 256,
+        "minLength": 10
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "title": "AdminUpdate"
+   },
+   "AuditEntryOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "occurred_at": {
+      "type": "string",
+      "title": "Occurred At"
+     },
+     "action": {
+      "type": "string",
+      "title": "Action"
+     },
+     "actor_type": {
+      "type": "string",
+      "title": "Actor Type"
+     },
+     "actor_admin_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Admin Id"
+     },
+     "before": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Before"
+     },
+     "after": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "After"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "occurred_at",
+     "action",
+     "actor_type",
+     "actor_admin_id",
+     "before",
+     "after"
+    ],
+    "title": "AuditEntryOut"
+   },
+   "AuditLogOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "occurred_at": {
+      "type": "string",
+      "title": "Occurred At"
+     },
+     "actor_type": {
+      "type": "string",
+      "title": "Actor Type"
+     },
+     "actor_admin_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Admin Id"
+     },
+     "actor_device_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Device Id"
+     },
+     "actor_employee_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Employee Id"
+     },
+     "action": {
+      "type": "string",
+      "title": "Action"
+     },
+     "entity_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Type"
+     },
+     "entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Id"
+     },
+     "before": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Before"
+     },
+     "after": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "After"
+     },
+     "ip": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ip"
+     },
+     "request_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Request Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "occurred_at",
+     "actor_type",
+     "actor_admin_id",
+     "actor_device_id",
+     "actor_employee_id",
+     "action",
+     "entity_type",
+     "entity_id",
+     "before",
+     "after",
+     "ip",
+     "request_id"
+    ],
+    "title": "AuditLogOut"
+   },
+   "CompanySettings": {
+    "properties": {
+     "tolerance_per_mark_minutes": {
+      "type": "integer",
+      "maximum": 60.0,
+      "minimum": 0.0,
+      "title": "Tolerance Per Mark Minutes",
+      "default": 5
+     },
+     "tolerance_daily_minutes": {
+      "type": "integer",
+      "maximum": 120.0,
+      "minimum": 0.0,
+      "title": "Tolerance Daily Minutes",
+      "default": 10
+     },
+     "min_minutes_between_records": {
+      "type": "integer",
+      "maximum": 60.0,
+      "minimum": 0.0,
+      "title": "Min Minutes Between Records",
+      "default": 2
+     },
+     "max_shift_hours": {
+      "type": "integer",
+      "maximum": 24.0,
+      "minimum": 1.0,
+      "title": "Max Shift Hours",
+      "default": 16
+     },
+     "early_entry_window_hours": {
+      "type": "integer",
+      "maximum": 12.0,
+      "minimum": 0.0,
+      "title": "Early Entry Window Hours",
+      "default": 4
+     },
+     "night_start": {
+      "type": "string",
+      "format": "time",
+      "title": "Night Start",
+      "default": "22:00:00"
+     },
+     "night_end": {
+      "type": "string",
+      "format": "time",
+      "title": "Night End",
+      "default": "05:00:00"
+     },
+     "kiosk_hour_bank_screen_seconds": {
+      "type": "integer",
+      "maximum": 600.0,
+      "minimum": 5.0,
+      "title": "Kiosk Hour Bank Screen Seconds",
+      "default": 30
+     }
+    },
+    "type": "object",
+    "title": "CompanySettings"
+   },
+   "CompanySettingsUpdate": {
+    "properties": {
+     "tolerance_per_mark_minutes": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 60.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tolerance Per Mark Minutes"
+     },
+     "tolerance_daily_minutes": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 120.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tolerance Daily Minutes"
+     },
+     "min_minutes_between_records": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 60.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Min Minutes Between Records"
+     },
+     "max_shift_hours": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 24.0,
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max Shift Hours"
+     },
+     "early_entry_window_hours": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 12.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Early Entry Window Hours"
+     },
+     "night_start": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Night Start"
+     },
+     "night_end": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Night End"
+     },
+     "kiosk_hour_bank_screen_seconds": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 600.0,
+        "minimum": 5.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Kiosk Hour Bank Screen Seconds"
+     }
+    },
+    "type": "object",
+    "title": "CompanySettingsUpdate"
+   },
+   "DayOut": {
+    "properties": {
+     "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+     },
+     "day_type": {
+      "type": "string",
+      "enum": [
+       "WORKDAY",
+       "DAY_OFF",
+       "HOLIDAY",
+       "NOT_EMPLOYED"
+      ],
+      "title": "Day Type"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "OK",
+       "ABSENT",
+       "INCOMPLETE",
+       "IN_PROGRESS",
+       "FUTURE",
+       "NONE"
+      ],
+      "title": "Status"
+     },
+     "flags": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Flags"
+     },
+     "expected_start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Start"
+     },
+     "expected_end": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected End"
+     },
+     "planned_minutes": {
+      "type": "integer",
+      "title": "Planned Minutes"
+     },
+     "worked_minutes": {
+      "type": "integer",
+      "title": "Worked Minutes"
+     },
+     "break_minutes": {
+      "type": "integer",
+      "title": "Break Minutes"
+     },
+     "late_minutes": {
+      "type": "integer",
+      "title": "Late Minutes"
+     },
+     "early_leave_minutes": {
+      "type": "integer",
+      "title": "Early Leave Minutes"
+     },
+     "missing_minutes": {
+      "type": "integer",
+      "title": "Missing Minutes"
+     },
+     "overtime_minutes": {
+      "type": "integer",
+      "title": "Overtime Minutes"
+     },
+     "night_minutes": {
+      "type": "integer",
+      "title": "Night Minutes"
+     },
+     "night_minutes_reduced": {
+      "type": "integer",
+      "title": "Night Minutes Reduced"
+     },
+     "balance_minutes": {
+      "type": "integer",
+      "title": "Balance Minutes"
+     },
+     "counts_for_bank": {
+      "type": "boolean",
+      "title": "Counts For Bank"
+     },
+     "punches": {
+      "items": {
+       "$ref": "#/components/schemas/PunchOut"
+      },
+      "type": "array",
+      "title": "Punches"
+     }
+    },
+    "type": "object",
+    "required": [
+     "date",
+     "day_type",
+     "status",
+     "flags",
+     "expected_start",
+     "expected_end",
+     "planned_minutes",
+     "worked_minutes",
+     "break_minutes",
+     "late_minutes",
+     "early_leave_minutes",
+     "missing_minutes",
+     "overtime_minutes",
+     "night_minutes",
+     "night_minutes_reduced",
+     "balance_minutes",
+     "counts_for_bank",
+     "punches"
+    ],
+    "title": "DayOut"
+   },
+   "DeviceIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 100,
+      "title": "Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "DeviceIn"
+   },
+   "DeviceOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "last_seen_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen At"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active",
+     "last_seen_at",
+     "created_at"
+    ],
+    "title": "DeviceOut"
+   },
+   "DeviceWithToken": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "last_seen_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen At"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "token": {
+      "type": "string",
+      "title": "Token",
+      "description": "Exibido somente agora. Configure-o no terminal."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active",
+     "last_seen_at",
+     "created_at",
+     "token"
+    ],
+    "title": "DeviceWithToken"
+   },
+   "EmployeeCreate": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 200,
+      "title": "Name"
+     },
+     "registration_number": {
+      "type": "string",
+      "maxLength": 50,
+      "title": "Registration Number"
+     },
+     "cpf": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cpf"
+     },
+     "hire_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Hire Date"
+     },
+     "schedule": {
+      "$ref": "#/components/schemas/ScheduleDaysIn"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "registration_number",
+     "hire_date",
+     "schedule"
+    ],
+    "title": "EmployeeCreate"
+   },
+   "EmployeeDetail": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "registration_number": {
+      "type": "string",
+      "title": "Registration Number"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "cpf": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cpf"
+     },
+     "hire_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Hire Date"
+     },
+     "termination_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Termination Date"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "ACTIVE",
+       "INACTIVE"
+      ],
+      "title": "Status"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "title": "Updated At"
+     },
+     "current_schedule": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ScheduleOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "registration_number",
+     "name",
+     "cpf",
+     "hire_date",
+     "termination_date",
+     "status",
+     "created_at",
+     "updated_at",
+     "current_schedule"
+    ],
+    "title": "EmployeeDetail"
+   },
+   "EmployeeOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "registration_number": {
+      "type": "string",
+      "title": "Registration Number"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "cpf": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cpf"
+     },
+     "hire_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Hire Date"
+     },
+     "termination_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Termination Date"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "ACTIVE",
+       "INACTIVE"
+      ],
+      "title": "Status"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "registration_number",
+     "name",
+     "cpf",
+     "hire_date",
+     "termination_date",
+     "status",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "EmployeeOut"
+   },
+   "EmployeeUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "registration_number": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 50
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Registration Number"
+     },
+     "cpf": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cpf"
+     },
+     "hire_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hire Date"
+     },
+     "termination_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Termination Date"
+     }
+    },
+    "type": "object",
+    "title": "EmployeeUpdate"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "HolidayIn": {
+    "properties": {
+     "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+     },
+     "name": {
+      "type": "string",
+      "maxLength": 200,
+      "title": "Name"
+     },
+     "recurring": {
+      "type": "boolean",
+      "title": "Recurring",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "date",
+     "name"
+    ],
+    "title": "HolidayIn"
+   },
+   "HolidayOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "recurring": {
+      "type": "boolean",
+      "title": "Recurring"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "date",
+     "name",
+     "recurring"
+    ],
+    "title": "HolidayOut"
+   },
+   "HolidayUpdate": {
+    "properties": {
+     "date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Date"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "recurring": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recurring"
+     }
+    },
+    "type": "object",
+    "title": "HolidayUpdate"
+   },
+   "HourBankEntryIn": {
+    "properties": {
+     "entry_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Entry Date"
+     },
+     "minutes": {
+      "type": "integer",
+      "title": "Minutes",
+      "description": "Positivo = crédito, negativo = débito"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "OPENING_BALANCE",
+       "COMPENSATION",
+       "PAYOUT",
+       "CORRECTION"
+      ],
+      "title": "Kind"
+     },
+     "reason": {
+      "type": "string",
+      "maxLength": 1000,
+      "minLength": 10,
+      "title": "Reason",
+      "description": "Justificativa"
+     }
+    },
+    "type": "object",
+    "required": [
+     "entry_date",
+     "minutes",
+     "kind",
+     "reason"
+    ],
+    "title": "HourBankEntryIn"
+   },
+   "HourBankEntryOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "entry_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Entry Date"
+     },
+     "minutes": {
+      "type": "integer",
+      "title": "Minutes"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "created_by_admin_id": {
+      "type": "integer",
+      "title": "Created By Admin Id"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "employee_id",
+     "entry_date",
+     "minutes",
+     "kind",
+     "reason",
+     "created_by_admin_id",
+     "created_at"
+    ],
+    "title": "HourBankEntryOut"
+   },
+   "HourBankOut": {
+    "properties": {
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "date_from": {
+      "type": "string",
+      "format": "date",
+      "title": "Date From"
+     },
+     "date_to": {
+      "type": "string",
+      "format": "date",
+      "title": "Date To"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/DayOut"
+      },
+      "type": "array",
+      "title": "Days"
+     },
+     "totals": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "opening_balance_minutes": {
+      "type": "integer",
+      "title": "Opening Balance Minutes",
+      "description": "Saldo acumulado antes de date_from"
+     },
+     "entries": {
+      "items": {
+       "$ref": "#/components/schemas/HourBankEntryOut"
+      },
+      "type": "array",
+      "title": "Entries",
+      "description": "Lançamentos manuais no período"
+     },
+     "entries_minutes": {
+      "type": "integer",
+      "title": "Entries Minutes"
+     },
+     "closing_balance_minutes": {
+      "type": "integer",
+      "title": "Closing Balance Minutes",
+      "description": "Saldo acumulado até date_to"
+     }
+    },
+    "type": "object",
+    "required": [
+     "employee_id",
+     "date_from",
+     "date_to",
+     "days",
+     "totals",
+     "opening_balance_minutes",
+     "entries",
+     "entries_minutes",
+     "closing_balance_minutes"
+    ],
+    "title": "HourBankOut"
+   },
+   "HourBankSummaryItem": {
+    "properties": {
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "registration_number": {
+      "type": "string",
+      "title": "Registration Number"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "ACTIVE",
+       "INACTIVE"
+      ],
+      "title": "Status"
+     },
+     "opening_balance_minutes": {
+      "type": "integer",
+      "title": "Opening Balance Minutes"
+     },
+     "planned_minutes": {
+      "type": "integer",
+      "title": "Planned Minutes"
+     },
+     "worked_minutes": {
+      "type": "integer",
+      "title": "Worked Minutes"
+     },
+     "overtime_minutes": {
+      "type": "integer",
+      "title": "Overtime Minutes"
+     },
+     "missing_minutes": {
+      "type": "integer",
+      "title": "Missing Minutes"
+     },
+     "period_balance_minutes": {
+      "type": "integer",
+      "title": "Period Balance Minutes",
+      "description": "Saldo dos dias do período (sem lançamentos)"
+     },
+     "entries_minutes": {
+      "type": "integer",
+      "title": "Entries Minutes"
+     },
+     "closing_balance_minutes": {
+      "type": "integer",
+      "title": "Closing Balance Minutes"
+     },
+     "absences": {
+      "type": "integer",
+      "title": "Absences"
+     },
+     "incomplete_days": {
+      "type": "integer",
+      "title": "Incomplete Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "employee_id",
+     "name",
+     "registration_number",
+     "status",
+     "opening_balance_minutes",
+     "planned_minutes",
+     "worked_minutes",
+     "overtime_minutes",
+     "missing_minutes",
+     "period_balance_minutes",
+     "entries_minutes",
+     "closing_balance_minutes",
+     "absences",
+     "incomplete_days"
+    ],
+    "title": "HourBankSummaryItem"
+   },
+   "LoginRequest": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "LoginRequest"
+   },
+   "Page_AdjustmentOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AdjustmentOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[AdjustmentOut]"
+   },
+   "Page_AdminOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AdminOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[AdminOut]"
+   },
+   "Page_AuditEntryOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AuditEntryOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[AuditEntryOut]"
+   },
+   "Page_AuditLogOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AuditLogOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[AuditLogOut]"
+   },
+   "Page_EmployeeOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/EmployeeOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[EmployeeOut]"
+   },
+   "Page_HourBankSummaryItem_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/HourBankSummaryItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[HourBankSummaryItem]"
+   },
+   "Page_TimeRecordOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/TimeRecordOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "page",
+     "page_size",
+     "total"
+    ],
+    "title": "Page[TimeRecordOut]"
+   },
+   "PingOut": {
+    "properties": {
+     "device": {
+      "type": "string",
+      "title": "Device"
+     },
+     "server_time": {
+      "type": "string",
+      "title": "Server Time"
+     }
+    },
+    "type": "object",
+    "required": [
+     "device",
+     "server_time"
+    ],
+    "title": "PingOut"
+   },
+   "PunchOut": {
+    "properties": {
+     "type": {
+      "type": "string",
+      "enum": [
+       "ENTRY",
+       "LUNCH_EXIT",
+       "LUNCH_RETURN",
+       "EXIT"
+      ],
+      "title": "Type"
+     },
+     "at": {
+      "type": "string",
+      "title": "At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "type",
+     "at"
+    ],
+    "title": "PunchOut"
+   },
+   "ScheduleCreate": {
+    "properties": {
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/ScheduleDayIn"
+      },
+      "type": "array",
+      "maxItems": 7,
+      "minItems": 1,
+      "title": "Days"
+     },
+     "valid_from": {
+      "type": "string",
+      "format": "date",
+      "title": "Valid From"
+     }
+    },
+    "type": "object",
+    "required": [
+     "days",
+     "valid_from"
+    ],
+    "title": "ScheduleCreate"
+   },
+   "ScheduleDayIn": {
+    "properties": {
+     "weekday": {
+      "type": "integer",
+      "maximum": 6.0,
+      "minimum": 0.0,
+      "title": "Weekday",
+      "description": "0 = segunda … 6 = domingo"
+     },
+     "start_time": {
+      "type": "string",
+      "format": "time",
+      "title": "Start Time",
+      "description": "Entrada prevista, ex.: 08:00"
+     },
+     "end_time": {
+      "type": "string",
+      "format": "time",
+      "title": "End Time",
+      "description": "Saída prevista, ex.: 16:00 (menor que a entrada = dia seguinte)"
+     },
+     "lunch_minutes": {
+      "type": "integer",
+      "maximum": 960.0,
+      "minimum": 0.0,
+      "title": "Lunch Minutes",
+      "description": "Duração do almoço",
+      "default": 60
+     }
+    },
+    "type": "object",
+    "required": [
+     "weekday",
+     "start_time",
+     "end_time"
+    ],
+    "title": "ScheduleDayIn"
+   },
+   "ScheduleDayOut": {
+    "properties": {
+     "weekday": {
+      "type": "integer",
+      "title": "Weekday"
+     },
+     "start_time": {
+      "type": "string",
+      "format": "time",
+      "title": "Start Time"
+     },
+     "end_time": {
+      "type": "string",
+      "format": "time",
+      "title": "End Time"
+     },
+     "lunch_minutes": {
+      "type": "integer",
+      "title": "Lunch Minutes"
+     },
+     "planned_minutes": {
+      "type": "integer",
+      "title": "Planned Minutes",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "required": [
+     "weekday",
+     "start_time",
+     "end_time",
+     "lunch_minutes"
+    ],
+    "title": "ScheduleDayOut"
+   },
+   "ScheduleDaysIn": {
+    "properties": {
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/ScheduleDayIn"
+      },
+      "type": "array",
+      "maxItems": 7,
+      "minItems": 1,
+      "title": "Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "days"
+    ],
+    "title": "ScheduleDaysIn",
+    "description": "Horário fixo. Aceita a forma simples ou dia a dia.\n\nForma simples (mesmo horário em vários dias):\n    {\"start_time\": \"08:00\", \"end_time\": \"16:00\", \"lunch_minutes\": 60,\n     \"weekdays\": [\"segunda\", \"terça\", \"quarta\", \"quinta\", \"sexta\", \"sábado\"]}\nDia a dia:\n    {\"days\": [{\"weekday\": 0, \"start_time\": \"08:00\", \"end_time\": \"16:00\"}, ...]}"
+   },
+   "ScheduleOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "valid_from": {
+      "type": "string",
+      "format": "date",
+      "title": "Valid From"
+     },
+     "valid_to": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valid To"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/ScheduleDayOut"
+      },
+      "type": "array",
+      "title": "Days"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "valid_from",
+     "valid_to",
+     "days",
+     "created_at"
+    ],
+    "title": "ScheduleOut"
+   },
+   "TimeRecordDetail": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "employee_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employee Name"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "ENTRY",
+       "LUNCH_EXIT",
+       "LUNCH_RETURN",
+       "EXIT"
+      ],
+      "title": "Type"
+     },
+     "recorded_at": {
+      "type": "string",
+      "title": "Recorded At"
+     },
+     "workday_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Workday Date"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "KIOSK",
+       "ADJUSTMENT"
+      ],
+      "title": "Source"
+     },
+     "device_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Id"
+     },
+     "face_match_score": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Face Match Score"
+     },
+     "voided_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Voided At"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "adjustments": {
+      "items": {
+       "$ref": "#/components/schemas/AdjustmentOut"
+      },
+      "type": "array",
+      "title": "Adjustments"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "employee_id",
+     "type",
+     "recorded_at",
+     "workday_date",
+     "source",
+     "device_id",
+     "face_match_score",
+     "voided_at",
+     "created_at",
+     "adjustments"
+    ],
+    "title": "TimeRecordDetail"
+   },
+   "TimeRecordOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "employee_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employee Name"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "ENTRY",
+       "LUNCH_EXIT",
+       "LUNCH_RETURN",
+       "EXIT"
+      ],
+      "title": "Type"
+     },
+     "recorded_at": {
+      "type": "string",
+      "title": "Recorded At"
+     },
+     "workday_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Workday Date"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "KIOSK",
+       "ADJUSTMENT"
+      ],
+      "title": "Source"
+     },
+     "device_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Id"
+     },
+     "face_match_score": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Face Match Score"
+     },
+     "voided_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Voided At"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "employee_id",
+     "type",
+     "recorded_at",
+     "workday_date",
+     "source",
+     "device_id",
+     "face_match_score",
+     "voided_at",
+     "created_at"
+    ],
+    "title": "TimeRecordOut"
+   },
+   "TokenResponse": {
+    "properties": {
+     "access_token": {
+      "type": "string",
+      "title": "Access Token"
+     },
+     "token_type": {
+      "type": "string",
+      "title": "Token Type",
+      "default": "bearer"
+     },
+     "expires_in": {
+      "type": "integer",
+      "title": "Expires In"
+     },
+     "admin": {
+      "$ref": "#/components/schemas/AdminOut"
+     }
+    },
+    "type": "object",
+    "required": [
+     "access_token",
+     "expires_in",
+     "admin"
+    ],
+    "title": "TokenResponse"
+   },
+   "Totals": {
+    "properties": {
+     "planned_minutes": {
+      "type": "integer",
+      "title": "Planned Minutes"
+     },
+     "worked_minutes": {
+      "type": "integer",
+      "title": "Worked Minutes"
+     },
+     "late_minutes": {
+      "type": "integer",
+      "title": "Late Minutes"
+     },
+     "early_leave_minutes": {
+      "type": "integer",
+      "title": "Early Leave Minutes"
+     },
+     "missing_minutes": {
+      "type": "integer",
+      "title": "Missing Minutes"
+     },
+     "overtime_minutes": {
+      "type": "integer",
+      "title": "Overtime Minutes"
+     },
+     "night_minutes": {
+      "type": "integer",
+      "title": "Night Minutes"
+     },
+     "balance_minutes": {
+      "type": "integer",
+      "title": "Balance Minutes"
+     },
+     "absences": {
+      "type": "integer",
+      "title": "Absences"
+     },
+     "incomplete_days": {
+      "type": "integer",
+      "title": "Incomplete Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "planned_minutes",
+     "worked_minutes",
+     "late_minutes",
+     "early_leave_minutes",
+     "missing_minutes",
+     "overtime_minutes",
+     "night_minutes",
+     "balance_minutes",
+     "absences",
+     "incomplete_days"
+    ],
+    "title": "Totals"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "VoidRecordAdjustment": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "const": "VOID",
+      "title": "Kind"
+     },
+     "record_id": {
+      "type": "integer",
+      "title": "Record Id"
+     },
+     "reason": {
+      "type": "string",
+      "maxLength": 1000,
+      "minLength": 10,
+      "title": "Reason",
+      "description": "Justificativa"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "record_id",
+     "reason"
+    ],
+    "title": "VoidRecordAdjustment"
+   },
+   "WorkdaysOut": {
+    "properties": {
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "date_from": {
+      "type": "string",
+      "format": "date",
+      "title": "Date From"
+     },
+     "date_to": {
+      "type": "string",
+      "format": "date",
+      "title": "Date To"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/DayOut"
+      },
+      "type": "array",
+      "title": "Days"
+     },
+     "totals": {
+      "$ref": "#/components/schemas/Totals"
+     }
+    },
+    "type": "object",
+    "required": [
+     "employee_id",
+     "date_from",
+     "date_to",
+     "days",
+     "totals"
+    ],
+    "title": "WorkdaysOut"
+   }
+  }
+ },
+ "tags": [
+  {
+   "name": "autenticação",
+   "description": "Login, renovação e saída do administrador."
+  },
+  {
+   "name": "administradores",
+   "description": "Únicos usuários com senha."
+  },
+  {
+   "name": "funcionários",
+   "description": "Cadastro, horário fixo (dias, entrada, saída, almoço)."
+  },
+  {
+   "name": "registros de ponto",
+   "description": "Histórico de batidas e ajustes do administrador."
+  },
+  {
+   "name": "cálculo e banco de horas",
+   "description": "Resultado diário, saldos e lançamentos."
+  },
+  {
+   "name": "feriados",
+   "description": "Feriados fixos e recorrentes."
+  },
+  {
+   "name": "dispositivos",
+   "description": "Terminais de ponto autorizados."
+  },
+  {
+   "name": "configurações",
+   "description": "Tolerâncias e parâmetros da empresa."
+  },
+  {
+   "name": "auditoria",
+   "description": "Trilha de ações relevantes (somente leitura)."
+  },
+  {
+   "name": "kiosk",
+   "description": "Endpoints usados pelo terminal de ponto."
+  },
+  {
+   "name": "saúde",
+   "description": "Verificações para o orquestrador."
+  }
+ ]
+}

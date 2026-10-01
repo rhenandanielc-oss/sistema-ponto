@@ -29,6 +29,14 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
 
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8080:80"
+
   # Testes contra um PostgreSQL descartável: docker compose run --rm tests
   tests:
     build:

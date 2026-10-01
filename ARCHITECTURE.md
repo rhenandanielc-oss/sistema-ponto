@@ -2,9 +2,8 @@
 
 # Arquitetura — Sistema de Ponto Eletrônico
 
-> **Status:** backend implementado nas Fases 1–3 (autenticação, administradores, funcionários com horário, batidas,
-> ajustes, motor de cálculo, feriados, banco de horas, terminais, configurações, auditoria, limites de requisição).
-> Frontend (Fase 4) e biometria/kiosk (Fase 5) ainda não implementados.
+> **Status:** backend (Fases 1–3) e painel do administrador (Fase 4) implementados.
+> Kiosk com reconhecimento facial (Fase 5) e preparação para produção (Fase 6) ainda não implementados.
 
 ---
 
@@ -102,13 +101,24 @@ O kiosk é a mesma SPA na rota `/kiosk`, autenticada com **credencial de disposi
 | `/admin` | Administrador | Feriados, dispositivos (kiosks), administradores, configurações, auditoria |
 
 A rota `/jornadas` prevista no `MASTER-PROMPT.md` foi incorporada a `/funcionarios`: o horário fixo é informado
-no cadastro do funcionário (decisão do responsável, 2026-10-01).
+no cadastro do funcionário (decisão do responsável, 2026-10-01). `/jornadas` redireciona para `/funcionarios`.
+Detalhes do funcionário em `/funcionarios/:id`; banco de horas de um funcionário em `/banco-de-horas/:id`.
+
+### 3.2 Implementação (Fase 4)
+
+* `src/api/client.ts`: `fetch` com o token em memória; em 401 tenta **uma** renovação pelo cookie de refresh
+  (renovações simultâneas são compartilhadas) e repete a requisição; se falhar, volta ao login.
+* `src/api/schema.d.ts`: tipos gerados do OpenAPI do backend (`npm run gen:api`), evitando divergência manual.
+* `src/lib/auth.tsx`: sessão do administrador; ao abrir a página, a sessão é recuperada pelo cookie.
+* Formatação de datas lê o texto que a API devolve (já no fuso da empresa), sem conversão pelo fuso do navegador.
+* Produção: `frontend/Dockerfile` gera o build e o serve por **nginx**, que encaminha `/api` ao backend
+  (mesma origem para o cookie) e envia CSP e cabeçalhos de segurança.
 
 ---
 
 ## 4. Organização do repositório
 
-`backend/` existe desde a Fase 1; `frontend/` e `app/biometrics/` são planejados.
+`backend/` existe desde a Fase 1 e `frontend/` desde a Fase 4; `app/biometrics/` e `src/kiosk/` são planejados (Fase 5).
 
 ```
 sistema-ponto/
