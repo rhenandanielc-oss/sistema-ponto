@@ -2,9 +2,8 @@
 
 # Plano de Testes
 
-> **Status:** Fases 1 e 2 implementadas — C01–C24, R01–R18, A01–A10 e §6 cobertos em `backend/tests/` (165 testes).
-> A11–A13 e §7 dependem do kiosk (Fase 5).
-> Cada fase registra os resultados em `PROJECT-STATE.md`.
+> **Status:** Fases 1, 2 e 3 implementadas — C01–C24, R01–R18, A01–A10, §6 e testes da API (auditoria, resumo,
+> limites, cabeçalhos, OpenAPI, fluxo ponta a ponta) em `backend/tests/` (179 testes). A11–A13 e §7: Fase 5.
 
 ---
 

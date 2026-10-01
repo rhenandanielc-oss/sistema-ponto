@@ -3,7 +3,8 @@
 # Segurança
 
 > **Status:** autenticação do administrador implementada na Fase 1 (§3, §6 parcial, §7, §8 para os eventos existentes).
-> Pendentes: limitação de taxa (Fase 3), dispositivos (Fase 2), kiosk/biometria (Fase 5), revisão final (Fase 6).
+> Fase 2: dispositivos. Fase 3: limitação de taxa, cabeçalhos de segurança, limite de corpo, auditoria consultável.
+> Pendentes: kiosk/biometria (Fase 5), revisão final e permissões de banco (Fase 6).
 
 ---
 
@@ -78,10 +79,13 @@ Só o refresh token vai por cookie (`SameSite=Strict`, caminho `/auth`); as dema
 
 * HTTPS obrigatório em produção (HSTS no proxy). A câmera do kiosk também exige HTTPS.
 * CORS restrito à origem do frontend.
-* Limitação de taxa em login e endpoints do kiosk.
-* Tamanho máximo de corpo: 1 MB.
+* Limitação de taxa em login, refresh e endpoints do kiosk (`app/core/rate_limit.py`; limites em `API.md`).
+  O limitador é em memória, por processo: com vários workers o limite efetivo se multiplica, e atrás de proxy
+  o uvicorn precisa de `--proxy-headers` para enxergar o IP real (revisar na Fase 6).
+* Tamanho máximo de corpo: 1 MB (`413 PAYLOAD_TOO_LARGE`), checado pelo `Content-Length`.
 * Erros sem stack trace nem SQL (formato em `API.md`).
-* Cabeçalhos de segurança e CSP no frontend.
+* Cabeçalhos de segurança em toda resposta da API (`nosniff`, `X-Frame-Options: DENY`, `no-referrer`, `no-store`);
+  CSP no frontend (Fase 4).
 * Consultas somente via ORM/parâmetros.
 
 ---

@@ -199,3 +199,20 @@ class HourBankOut(WorkdaysOut):
     entries: list[HourBankEntryOut] = Field(description="Lançamentos manuais no período")
     entries_minutes: int
     closing_balance_minutes: int = Field(description="Saldo acumulado até date_to")
+
+
+class HourBankSummaryItem(BaseModel):
+    employee_id: int
+    name: str
+    registration_number: str
+    status: Literal["ACTIVE", "INACTIVE"]
+    opening_balance_minutes: int
+    planned_minutes: int
+    worked_minutes: int
+    overtime_minutes: int
+    missing_minutes: int
+    period_balance_minutes: int = Field(description="Saldo dos dias do período (sem lançamentos)")
+    entries_minutes: int
+    closing_balance_minutes: int
+    absences: int
+    incomplete_days: int

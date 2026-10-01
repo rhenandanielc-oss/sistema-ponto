@@ -2,8 +2,8 @@
 
 # API REST — v1
 
-> **Status:** endpoints das Fases 1 e 2 **implementados** (todos os marcados com 1 ou 2 abaixo).
-> Os demais serão implementados nas Fases 3 e 5. O OpenAPI gerado pelo FastAPI
+> **Status:** endpoints das Fases 1, 2 e 3 **implementados**. Faltam os da Fase 5 (identificação facial e biometria).
+> O OpenAPI gerado pelo FastAPI
 > (`/api/v1/openapi.json`, UI em `/api/docs`) é a referência detalhada dos campos.
 
 ---
@@ -43,6 +43,7 @@ Parâmetros por recurso. Períodos: `date_from`, `date_to`, **inclusivos**.
 | HTTP | Códigos |
 |---|---|
 | 400 | `BAD_REQUEST` |
+| 413 | `PAYLOAD_TOO_LARGE` (corpo acima de 1 MB) |
 | 401 | `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `IDENTIFICATION_REQUIRED` |
 | 403 | `FORBIDDEN`, `DEVICE_NOT_AUTHORIZED` |
 | 404 | `NOT_FOUND`, `EMPLOYEE_NOT_FOUND` |
@@ -53,6 +54,19 @@ Parâmetros por recurso. Períodos: `date_from`, `date_to`, **inclusivos**.
 | 500 | `INTERNAL_ERROR` |
 
 `FACE_NOT_RECOGNIZED` (404) é devolvido por `/kiosk/identify` quando ninguém corresponde.
+
+---
+
+### Limites de requisição
+
+| Rota | Limite por IP | Resposta ao exceder |
+|---|---|---|
+| `POST /auth/login` | 20 por minuto | 429 `RATE_LIMITED` + cabeçalho `Retry-After` |
+| `POST /auth/refresh` | 60 por minuto | idem |
+| `/kiosk/*` | 120 por minuto (tokens inválidos também contam) | idem |
+
+Toda resposta traz `X-Request-ID`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: no-referrer` e `Cache-Control: no-store`.
 
 ---
 
@@ -112,12 +126,12 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | GET | `/employees/{id}/workdays?date_from&date_to` | Resultado diário (`BUSINESS-RULES.md` §5) | 2 |
 | GET | `/employees/{id}/hour-bank?date_from&date_to` | Saldo anterior, dias, totais, saldo final | 2 |
 | GET / POST | `/employees/{id}/hour-bank/entries` | Lançamentos manuais | 2 |
-| GET | `/hour-bank/summary?date_from&date_to` | Saldo de todos os funcionários (paginado) | 3 |
+| GET | `/hour-bank/summary?date_from&date_to&q&status` | Saldo de todos os funcionários no período, ordenado por nome (paginado) | 3 |
 
 ### Auditoria, dispositivos e configurações
 | Método | Rota | Fase |
 |---|---|---|
-| GET | `/audit-logs` (filtros: `entity_type`, `entity_id`, `action`, `date_from`, `date_to`) | 3 |
+| GET | `/audit-logs` (filtros: `entity_type`, `entity_id`, `action` exata ou prefixo terminado em `.` — ex.: `employee.` —, `actor_admin_id`, `date_from`, `date_to`; ordenação `occurred_at`) | 3 |
 | GET / POST | `/devices` (POST devolve o token **uma vez**) | 2 |
 | POST | `/devices/{id}/activate`, `/devices/{id}/deactivate`, `/devices/{id}/rotate-token` | 2 |
 | GET / PATCH | `/settings` (tolerâncias, intervalo mínimo entre batidas, turno máximo, janela de entrada antecipada, período noturno, tempo da tela do kiosk) | 2 |

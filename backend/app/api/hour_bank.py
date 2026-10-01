@@ -1,15 +1,17 @@
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import Actor, DbSession, get_current_admin
+from app.api.deps import Actor, DbSession, PageParams, get_current_admin
 from app.calculation.workday import DayResult
+from app.schemas.common import Page
 from app.schemas.timekeeping import (
     DayOut,
     HourBankEntryIn,
     HourBankEntryOut,
     HourBankOut,
+    HourBankSummaryItem,
     PunchOut,
     Totals,
     WorkdaysOut,
@@ -91,3 +93,51 @@ def add_entry(
     return HourBankEntryOut.model_validate(
         hour_bank_service.add_entry(db, employee_id, data, actor)
     )
+
+
+summary_router = APIRouter(
+    prefix="/hour-bank",
+    tags=["cálculo e banco de horas"],
+    dependencies=[Depends(get_current_admin)],
+)
+
+
+@summary_router.get("/summary", response_model=Page[HourBankSummaryItem])
+def hour_bank_summary(
+    date_from: DateFrom,
+    date_to: DateTo,
+    db: DbSession,
+    pagination: PageParams,
+    q: Annotated[str | None, Query(max_length=100, description="Nome ou matrícula")] = None,
+    status: Literal["ACTIVE", "INACTIVE"] | None = None,
+) -> Page[HourBankSummaryItem]:
+    """Saldo do banco de horas de todos os funcionários no período, ordenado por nome."""
+    rows, total = hour_bank_service.summary(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        q=q,
+        status=status,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+    items = [
+        HourBankSummaryItem(
+            employee_id=e.id,
+            name=e.name,
+            registration_number=e.registration_number,
+            status=e.status,
+            opening_balance_minutes=b.opening_balance_minutes,
+            planned_minutes=b.totals.planned_minutes,
+            worked_minutes=b.totals.worked_minutes,
+            overtime_minutes=b.totals.overtime_minutes,
+            missing_minutes=b.totals.missing_minutes,
+            period_balance_minutes=b.totals.balance_minutes,
+            entries_minutes=b.entries_minutes,
+            closing_balance_minutes=b.closing_balance_minutes,
+            absences=b.totals.absences,
+            incomplete_days=b.totals.incomplete_days,
+        )
+        for e, b in rows
+    ]
+    return Page(items=items, page=pagination.page, page_size=pagination.page_size, total=total)

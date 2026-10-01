@@ -3,6 +3,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -188,3 +189,21 @@ def add_entry(
     )
     db.commit()
     return entry
+
+
+def summary(
+    db: Session,
+    *,
+    date_from: date,
+    date_to: date,
+    q: str | None,
+    status: Literal["ACTIVE", "INACTIVE"] | None,
+    page: int,
+    page_size: int,
+) -> tuple[list[tuple[Employee, HourBank]], int]:
+    """Banco de horas de todos os funcionários no período (paginado por funcionário)."""
+    validate_period(date_from, date_to)
+    employees, total = employee_service.list_employees(
+        db, q=q, status=status, sort="name", page=page, page_size=page_size
+    )
+    return [(e, hour_bank(db, e.id, date_from, date_to)) for e in employees], total

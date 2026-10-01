@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Response
+from fastapi import APIRouter, Cookie, Depends, Response
 
 from app.api.deps import CurrentAdmin, DbSession
 from app.core.config import get_settings
+from app.core.rate_limit import rate_limit
 from app.schemas.auth import AdminOut, LoginRequest, TokenResponse
 from app.services import auth_service
 
@@ -36,12 +37,20 @@ def _token_response(response: Response, session: auth_service.AuthSession) -> To
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit("login", limit=20))],
+)
 def login(data: LoginRequest, response: Response, db: DbSession) -> TokenResponse:
     return _token_response(response, auth_service.login(db, data.email, data.password))
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit("refresh", limit=60))],
+)
 def refresh(
     response: Response,
     db: DbSession,

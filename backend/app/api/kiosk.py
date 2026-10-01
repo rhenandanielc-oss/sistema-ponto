@@ -1,11 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.api.deps import CurrentDevice
 from app.core.clock import now_utc
+from app.core.rate_limit import rate_limit
 from app.schemas.common import LocalDatetime
 
-router = APIRouter(prefix="/kiosk", tags=["kiosk"])
+# O limite vem antes da autenticação: tokens inválidos também contam.
+router = APIRouter(
+    prefix="/kiosk", tags=["kiosk"], dependencies=[Depends(rate_limit("kiosk", limit=120))]
+)
 
 
 class PingOut(BaseModel):

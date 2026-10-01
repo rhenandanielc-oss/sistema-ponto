@@ -12,13 +12,13 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Status:** EM ANDAMENTO
 
-**Fase atual:** Fase 2 — Registros e cálculo (CONCLUÍDA) → próxima: Fase 3 — API completa
+**Fase atual:** Fase 3 — API completa (CONCLUÍDA) → próxima: Fase 4 — Frontend
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: implement time records, workday calculation and hour bank` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: complete API (audit, hour bank summary, rate limits)` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Iniciar a Fase 3 — auditoria consultável, resumo de banco de horas de todos, limitação de taxa, revisão do OpenAPI.
+**Próxima ação:** Iniciar a Fase 4 — frontend (React + TypeScript + Vite + Tailwind): login, funcionários, histórico, banco de horas, administração.
 
 ---
 
@@ -133,27 +133,32 @@ duas conexões), banco de horas via API, feriados, terminais e configurações.
 
 # Fase 3 — API
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Objetivos
 
-* [ ] autenticação
-* [ ] funcionários
-* [ ] horário fixo dos funcionários
-* [ ] registros
-* [ ] histórico
-* [ ] cálculos
-* [ ] banco de horas
-* [ ] administradores
-* [ ] kiosk (identificação, batida, consulta do banco de horas)
-* [ ] auditoria
-* [ ] feriados
-* [ ] filtros
-* [ ] paginação
-* [ ] ordenação
-* [ ] tratamento de erros
-* [ ] OpenAPI
-* [ ] testes de integração
+* [x] autenticação, administradores, funcionários, horário fixo (Fase 1)
+* [x] registros, histórico, cálculos, banco de horas, feriados, terminais, configurações (Fase 2)
+* [x] cadastro do horário com dias por nome ("segunda", "sáb"…), horário fixo e almoço; dia extra = hora extra
+* [x] auditoria consultável (`GET /audit-logs`: entidade, ação exata ou por prefixo, administrador, período, ordenação)
+* [x] resumo do banco de horas de todos (`GET /hour-bank/summary`)
+* [x] filtros, paginação e ordenação em todas as listagens
+* [x] tratamento de erros padronizado (inclui 413 e 429)
+* [x] limitação de taxa (login, refresh, kiosk), cabeçalhos de segurança, limite de 1 MB no corpo
+* [x] OpenAPI com descrição e tags documentadas (teste garante que toda rota tem tag declarada)
+* [x] testes de integração, incluindo fluxo ponta a ponta de uma semana de trabalho
+* [ ] kiosk: identificação, batida e consulta do banco de horas pelo rosto → **Fase 5** (depende da biometria)
+
+### Arquivos importantes
+
+* `backend/app/api/audit.py`, `backend/app/services/audit_query.py`
+* `backend/app/api/hour_bank.py` (`summary_router`), `backend/app/services/hour_bank_service.py` (`summary`)
+* `backend/app/core/rate_limit.py`, `backend/app/core/http_security.py`
+* `backend/tests/integration/test_phase3_api.py`, `test_end_to_end.py`
+
+### Testes
+
+179 testes passando.
 
 ---
 
@@ -331,7 +336,8 @@ Status:
 * [x] expiração de sessão (access 15 min, refresh 8 h, rotação e reuso)
 * [x] auditoria de login
 * [x] proteção de secrets (`.env` fora do Git; API recusa iniciar em produção com `JWT_SECRET` fraco)
-* [ ] limitação de taxa (Fase 3)
+* [x] limitação de taxa (Fase 3; em memória, por processo)
+* [x] cabeçalhos de segurança e limite de tamanho de corpo (Fase 3)
 * [ ] permissões de banco somente-inserção em `audit_logs` (Fase 6)
 * [ ] proteção de biometria
 * [ ] controle de acesso
@@ -367,7 +373,7 @@ Status:
 * [x] cálculos
 * [x] histórico
 * [x] banco de horas
-* [ ] auditoria (consulta via API — Fase 3; a gravação já é testada)
+* [x] auditoria
 
 ## Frontend
 
@@ -459,6 +465,8 @@ Possíveis categorias:
 * Horário fixo passou a ser entrada/saída + duração do almoço (almoço livre). Migration `0002`.
 * **Fase 2 concluída:** batidas, sequência, duplicidade, dia de jornada (inclui turno noturno), ajustes, histórico,
   motor de cálculo, feriados, banco de horas, terminais, configurações. Migration `0003`. 165 testes passando.
+* Cadastro aceita dias por nome. **Fase 3 concluída:** auditoria consultável, resumo do banco de horas, limites de
+  requisição, cabeçalhos de segurança, OpenAPI. A auditoria passou a usar o relógio do backend. 179 testes passando.
 
 Formato:
 
@@ -483,13 +491,11 @@ uv run alembic upgrade head / downgrade / upgrade / check   (0001 → 0003)
 Também executado na imagem Docker de testes (mesmos 165 testes).
 
 **Resultado:**
-165 passed; ruff e mypy (strict) sem erros; `alembic check` sem diferenças. Migration `0002` validada com dados
-existentes (almoço 12:00–13:00 → 60 min; 23:30–00:15 → 45 min; sem almoço → 0).
+179 passed; ruff e mypy (strict) sem erros; `alembic check` sem diferenças.
 
 **Falhas:**
-Encontradas e corrigidas durante a fase: horários devolvidos em UTC; um módulo de rotas escondido por variável
-de mesmo nome em `main.py`; campo `date` escondendo o tipo `date` em schema; FK circular na migration gerada.
-Um teste esperava saldo anterior errado (o código estava certo: faltas antes do período entram no saldo anterior).
+Fase 3: a auditoria gravava o horário do relógio do banco, não do backend (corrigido: `occurred_at = now_utc()`);
+um teste contava batidas errado (11 em vez de 15 — erro do teste).
 
 ---
 
@@ -520,9 +526,14 @@ Ao iniciar uma nova sessão:
 * Definição do responsável: horário fixo = entrada e saída (ex.: 08:00–16:00), almoço livre com duração prevista
   (padrão 60 min). Migration `0002`.
 * Executada a **Fase 2 — Registros e cálculo** (ver seção da fase).
-* Próxima sessão: **Fase 3 — API completa**: `GET /audit-logs` com filtros; `GET /hour-bank/summary` (saldo de
-  todos os funcionários); limitação de taxa no login e no kiosk; revisão do OpenAPI (descrições, exemplos);
-  testes de integração ponta a ponta. Depois, Fase 4 (frontend).
+* Definição do responsável: o administrador digita nome, dias de trabalho, horário fixo e tempo de almoço;
+  trabalho em dia fora da escala é hora extra. A API passou a aceitar os dias por nome.
+* Executada a **Fase 3 — API completa** (ver seção da fase).
+* Próxima sessão: **Fase 4 — Frontend** em `frontend/` (React + TypeScript + Vite + Tailwind + React Router +
+  React Query), interface em português: `/login`, `/funcionarios` (cadastro com nome, dias, horário fixo, almoço),
+  `/historico` (filtros hoje/semana/mês/período, ajustes), `/banco-de-horas` (resumo + detalhe diário),
+  `/admin` (feriados, terminais, administradores, configurações, auditoria). Tipos gerados do OpenAPI.
+  O `/kiosk` fica para a Fase 5.
 
 ---
 

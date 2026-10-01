@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     app_timezone: str = "America/Sao_Paulo"
     cors_origins: list[str] = []
+    rate_limit_enabled: bool = True
 
     @model_validator(mode="after")
     def _check_production_secrets(self) -> "Settings":

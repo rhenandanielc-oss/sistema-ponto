@@ -19,6 +19,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core import clock
+from app.core.rate_limit import limiter
 from app.db.base import Base
 from app.db.session import get_engine, get_sessionmaker
 from app.main import create_app
@@ -50,6 +51,7 @@ def database() -> Iterator[None]:
 def clean_tables() -> Iterator[None]:
     yield
     clock.freeze(None)
+    limiter.reset()
     tables = ", ".join(t.name for t in Base.metadata.sorted_tables)
     with get_engine().begin() as conn:
         conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))

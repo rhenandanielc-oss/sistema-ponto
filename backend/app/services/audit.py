@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from sqlalchemy.orm import Session
 
+from app.core.clock import now_utc
 from app.core.request_context import current_request
 from app.models import AuditLog
 
@@ -53,6 +54,7 @@ def record(
     req = current_request()
     db.add(
         AuditLog(
+            occurred_at=now_utc(),  # mesma fonte de tempo do restante do backend
             actor_type=actor.type,
             actor_admin_id=actor.admin_id,
             actor_device_id=actor.device_id,
