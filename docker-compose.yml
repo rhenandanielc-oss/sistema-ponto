@@ -1,0 +1,60 @@
+# Desenvolvimento local. Configuração de produção será revisada na Fase 6.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ponto}
+      POSTGRES_USER: ${POSTGRES_USER:-ponto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      target: base
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ponto}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ponto}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  # Testes contra um PostgreSQL descartável: docker compose run --rm tests
+  tests:
+    build:
+      context: ./backend
+      target: test
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://ponto:ponto@test-db:5432/ponto_test
+    depends_on:
+      test-db:
+        condition: service_healthy
+    profiles: ["test"]
+
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ponto_test
+      POSTGRES_USER: ponto
+      POSTGRES_PASSWORD: ponto
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ponto -d ponto_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    profiles: ["test"]
+
+volumes:
+  postgres-data:

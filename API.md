@@ -2,9 +2,9 @@
 
 # API REST — v1
 
-> **Status:** projetado na Fase 0 (revisado em 2026-10-01). Os endpoints serão implementados nas Fases 1–3 e 5
-> (coluna "Fase"). A partir da Fase 3 o OpenAPI gerado pelo FastAPI (`/api/v1/openapi.json`, UI em `/api/docs`)
-> é a referência detalhada; este arquivo mantém visão geral e convenções.
+> **Status:** endpoints da Fase 1 **implementados** (saúde, autenticação, administradores, funcionários e horários).
+> Os demais serão implementados nas Fases 2, 3 e 5 (coluna "Fase"). O OpenAPI gerado pelo FastAPI
+> (`/api/v1/openapi.json`, UI em `/api/docs`) é a referência detalhada dos campos.
 
 ---
 
@@ -57,7 +57,7 @@ Parâmetros por recurso. Períodos: `date_from`, `date_to`, **inclusivos**.
 
 ## 2. Endpoints — administrador
 
-Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refresh`.
+Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refresh|logout` (estes dois últimos usam o cookie de refresh).
 
 ### Saúde
 | Método | Rota | Fase |

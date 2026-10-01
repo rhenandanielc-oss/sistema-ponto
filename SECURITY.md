@@ -2,8 +2,8 @@
 
 # Segurança
 
-> **Status:** projetado na Fase 0 (revisado em 2026-10-01). Implementação: autenticação do administrador na Fase 1,
-> dispositivos na Fase 2, kiosk/biometria na Fase 5, revisão final na Fase 6.
+> **Status:** autenticação do administrador implementada na Fase 1 (§3, §6 parcial, §7, §8 para os eventos existentes).
+> Pendentes: limitação de taxa (Fase 3), dispositivos (Fase 2), kiosk/biometria (Fase 5), revisão final (Fase 6).
 
 ---
 

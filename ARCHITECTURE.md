@@ -2,8 +2,8 @@
 
 # Arquitetura — Sistema de Ponto Eletrônico
 
-> **Status:** projetado na Fase 0. Nada deste documento está implementado ainda.
-> Quando uma fase implementar uma parte, este documento deve ser ajustado para refletir o código real.
+> **Status:** backend base implementado na Fase 1 (configuração, banco, autenticação, administradores, funcionários).
+> Frontend, kiosk e biometria ainda não implementados. Ajuste este documento a cada fase.
 
 ---
 
@@ -105,14 +105,17 @@ no cadastro do funcionário (decisão do responsável, 2026-10-01).
 
 ---
 
-## 4. Organização do repositório (planejada)
+## 4. Organização do repositório
+
+`backend/` existe desde a Fase 1; `frontend/` e `app/biometrics/` são planejados.
 
 ```
 sistema-ponto/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # criação do app FastAPI, middlewares, routers
-│   │   ├── core/                # config, segurança (JWT, hash), erros, timezone
+│   │   ├── cli.py               # comandos de servidor (create-admin)
+│   │   ├── core/                # config, relógio, segurança (JWT, hash), erros, contexto da requisição
 │   │   ├── db/                  # engine, sessão, base declarativa
 │   │   ├── models/              # modelos SQLAlchemy
 │   │   ├── schemas/             # modelos Pydantic (entrada/saída)
@@ -123,7 +126,7 @@ sistema-ponto/
 │   ├── migrations/              # Alembic
 │   ├── tests/
 │   │   ├── unit/                # motor de cálculo, regras puras
-│   │   └── integration/         # API + PostgreSQL real (contêiner)
+│   │   └── integration/         # API + PostgreSQL real
 │   ├── pyproject.toml
 │   └── Dockerfile
 ├── frontend/
@@ -158,7 +161,8 @@ api (routers)  →  services  →  models / db
 Decisão crítica para um sistema de ponto:
 
 * Todo instante é gravado como `timestamptz` (UTC no banco).
-* O **horário oficial** do registro é `now()` do servidor no momento da transação; o cliente não envia horário.
+* O **horário oficial** do registro é o relógio do servidor (`app/core/clock.py`, única fonte de "agora" do backend);
+  o cliente não envia horário.
 * A empresa tem um **fuso de referência** configurável (`APP_TIMEZONE`, padrão `America/Sao_Paulo`).
   Datas de jornada, "hoje", "semana", "mês", feriados e horários de escala são interpretados nesse fuso.
 * O servidor deve manter o relógio sincronizado por NTP (requisito de deploy, Fase 6).

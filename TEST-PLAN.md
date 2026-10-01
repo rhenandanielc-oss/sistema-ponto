@@ -2,8 +2,8 @@
 
 # Plano de Testes
 
-> **Status:** planejado na Fase 0 (revisado em 2026-10-01). Nenhum teste existe ainda. Cada fase deve implementar os testes
-> listados para ela e registrar os resultados em `PROJECT-STATE.md`.
+> **Status:** Fase 1 implementada — A01–A10 e §6 cobertos em `backend/tests/` (81 testes). Demais casos nas fases seguintes.
+> Cada fase registra os resultados em `PROJECT-STATE.md`.
 
 ---
 
@@ -23,7 +23,8 @@ Regras:
 * O motor de cálculo recebe tempo e dados como parâmetros ⇒ testes unitários **sem banco e sem relógio real**.
 * Integração usa um banco descartável; nunca SQLite (as restrições `EXCLUDE`/índices parciais são do PostgreSQL).
 * Nenhuma imagem facial real é versionada (o `.gitignore` já bloqueia as pastas usuais).
-* Testes devem rodar com um único comando (`docker compose run --rm backend pytest` — definido na Fase 1).
+* Comando único: `docker compose --profile test run --rm tests` (sobe um PostgreSQL descartável).
+  Localmente: `cd backend && TEST_DATABASE_URL=... uv run pytest`.
 * Lint e tipagem (`ruff`, `mypy`, `tsc`) fazem parte da validação de cada fase.
 
 ---

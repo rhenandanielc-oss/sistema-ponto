@@ -2,8 +2,7 @@
 
 # Modelo de Dados — PostgreSQL 16
 
-> **Status:** projetado na Fase 0 (revisado em 2026-10-01). As tabelas serão criadas por migrations Alembic a partir
-> da Fase 1 (núcleo) e Fase 2 (registros, feriados, banco de horas). Biometria entra na Fase 5.
+> **Status:** tabelas da §3 **implementadas** na Fase 1 (migration `0001`). §4 entra na Fase 2 e §5 na Fase 5.
 > Este documento deve ser atualizado a cada migration.
 
 ---
