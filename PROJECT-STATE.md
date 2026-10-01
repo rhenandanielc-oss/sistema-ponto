@@ -16,7 +16,7 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: payday and payroll hours per employee` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: payable hours (fixed + overtime - missing)` (branch `claude/oi-xu1bph`; ver `git log`)
 
 **Próxima ação:** Iniciar a Fase 5 — reconhecimento facial e terminal de ponto (kiosk).
 
@@ -307,6 +307,8 @@ estáveis no Vite e também contra o build servido pelo nginx com CSP). Backend:
    inclusive em horas decimais; **o administrador multiplica pelo valor da hora**. Nenhum valor em dinheiro é
    guardado. Página `/pagamento`, endpoints `/payroll`, migration `0004`. Ciclo assumido pelo Claude Code —
    o responsável pode pedir outro corte (ex.: fechar alguns dias antes do pagamento).
+8. *(2026-10-01)* **Horas a pagar = horas fixas (salário) + extras − faltantes**, mostradas na página Pagamento e
+   na ficha do funcionário (`payable_*` na API). Continua sendo só horas; o administrador multiplica pelo valor.
 6. *(2026-10-01)* O horário fixo é **só entrada e saída** (ex.: João, 08:00 – 16:00). **O almoço é livre**: o funcionário
    sai e volta quando quiser e o sistema não recusa almoço fora de hora. O cadastro guarda a **duração prevista do
    almoço** (padrão 60 min, ajustável, pode ser 0), descontada da carga: 08:00–16:00 ⇒ 7 h. Migration `0002`.
@@ -499,7 +501,7 @@ Possíveis categorias:
   motor de cálculo, feriados, banco de horas, terminais, configurações. Migration `0003`. 165 testes passando.
 * Cadastro aceita dias por nome. **Fase 3 concluída:** auditoria consultável, resumo do banco de horas, limites de
   requisição, cabeçalhos de segurança, OpenAPI. A auditoria passou a usar o relógio do backend. 179 testes passando.
-* Dia do pagamento e horas por ciclo de pagamento (`/pagamento`); migration `0004`. 200 testes no backend.
+* Dia do pagamento e horas por ciclo de pagamento (`/pagamento`); migration `0004`. 201 testes no backend.
 * **Fase 4 concluída:** painel web do administrador (React). Testes de navegador acharam e corrigiram: CSP
   descartada pelo nginx (`add_header` em `location`) e um teste instável (corrigido no teste).
 
@@ -529,7 +531,7 @@ E2E_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_e2e npm r
 ```
 
 **Resultado:**
-Backend: 200 passed; ruff, mypy (strict). Frontend: eslint, tsc, 12 testes Vitest, build, 2 testes E2E
+Backend: 201 passed; ruff, mypy (strict). Frontend: eslint, tsc, 12 testes Vitest, build, 2 testes E2E
 (Playwright/Chromium) estáveis em 6 execuções; E2E também contra nginx + build de produção.
 
 **Falhas:**

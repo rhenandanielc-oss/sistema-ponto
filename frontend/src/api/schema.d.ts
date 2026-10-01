@@ -1285,7 +1285,10 @@ export interface components {
              * @description Horas trabalhadas em decimal (7h30 = 7.5)
              */
             worked_hours: number;
-            /** Planned Minutes */
+            /**
+             * Planned Minutes
+             * @description Horas fixas (salário): carga prevista no ciclo
+             */
             planned_minutes: number;
             /** Planned Hours */
             planned_hours: number;
@@ -1299,6 +1302,16 @@ export interface components {
             missing_hours: number;
             /** Balance Minutes */
             balance_minutes: number;
+            /**
+             * Payable Minutes
+             * @description Horas fixas + extras − faltantes
+             */
+            payable_minutes: number;
+            /**
+             * Payable Hours
+             * @description Horas a pagar em decimal (multiplicar pelo valor da hora)
+             */
+            payable_hours: number;
             /** Absences */
             absences: number;
             /**

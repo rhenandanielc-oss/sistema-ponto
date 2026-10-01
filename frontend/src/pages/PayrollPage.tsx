@@ -63,8 +63,9 @@ export function PayrollPage() {
           />
         </div>
         <p className="mb-4 text-sm text-slate-500">
-          Cada funcionário tem o seu ciclo: do dia seguinte ao pagamento anterior até o dia do pagamento. As horas
-          decimais (ex.: 7h30 = 7,50) servem para multiplicar pelo valor da hora.
+          Cada funcionário tem o seu ciclo: do dia seguinte ao pagamento anterior até o dia do pagamento.{" "}
+          <strong>Horas a pagar = horas fixas (salário) + extras − faltantes.</strong> Multiplique as horas a pagar
+          pelo valor da hora (as horas estão em decimal: 7h30 = 7,50).
         </p>
         <ErrorMessage error={query.error} />
         {query.isLoading ? (
@@ -78,9 +79,11 @@ export function PayrollPage() {
                     <th>Funcionário</th>
                     <th>Pagamento</th>
                     <th>Período</th>
-                    <th>Horas trabalhadas</th>
-                    <th>Extras</th>
-                    <th>Faltantes</th>
+                    <th>Horas fixas</th>
+                    <th>+ Extras</th>
+                    <th>− Faltantes</th>
+                    <th>= Horas a pagar</th>
+                    <th>Trabalhadas</th>
                     <th>Faltas</th>
                     <th />
                   </tr>
@@ -96,12 +99,14 @@ export function PayrollPage() {
                       <td className="text-slate-600">
                         {formatDate(p.period_start)} a {formatDate(p.period_end)}
                       </td>
-                      <td className="tabular-nums">
-                        <span className="font-semibold">{formatDecimalHours(p.worked_hours)} h</span>
-                        <span className="ml-2 text-xs text-slate-500">({formatMinutes(p.worked_minutes)})</span>
-                      </td>
+                      <td className="tabular-nums">{formatDecimalHours(p.planned_hours)} h</td>
                       <td className="tabular-nums text-green-700">{formatDecimalHours(p.overtime_hours)} h</td>
                       <td className="tabular-nums text-red-700">{formatDecimalHours(p.missing_hours)} h</td>
+                      <td className="tabular-nums" data-testid="payable">
+                        <span className="font-semibold">{formatDecimalHours(p.payable_hours)} h</span>
+                        <span className="ml-1 text-xs text-slate-500">({formatMinutes(p.payable_minutes)})</span>
+                      </td>
+                      <td className="tabular-nums text-slate-600">{formatDecimalHours(p.worked_hours)} h</td>
                       <td>{p.absences}</td>
                       <td className="space-x-2">
                         {p.incomplete_days > 0 && (

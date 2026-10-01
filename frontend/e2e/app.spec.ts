@@ -106,7 +106,7 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await page.getByRole("link", { name: "Pagamento" }).click();
   await expect(page.getByRole("heading", { name: "Pagamento" })).toBeVisible();
   const payRow = page.locator("tr", { hasText: "João da Silva" });
-  await expect(payRow).toContainText(/\d+,\d{2} h/);
+  await expect(payRow.getByTestId("payable")).toContainText(/\d+,\d{2} h/);
   await payRow.getByRole("link", { name: "Detalhe" }).click();
   await expect(page.getByRole("heading", { name: /Banco de horas — João da Silva/ })).toBeVisible();
   await expect(page.getByLabel("Data inicial")).toBeVisible(); // período do ciclo já aplicado

@@ -37,19 +37,25 @@ class PayrollOut(BaseModel):
     closed: bool = Field(description="false = ciclo em andamento; as horas ainda podem mudar")
     worked_minutes: int
     worked_hours: float = Field(description="Horas trabalhadas em decimal (7h30 = 7.5)")
-    planned_minutes: int
+    planned_minutes: int = Field(description="Horas fixas (salário): carga prevista no ciclo")
     planned_hours: float
     overtime_minutes: int
     overtime_hours: float
     missing_minutes: int
     missing_hours: float
     balance_minutes: int
+    payable_minutes: int = Field(description="Horas fixas + extras − faltantes")
+    payable_hours: float = Field(
+        description="Horas a pagar em decimal (multiplicar pelo valor da hora)"
+    )
     absences: int
     incomplete_days: int = Field(description="Dias com batida faltando: corrija antes de pagar")
 
 
 def _out(p: payroll_service.Payroll) -> PayrollOut:
     t = p.totals
+    # Horas a pagar = horas fixas (salário) + extras − faltantes (BUSINESS-RULES.md §11).
+    payable = t.planned_minutes + t.overtime_minutes - t.missing_minutes
     return PayrollOut(
         employee_id=p.employee.id,
         name=p.employee.name,
@@ -68,6 +74,8 @@ def _out(p: payroll_service.Payroll) -> PayrollOut:
         missing_minutes=t.missing_minutes,
         missing_hours=_hours(t.missing_minutes),
         balance_minutes=t.balance_minutes,
+        payable_minutes=payable,
+        payable_hours=_hours(payable),
         absences=t.absences,
         incomplete_days=t.incomplete_days,
     )

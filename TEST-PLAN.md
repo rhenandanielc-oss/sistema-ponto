@@ -2,7 +2,7 @@
 
 # Plano de Testes
 
-> **Status:** Fases 1–4 implementadas. Backend: C01–C24, R01–R18, A01–A10, §6, testes da API e do pagamento (200 testes).
+> **Status:** Fases 1–4 implementadas. Backend: C01–C24, R01–R18, A01–A10, §6, testes da API e do pagamento (201 testes).
 > Frontend: Vitest (12 testes) e Playwright E2E (login, cadastro, histórico, ajustes, banco de horas, administração).
 > A11–A13 e §7: Fase 5.
 
@@ -167,4 +167,5 @@ Salvo indicação, os exemplos usam:
 | P07 | Dia incompleto no ciclo | contado em `incomplete_days` |
 | P08 | Resumo | cada funcionário no seu próprio ciclo (dias 5 e 20) |
 | P09 | Validação | `payday` obrigatório, 1–31; mês inválido ⇒ 422 |
+| P10 | Horas a pagar | fixas + extras − faltantes: 32 + 1,5 − 8,5 = 25 h; variação dentro da tolerância não desconta (32 + 2 − 0 = 34 h) |
 

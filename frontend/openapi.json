@@ -4928,7 +4928,8 @@
      },
      "planned_minutes": {
       "type": "integer",
-      "title": "Planned Minutes"
+      "title": "Planned Minutes",
+      "description": "Horas fixas (salário): carga prevista no ciclo"
      },
      "planned_hours": {
       "type": "number",
@@ -4953,6 +4954,16 @@
      "balance_minutes": {
       "type": "integer",
       "title": "Balance Minutes"
+     },
+     "payable_minutes": {
+      "type": "integer",
+      "title": "Payable Minutes",
+      "description": "Horas fixas + extras − faltantes"
+     },
+     "payable_hours": {
+      "type": "number",
+      "title": "Payable Hours",
+      "description": "Horas a pagar em decimal (multiplicar pelo valor da hora)"
      },
      "absences": {
       "type": "integer",
@@ -4983,6 +4994,8 @@
      "missing_minutes",
      "missing_hours",
      "balance_minutes",
+     "payable_minutes",
+     "payable_hours",
      "absences",
      "incomplete_days"
     ],

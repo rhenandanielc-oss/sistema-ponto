@@ -258,7 +258,15 @@ Nenhum valor em dinheiro é guardado ou calculado.
 * Se o dia não existir no mês (ex.: 31 em fevereiro), vale o **último dia do mês**.
 * Para cada ciclo o sistema informa: horas trabalhadas, previstas, extras, faltantes, faltas e dias incompletos,
   em horas e minutos e em **horas decimais** (7h30 = 7,50), para multiplicar pelo valor da hora.
-* "Horas trabalhadas" é a soma do tempo efetivamente trabalhado (batidas), inclusive em folgas e feriados.
+* **Horas a pagar = horas fixas (salário) + horas extras − horas faltantes** (decisão do responsável, 2026-10-01):
+  * **horas fixas** = carga prevista do horário fixo em todos os dias de trabalho do ciclo (sem feriados, folgas
+    e dias fora do contrato);
+  * **horas extras** e **horas faltantes** = as mesmas do banco de horas (com a tolerância da CLT; faltas entram
+    como faltantes; dias incompletos ou em andamento ainda não entram).
+  * Ex.: 32 h fixas + 1,5 h extras − 8,5 h faltantes = **25 h a pagar**; o administrador multiplica pelo valor da hora.
+  * Com o ciclo **em andamento**, as horas fixas já são as do ciclo inteiro (o salário), e as faltantes só contam
+    os dias já passados; o valor só é definitivo quando o ciclo fecha.
+* "Horas trabalhadas" (informativo) é a soma do tempo efetivamente batido, inclusive em folgas e feriados.
 * Dias incompletos (batida faltando) são sinalizados: devem ser corrigidos antes de pagar.
 * Ciclo ainda não encerrado aparece como "em andamento" (as horas ainda podem mudar).
 * Dias antes da admissão não contam (`NOT_EMPLOYED`).

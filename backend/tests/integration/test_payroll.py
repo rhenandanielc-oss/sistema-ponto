@@ -35,6 +35,27 @@ def test_hours_of_payment_cycle(client: TestClient, auth_headers, db: Session) -
     assert p["missing_hours"] == 8.5  # falta (8 h) + atraso (0,5 h)
     assert p["absences"] == 1
     assert p["incomplete_days"] == 0
+    # Horas fixas (32 h) + extras (1,5 h) − faltantes (8,5 h) = 25 h a pagar.
+    assert (p["payable_minutes"], p["payable_hours"]) == (1500, 25.0)
+
+
+def test_payable_hours_respect_tolerance(client: TestClient, auth_headers, db: Session) -> None:
+    """Variação dentro da tolerância não desconta: paga as horas fixas cheias."""
+    employee = create_employee(client, auth_headers, payday=5)
+    full_day(db, employee, 1, "08:04", "12:00", "13:00", "17:03")  # 7h59 trabalhadas
+    full_day(db, employee, 2, "08:00", "12:00", "13:00", "17:00")
+    full_day(db, employee, 3, "08:00", "12:00", "13:00", "17:00")
+    full_day(db, employee, 4, "08:00", "12:00", "13:00", "19:00")  # +2 h
+    clock.freeze(local(10, "12:00"))
+    p = client.get(
+        f"/api/v1/employees/{employee}/payroll",
+        params={"payment_month": "2026-09"},
+        headers=auth_headers,
+    ).json()
+    assert p["worked_minutes"] == 479 + 480 + 480 + 600
+    assert p["planned_hours"] == 32.0
+    assert (p["overtime_hours"], p["missing_hours"]) == (2.0, 0.0)
+    assert p["payable_hours"] == 34.0  # 32 + 2 − 0
 
 
 def test_current_cycle_by_reference_date(client: TestClient, auth_headers, db: Session) -> None:

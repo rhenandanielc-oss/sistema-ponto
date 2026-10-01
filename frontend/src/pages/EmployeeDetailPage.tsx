@@ -111,8 +111,12 @@ export function EmployeeDetailPage() {
               <p className="text-xs text-indigo-800">
                 Ciclo atual: {formatDate(payroll.data.period_start)} a {formatDate(payroll.data.period_end)}
               </p>
+              <p className="text-xs text-indigo-800">
+                {formatDecimalHours(payroll.data.planned_hours)} h fixas + {formatDecimalHours(payroll.data.overtime_hours)} h
+                extras − {formatDecimalHours(payroll.data.missing_hours)} h faltantes
+              </p>
               <p className="text-lg font-semibold text-indigo-900">
-                {formatMinutes(payroll.data.worked_minutes)} trabalhadas ({formatDecimalHours(payroll.data.worked_hours)} h)
+                {formatDecimalHours(payroll.data.payable_hours)} h a pagar
               </p>
               <Link className="text-xs text-indigo-700 hover:underline" to="/pagamento">
                 Ver pagamento
