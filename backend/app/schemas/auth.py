@@ -1,8 +1,6 @@
-from datetime import datetime
-
 from pydantic import BaseModel, EmailStr
 
-from app.schemas.common import ORMModel
+from app.schemas.common import LocalDatetime, ORMModel
 
 
 class LoginRequest(BaseModel):
@@ -15,7 +13,7 @@ class AdminOut(ORMModel):
     email: str
     name: str
     is_active: bool
-    last_login_at: datetime | None
+    last_login_at: LocalDatetime | None
 
 
 class TokenResponse(BaseModel):

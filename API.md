@@ -2,8 +2,8 @@
 
 # API REST — v1
 
-> **Status:** endpoints da Fase 1 **implementados** (saúde, autenticação, administradores, funcionários e horários).
-> Os demais serão implementados nas Fases 2, 3 e 5 (coluna "Fase"). O OpenAPI gerado pelo FastAPI
+> **Status:** endpoints das Fases 1 e 2 **implementados** (todos os marcados com 1 ou 2 abaixo).
+> Os demais serão implementados nas Fases 3 e 5. O OpenAPI gerado pelo FastAPI
 > (`/api/v1/openapi.json`, UI em `/api/docs`) é a referência detalhada dos campos.
 
 ---
@@ -11,7 +11,8 @@
 ## 1. Convenções
 
 * Base: `/api/v1`. JSON UTF-8. Campos em `snake_case`.
-* Instantes ISO 8601 com fuso (`2026-09-01T08:02:13-03:00`). Datas `YYYY-MM-DD` (fuso da empresa).
+* Instantes ISO 8601 com fuso. Respostas sempre no fuso da empresa (`2026-09-01T08:02:13-03:00`);
+  entradas precisam informar o fuso (horário sem fuso é recusado). Datas `YYYY-MM-DD` (fuso da empresa).
 * Durações em **minutos**.
 * Autenticação:
   * administrador: `Authorization: Bearer <access_token>`;
@@ -103,7 +104,7 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | GET | `/time-records` | Histórico. Filtros: `employee_id`, `date_from`, `date_to`, `type`, `source`, `device_id`, `include_voided`. Ordenação: `recorded_at` | 2 |
 | GET | `/time-records/{id}` | Detalhe com ajustes | 2 |
 | POST | `/time-records/adjustments` | `{kind: ADD, employee_id, type, recorded_at, reason}` ou `{kind: VOID, record_id, reason}` | 2 |
-| GET | `/time-records/adjustments` | Lista de ajustes | 3 |
+| GET | `/time-records/adjustments` | Lista de ajustes (filtro `employee_id`) | 2 |
 
 ### Cálculo e banco de horas
 | Método | Rota | Descrição | Fase |
@@ -118,8 +119,8 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 |---|---|---|
 | GET | `/audit-logs` (filtros: `entity_type`, `entity_id`, `action`, `date_from`, `date_to`) | 3 |
 | GET / POST | `/devices` (POST devolve o token **uma vez**) | 2 |
-| POST | `/devices/{id}/deactivate`, `/devices/{id}/rotate-token` | 2 |
-| GET / PATCH | `/settings` | 2 |
+| POST | `/devices/{id}/activate`, `/devices/{id}/deactivate`, `/devices/{id}/rotate-token` | 2 |
+| GET / PATCH | `/settings` (tolerâncias, intervalo mínimo entre batidas, turno máximo, janela de entrada antecipada, período noturno, tempo da tela do kiosk) | 2 |
 
 ### Biometria
 | Método | Rota | Fase |

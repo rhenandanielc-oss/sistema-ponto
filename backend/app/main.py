@@ -1,7 +1,18 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admins, auth, employees, health
+from app.api import (
+    admins,
+    auth,
+    devices,
+    employees,
+    health,
+    holidays,
+    hour_bank,
+    kiosk,
+    time_records,
+)
+from app.api import settings as settings_api
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.request_context import request_context_middleware
@@ -30,7 +41,18 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
 
     api = APIRouter(prefix=API_PREFIX)
-    for module in (health, auth, admins, employees):
+    for module in (
+        health,
+        auth,
+        admins,
+        employees,
+        hour_bank,
+        time_records,
+        holidays,
+        devices,
+        settings_api,
+        kiosk,
+    ):
         api.include_router(module.router)
     app.include_router(api)
     return app

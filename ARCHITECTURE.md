@@ -2,7 +2,8 @@
 
 # Arquitetura — Sistema de Ponto Eletrônico
 
-> **Status:** backend base implementado na Fase 1 (configuração, banco, autenticação, administradores, funcionários).
+> **Status:** backend implementado nas Fases 1 e 2 (autenticação, administradores, funcionários com horário, batidas,
+> ajustes, motor de cálculo, feriados, banco de horas, terminais, configurações).
 > Frontend, kiosk e biometria ainda não implementados. Ajuste este documento a cada fase.
 
 ---

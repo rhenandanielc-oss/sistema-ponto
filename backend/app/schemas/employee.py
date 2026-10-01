@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, time
+from datetime import date, time
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -12,7 +12,7 @@ from app.calculation.schedule import (
     planned_minutes,
     validate_week,
 )
-from app.schemas.common import ORMModel
+from app.schemas.common import LocalDatetime, ORMModel
 
 DEFAULT_WEEKDAYS = [0, 1, 2, 3, 4]  # segunda a sexta
 
@@ -131,7 +131,7 @@ class ScheduleOut(ORMModel):
     valid_from: date
     valid_to: date | None
     days: list[ScheduleDayOut]
-    created_at: datetime
+    created_at: LocalDatetime
 
 
 class EmployeeCreate(BaseModel):
@@ -168,8 +168,8 @@ class EmployeeOut(ORMModel):
     hire_date: date
     termination_date: date | None
     status: Literal["ACTIVE", "INACTIVE"]
-    created_at: datetime
-    updated_at: datetime
+    created_at: LocalDatetime
+    updated_at: LocalDatetime
 
 
 class EmployeeDetail(EmployeeOut):
@@ -178,7 +178,7 @@ class EmployeeDetail(EmployeeOut):
 
 class AuditEntryOut(ORMModel):
     id: int
-    occurred_at: datetime
+    occurred_at: LocalDatetime
     action: str
     actor_type: str
     actor_admin_id: int | None

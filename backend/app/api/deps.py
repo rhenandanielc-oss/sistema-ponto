@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.errors import AppError
 from app.core.security import TokenExpired, TokenInvalid, decode_access_token
 from app.db.session import get_db
-from app.models import Admin
-from app.services import audit
+from app.models import Admin, Device
+from app.services import audit, device_service
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -64,3 +64,19 @@ class Pagination:
 
 
 PageParams = Annotated[Pagination, Depends()]
+
+
+def get_current_device(
+    db: DbSession, authorization: Annotated[str | None, Header()] = None
+) -> Device:
+    """Exige o token de um terminal ativo (Authorization: Device <token>). Só para /kiosk/*."""
+    scheme, _, token = (authorization or "").partition(" ")
+    device = (
+        device_service.authenticate(db, token) if scheme.lower() == "device" and token else None
+    )
+    if device is None:
+        raise AppError(403, "DEVICE_NOT_AUTHORIZED", "Terminal não autorizado.")
+    return device
+
+
+CurrentDevice = Annotated[Device, Depends(get_current_device)]

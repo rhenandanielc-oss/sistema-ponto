@@ -20,8 +20,7 @@ class AuditLog(Base):
     )
     actor_type: Mapped[str] = mapped_column(Text, nullable=False)
     actor_admin_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("admins.id"))
-    # A FK para devices é criada na Fase 2, junto com a tabela de dispositivos.
-    actor_device_id: Mapped[int | None] = mapped_column(BigInteger)
+    actor_device_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("devices.id"))
     actor_employee_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("employees.id"))
     action: Mapped[str] = mapped_column(Text, nullable=False)
     entity_type: Mapped[str | None] = mapped_column(Text)

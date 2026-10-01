@@ -2,7 +2,8 @@
 
 # Modelo de Dados — PostgreSQL 16
 
-> **Status:** tabelas da §3 **implementadas** na Fase 1 (migration `0001`). §4 entra na Fase 2 e §5 na Fase 5.
+> **Status:** §3 **implementada** na Fase 1 (migrations `0001`, `0002`); §4 **implementada** na Fase 2 (migration `0003`).
+> §5 entra na Fase 5.
 > Este documento deve ser atualizado a cada migration.
 
 ---

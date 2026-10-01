@@ -12,13 +12,13 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Status:** EM ANDAMENTO
 
-**Fase atual:** Fase 1 — Backend base (CONCLUÍDA) → próxima: Fase 2 — Registros e cálculo
+**Fase atual:** Fase 2 — Registros e cálculo (CONCLUÍDA) → próxima: Fase 3 — API completa
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `docs: update project state after phase 1` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: implement time records, workday calculation and hour bank` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Iniciar a Fase 2 — registros de ponto, cálculo de jornada, feriados e banco de horas.
+**Próxima ação:** Iniciar a Fase 3 — auditoria consultável, resumo de banco de horas de todos, limitação de taxa, revisão do OpenAPI.
 
 ---
 
@@ -95,28 +95,39 @@ A11–A13 são do kiosk (Fase 5).
 
 # Fase 2 — Registros e cálculo
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Objetivos
 
-* [ ] registros ENTRY
-* [ ] registros LUNCH_EXIT
-* [ ] registros LUNCH_RETURN
-* [ ] registros EXIT
-* [ ] validação de sequência
-* [ ] prevenção de duplicidade
-* [ ] cálculo de jornada
-* [ ] horas extras
-* [ ] atrasos
-* [ ] faltas
-* [ ] banco de horas
-* [ ] feriados
-* [ ] finais de semana
-* [ ] turno noturno
+* [x] registros ENTRY, LUNCH_EXIT, LUNCH_RETURN, EXIT (horário oficial do servidor; serviço pronto para o kiosk da Fase 5)
+* [x] validação de sequência (máquina de estados; almoço livre em qualquer horário)
+* [x] prevenção de duplicidade (mesmo tipo no dia, batidas a menos de 2 min, índice único parcial, bloqueio por funcionário)
+* [x] cálculo de jornada (motor puro `app/calculation/workday.py`)
+* [x] horas extras, atrasos, saída antecipada, horas faltantes, tolerância CLT
+* [x] faltas, registros incompletos, dia em andamento, dias futuros
+* [x] banco de horas (saldo anterior, detalhamento diário, lançamentos manuais, saldo final)
+* [x] feriados (fixos e recorrentes)
+* [x] finais de semana / folgas trabalhadas
+* [x] turno noturno (dia de jornada pela entrada; minutos noturnos e hora reduzida)
+* [x] ajustes do administrador (incluir batida esquecida / anular batida errada, com justificativa e auditoria)
+* [x] histórico de batidas com filtros, paginação e ordenação
+* [x] terminais (kiosk): cadastro, token exibido uma vez, rotação, desativação, `GET /kiosk/ping`
+* [x] configurações da empresa (`GET/PATCH /settings`)
+
+### Arquivos importantes
+
+* `backend/app/calculation/records.py` — sequência e dia de jornada (puro)
+* `backend/app/calculation/workday.py` — motor de cálculo do dia (puro)
+* `backend/app/services/record_service.py` — batidas, ajustes, histórico
+* `backend/app/services/hour_bank_service.py` — cálculo por período e banco de horas
+* `backend/app/services/{holiday,device,settings}_service.py`
+* `backend/app/api/{time_records,hour_bank,holidays,devices,settings,kiosk}.py`
+* `backend/migrations/versions/0002_flexible_lunch.py`, `0003_phase_2_timekeeping.py`
 
 ### Testes
 
-Pendente.
+165 testes passando. Cobertura do `TEST-PLAN.md`: C01–C24 (+ C05b, C05c), R01–R18 (inclui concorrência real com
+duas conexões), banco de horas via API, feriados, terminais e configurações.
 
 ---
 
@@ -333,30 +344,30 @@ Status:
 
 ## Unitários
 
-* [ ] jornada normal
-* [ ] intervalo
-* [ ] atraso
-* [ ] saída antecipada
-* [ ] hora extra
-* [ ] falta
-* [ ] duplicidade
-* [ ] registro incompleto
-* [ ] jornada noturna
-* [ ] feriado
-* [ ] final de semana
-* [ ] banco de horas
-* [ ] período inclusivo
+* [x] jornada normal
+* [x] intervalo
+* [x] atraso
+* [x] saída antecipada
+* [x] hora extra
+* [x] falta
+* [x] duplicidade
+* [x] registro incompleto
+* [x] jornada noturna
+* [x] feriado
+* [x] final de semana
+* [x] banco de horas
+* [x] período inclusivo
 
 ## Integração
 
 * [x] autenticação
 * [x] funcionários
 * [x] horário fixo dos funcionários
-* [ ] registros
-* [ ] cálculos
-* [ ] histórico
-* [ ] banco de horas
-* [ ] auditoria
+* [x] registros
+* [x] cálculos
+* [x] histórico
+* [x] banco de horas
+* [ ] auditoria (consulta via API — Fase 3; a gravação já é testada)
 
 ## Frontend
 
@@ -374,6 +385,11 @@ Status:
 
 **Descrição:** "ana" aparecia depois de "Bruno" na listagem de funcionários.
 **Status:** corrigido na Fase 1 (ordenação por `lower(name)`), coberto por teste.
+
+### Horários devolvidos em UTC (corrigido)
+
+**Descrição:** a API devolvia instantes em UTC (`20:00Z`) em vez do fuso da empresa (`17:00-03:00`).
+**Status:** corrigido na Fase 2 (`LocalDatetime` em `app/schemas/common.py`), coberto por teste.
 
 ### Ambiente do Claude Code na nuvem: build Docker
 
@@ -440,6 +456,9 @@ Possíveis categorias:
 * Correção do responsável: o funcionário tem **horário fixo** (não carga horária solta), informado no cadastro.
 * **Fase 1 concluída:** backend base (FastAPI + PostgreSQL + Alembic), login do administrador, administradores,
   funcionários com horário fixo, auditoria, Docker. 81 testes passando.
+* Horário fixo passou a ser entrada/saída + duração do almoço (almoço livre). Migration `0002`.
+* **Fase 2 concluída:** batidas, sequência, duplicidade, dia de jornada (inclui turno noturno), ajustes, histórico,
+  motor de cálculo, feriados, banco de horas, terminais, configurações. Migration `0003`. 165 testes passando.
 
 Formato:
 
@@ -459,17 +478,18 @@ Formato:
 cd backend
 TEST_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_test uv run pytest -q
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
-uv run alembic upgrade head / downgrade base / upgrade head / check
+uv run alembic upgrade head / downgrade / upgrade / check   (0001 → 0003)
 ```
-Também executado dentro da imagem Docker (`target: test`): mesmos 81 testes.
-API iniciada pela imagem em modo produção: migrations aplicadas, `/health/ready` = ok, rota protegida = 401.
+Também executado na imagem Docker de testes (mesmos 165 testes).
 
 **Resultado:**
-81 passed; ruff e mypy (strict) sem erros; `alembic check` sem diferenças.
+165 passed; ruff e mypy (strict) sem erros; `alembic check` sem diferenças. Migration `0002` validada com dados
+existentes (almoço 12:00–13:00 → 60 min; 23:30–00:15 → 45 min; sem almoço → 0).
 
 **Falhas:**
-Duas falhas encontradas e corrigidas durante a fase: ordenação por nome sensível a maiúsculas; teste de rotas
-protegidas não enxergava as rotas na versão nova do FastAPI (passou a ler do OpenAPI).
+Encontradas e corrigidas durante a fase: horários devolvidos em UTC; um módulo de rotas escondido por variável
+de mesmo nome em `main.py`; campo `date` escondendo o tipo `date` em schema; FK circular na migration gerada.
+Um teste esperava saldo anterior errado (o código estava certo: faltas antes do período entram no saldo anterior).
 
 ---
 
@@ -497,13 +517,12 @@ Ao iniciar uma nova sessão:
 * Lidos `MASTER-PROMPT.md` e `PROJECT-STATE.md`; repositório sem código.
 * Executada a Fase 0 (documentação de arquitetura) e revisada com as definições do responsável.
 * Executada a **Fase 1 — Backend base** (ver seção da fase).
-* Próxima sessão: **Fase 2 — Registros e cálculo**:
-  migration com `devices`, `time_records`, `time_record_adjustments`, `holidays`, `hour_bank_entries` e FK de
-  `audit_logs.actor_device_id` (`DATABASE.md` §4); regras de sequência/duplicidade/dia de jornada
-  (`BUSINESS-RULES.md` §4); motor de cálculo puro em `app/calculation/` reutilizando `schedule.shift_offsets`
-  (§5–§7); feriados; banco de horas (§9); testes C01–C24 e R01–R18 do `TEST-PLAN.md`.
-  O registro pelo kiosk depende da biometria (Fase 5); na Fase 2 a criação de registros é exercitada pelo serviço
-  e pelos ajustes do administrador.
+* Definição do responsável: horário fixo = entrada e saída (ex.: 08:00–16:00), almoço livre com duração prevista
+  (padrão 60 min). Migration `0002`.
+* Executada a **Fase 2 — Registros e cálculo** (ver seção da fase).
+* Próxima sessão: **Fase 3 — API completa**: `GET /audit-logs` com filtros; `GET /hour-bank/summary` (saldo de
+  todos os funcionários); limitação de taxa no login e no kiosk; revisão do OpenAPI (descrições, exemplos);
+  testes de integração ponta a ponta. Depois, Fase 4 (frontend).
 
 ---
 

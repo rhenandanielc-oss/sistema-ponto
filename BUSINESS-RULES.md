@@ -2,7 +2,8 @@
 
 # Regras de Negócio — Sistema de Ponto
 
-> **Status:** projetado na Fase 0 (revisado em 2026-10-01 com as definições do responsável).
+> **Status:** §2–§10 **implementados** nas Fases 1 e 2 (`backend/app/calculation/`, `backend/app/services/`),
+> exceto a consulta pelo kiosk (§9.1, Fase 5). Revisado em 2026-10-01 com as definições do responsável.
 > As regras abaixo são a especificação que as Fases 1 e 2 devem implementar.
 > Valores marcados como **configurável** ficam em configuração da empresa (tabela `settings`), com o padrão indicado.
 
@@ -170,7 +171,7 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 
 * **Falta:** dia `WORKDAY` passado sem nenhum registro ⇒ `ABSENT`, `worked=0`, `balance=−planned`, entra no banco.
 * **Registro incompleto:** falta `EXIT`, ou `LUNCH_EXIT` sem `LUNCH_RETURN` ⇒ `INCOMPLETE`;
-  `worked` soma só os pares fechados; `counts_for_bank=false` até o administrador completar por ajuste.
+  `worked` soma só os pares fechados; saldo 0 e `counts_for_bank=false` até o administrador completar por ajuste.
 * **Dia em andamento:** turno aberto dentro de `max_shift_hours`, ou o dia de hoje ainda sem batidas ⇒ `IN_PROGRESS`,
   fora do banco.
 * **Dia futuro:** `FUTURE`, mostra a carga planejada, fora do banco.
