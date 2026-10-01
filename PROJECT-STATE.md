@@ -12,13 +12,13 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Status:** EM ANDAMENTO
 
-**Fase atual:** Fase 0 — Arquitetura (CONCLUÍDA) → próxima: Fase 1 — Backend base
+**Fase atual:** Fase 1 — Backend base (CONCLUÍDA) → próxima: Fase 2 — Registros e cálculo
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `docs: apply owner decisions to phase 0` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `docs: update project state after phase 1` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Iniciar a Fase 1 — Backend base.
+**Próxima ação:** Iniciar a Fase 2 — registros de ponto, cálculo de jornada, feriados e banco de horas.
 
 ---
 
@@ -61,23 +61,35 @@ Ver seção DECISÕES TÉCNICAS.
 
 # Fase 1 — Backend base
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Objetivos
 
-* [ ] PostgreSQL
-* [ ] Docker
-* [ ] migrations
-* [ ] modelos
-* [ ] administradores (único perfil com senha)
-* [ ] autenticação
-* [ ] autorização
-* [ ] funcionários
-* [ ] horário fixo no cadastro do funcionário
+* [x] PostgreSQL 16 (Docker Compose: `db` para desenvolvimento, `test-db` descartável para testes)
+* [x] Docker (`backend/Dockerfile` multi-stage: `base` = API, `test` = testes)
+* [x] migrations (Alembic, `0001` — inclui `EXCLUDE` contra vigências sobrepostas)
+* [x] modelos (`admins`, `refresh_tokens`, `employees`, `employee_schedules`, `employee_schedule_days`, `audit_logs`, `settings`)
+* [x] administradores (único perfil com senha; primeiro criado por `python -m app.cli create-admin`)
+* [x] autenticação (JWT 15 min + refresh rotacionado em cookie HttpOnly, detecção de reuso, bloqueio após 5 falhas)
+* [x] autorização (toda rota administrativa exige administrador ativo; teste automático cobre todas as rotas)
+* [x] funcionários (cadastro, edição, ativação/desativação, pesquisa, paginação, ordenação, histórico via auditoria)
+* [x] horário fixo no cadastro do funcionário (entrada, almoço, retorno, saída por dia da semana; vigência; carga diária calculada)
+
+### Arquivos importantes
+
+* `backend/app/main.py` — criação da aplicação
+* `backend/app/core/` — `config.py`, `clock.py` (única fonte de "agora"), `security.py`, `errors.py`, `request_context.py`
+* `backend/app/calculation/schedule.py` — validação do horário e carga planejada (puro; será usado pelo motor da Fase 2)
+* `backend/app/services/` — `auth_service.py`, `admin_service.py`, `employee_service.py`, `audit.py`
+* `backend/app/api/` — `auth.py`, `admins.py`, `employees.py`, `health.py`, `deps.py`
+* `backend/migrations/versions/0001_phase_1_base_schema.py`
+* `backend/tests/` — 81 testes (unitários + integração com PostgreSQL real)
+* `docker-compose.yml`, `.env.example`, `backend/README.md`
 
 ### Testes
 
-Pendente.
+81 testes passando (ver TESTES DA ÚLTIMA SESSÃO). Cobertura do `TEST-PLAN.md`: A01–A10 e §6 completos;
+A11–A13 são do kiosk (Fase 5).
 
 ---
 
@@ -298,13 +310,15 @@ Resumo:
 
 Status:
 
-* [ ] autenticação
-* [ ] autorização
-* [ ] proteção de rotas
-* [ ] hash de senha
-* [ ] expiração de sessão
-* [ ] auditoria de login
-* [ ] proteção de secrets
+* [x] autenticação (administrador)
+* [x] autorização
+* [x] proteção de rotas (teste percorre todas as rotas do OpenAPI)
+* [x] hash de senha (argon2id)
+* [x] expiração de sessão (access 15 min, refresh 8 h, rotação e reuso)
+* [x] auditoria de login
+* [x] proteção de secrets (`.env` fora do Git; API recusa iniciar em produção com `JWT_SECRET` fraco)
+* [ ] limitação de taxa (Fase 3)
+* [ ] permissões de banco somente-inserção em `audit_logs` (Fase 6)
 * [ ] proteção de biometria
 * [ ] controle de acesso
 * [ ] HTTPS
@@ -332,9 +346,9 @@ Status:
 
 ## Integração
 
-* [ ] autenticação
-* [ ] funcionários
-* [ ] horário fixo dos funcionários
+* [x] autenticação
+* [x] funcionários
+* [x] horário fixo dos funcionários
 * [ ] registros
 * [ ] cálculos
 * [ ] histórico
@@ -353,7 +367,17 @@ Status:
 
 # PROBLEMAS CONHECIDOS
 
-Nenhum problema registrado.
+### Ordenação por nome diferenciava maiúsculas (corrigido)
+
+**Descrição:** "ana" aparecia depois de "Bruno" na listagem de funcionários.
+**Status:** corrigido na Fase 1 (ordenação por `lower(name)`), coberto por teste.
+
+### Ambiente do Claude Code na nuvem: build Docker
+
+**Descrição:** neste ambiente o proxy de rede usa certificado próprio e bloqueia `ghcr.io`; o build da imagem só
+foi validado com uma cópia temporária do Dockerfile que instala esse certificado (não versionada).
+**Impacto:** nenhum fora deste ambiente. O Dockerfile do projeto instala o `uv` via PyPI.
+**Status:** sem ação necessária.
 
 Formato:
 
@@ -410,6 +434,9 @@ Possíveis categorias:
 * Resultado: arquitetura definida; 4 decisões pendentes listadas.
 * Revisão com as definições do responsável: perfis Administrador/Funcionário, kiosk só com escolha de batida,
   consulta do banco de horas pelo rosto, horário fixo no cadastro do funcionário; pontos de Portaria 671 e PIN descartados.
+* Correção do responsável: o funcionário tem **horário fixo** (não carga horária solta), informado no cadastro.
+* **Fase 1 concluída:** backend base (FastAPI + PostgreSQL + Alembic), login do administrador, administradores,
+  funcionários com horário fixo, auditoria, Docker. 81 testes passando.
 
 Formato:
 
@@ -425,13 +452,21 @@ Formato:
 # TESTES DA ÚLTIMA SESSÃO
 
 **Comando:**
-Nenhum (Fase 0 é só documentação).
+```
+cd backend
+TEST_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_test uv run pytest -q
+uv run ruff check . && uv run ruff format --check . && uv run mypy app
+uv run alembic upgrade head / downgrade base / upgrade head / check
+```
+Também executado dentro da imagem Docker (`target: test`): mesmos 81 testes.
+API iniciada pela imagem em modo produção: migrations aplicadas, `/health/ready` = ok, rota protegida = 401.
 
 **Resultado:**
-Não aplicável.
+81 passed; ruff e mypy (strict) sem erros; `alembic check` sem diferenças.
 
 **Falhas:**
-Nenhuma.
+Duas falhas encontradas e corrigidas durante a fase: ordenação por nome sensível a maiúsculas; teste de rotas
+protegidas não enxergava as rotas na versão nova do FastAPI (passou a ler do OpenAPI).
 
 ---
 
@@ -458,9 +493,14 @@ Ao iniciar uma nova sessão:
 
 * Lidos `MASTER-PROMPT.md` e `PROJECT-STATE.md`; repositório sem código.
 * Executada a Fase 0 (documentação de arquitetura) e revisada com as definições do responsável.
-* Próxima sessão: resolver/confirmar as DECISÕES PENDENTES e iniciar a **Fase 1 — Backend base**
-  (estrutura `backend/`, Docker Compose com PostgreSQL, Alembic, modelos da Fase 1 em `DATABASE.md` §3,
-  login do administrador, administradores, funcionários com horário fixo e testes A01–A10 e seção 6 do `TEST-PLAN.md`).
+* Executada a **Fase 1 — Backend base** (ver seção da fase).
+* Próxima sessão: **Fase 2 — Registros e cálculo**:
+  migration com `devices`, `time_records`, `time_record_adjustments`, `holidays`, `hour_bank_entries` e FK de
+  `audit_logs.actor_device_id` (`DATABASE.md` §4); regras de sequência/duplicidade/dia de jornada
+  (`BUSINESS-RULES.md` §4); motor de cálculo puro em `app/calculation/` reutilizando `schedule.shift_offsets`
+  (§5–§7); feriados; banco de horas (§9); testes C01–C24 e R01–R18 do `TEST-PLAN.md`.
+  O registro pelo kiosk depende da biometria (Fase 5); na Fase 2 a criação de registros é exercitada pelo serviço
+  e pelos ajustes do administrador.
 
 ---
 
