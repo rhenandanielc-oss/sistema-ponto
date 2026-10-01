@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import date
 
 from sqlalchemy import extract, select
@@ -52,8 +53,12 @@ def list_holidays(db: Session, date_from: date | None, date_to: date | None) -> 
 
 def holiday_dates(db: Session, date_from: date, date_to: date) -> set[date]:
     """Datas de feriado entre `date_from` e `date_to` (inclusive), expandindo os recorrentes."""
+    return expand(db.scalars(select(Holiday)).all(), date_from, date_to)
+
+
+def expand(holidays: Sequence[Holiday], date_from: date, date_to: date) -> set[date]:
     result: set[date] = set()
-    for h in db.scalars(select(Holiday)).all():
+    for h in holidays:
         if not h.recurring:
             if date_from <= h.date <= date_to:
                 result.add(h.date)

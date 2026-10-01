@@ -19,6 +19,7 @@ from app.api import settings as settings_api
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.http_security import security_middleware
+from app.core.logging import configure_logging
 from app.core.request_context import request_context_middleware
 
 API_PREFIX = "/api/v1"
@@ -63,13 +64,16 @@ TAGS = [
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    configure_logging(settings.log_format, settings.log_level)
+    # Em produção a documentação interativa fica desligada (o frontend usa tipos gerados).
+    docs = settings.environment != "production"
     app = FastAPI(
         title="Sistema de Ponto",
         version="0.3.0",
         description=API_DESCRIPTION,
         openapi_tags=TAGS,
-        openapi_url=f"{API_PREFIX}/openapi.json",
-        docs_url="/api/docs",
+        openapi_url=f"{API_PREFIX}/openapi.json" if docs else None,
+        docs_url="/api/docs" if docs else None,
         redoc_url=None,
     )
     if settings.cors_origins:

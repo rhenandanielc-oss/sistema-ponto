@@ -1,6 +1,7 @@
 """Cálculo por período e banco de horas (BUSINESS-RULES.md §5 e §9)."""
 
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Literal
@@ -9,10 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.calculation.records import Punch
-from app.calculation.workday import ABSENT, INCOMPLETE, DayInput, DayResult, calculate_day
+from app.calculation.workday import ABSENT, INCOMPLETE, DayInput, DayResult, Rules, calculate_day
 from app.core.clock import now_utc
 from app.core.errors import AppError
-from app.models import Employee, HourBankEntry, TimeRecord
+from app.models import Employee, Holiday, HourBankEntry, TimeRecord
 from app.schemas.timekeeping import HourBankEntryIn
 from app.services import audit, employee_service, holiday_service, settings_service
 from app.services.record_service import load_schedules
@@ -53,11 +54,33 @@ def validate_period(date_from: date, date_to: date) -> None:
         raise AppError(422, "VALIDATION_ERROR", f"O período máximo é de {MAX_PERIOD_DAYS} dias.")
 
 
-def _calculate(db: Session, employee: Employee, date_from: date, date_to: date) -> list[DayResult]:
+@dataclass(frozen=True)
+class CalcContext:
+    """Configurações e feriados carregados uma vez e reaproveitados por vários funcionários."""
+
+    rules: Rules
+    holidays: Sequence[Holiday]
+
+
+def load_context(db: Session) -> CalcContext:
+    return CalcContext(
+        rules=settings_service.rules(settings_service.load(db)),
+        holidays=db.scalars(select(Holiday)).all(),
+    )
+
+
+def _calculate(
+    db: Session,
+    employee: Employee,
+    date_from: date,
+    date_to: date,
+    ctx: CalcContext | None = None,
+) -> list[DayResult]:
     """Resultado diário de `date_from` a `date_to`, inclusive. Sem limite de período (interno)."""
-    rules = settings_service.rules(settings_service.load(db))
+    ctx = ctx or load_context(db)
+    rules = ctx.rules
     table = load_schedules(db, employee.id)
-    holidays = holiday_service.holiday_dates(db, date_from, date_to)
+    holidays = holiday_service.expand(ctx.holidays, date_from, date_to)
     punches: dict[date, list[Punch]] = defaultdict(list)
     for record in db.scalars(
         select(TimeRecord).where(
@@ -103,9 +126,15 @@ def _totals(days: list[DayResult]) -> Totals:
     )
 
 
-def period_totals(db: Session, employee: Employee, date_from: date, date_to: date) -> Totals:
+def period_totals(
+    db: Session,
+    employee: Employee,
+    date_from: date,
+    date_to: date,
+    ctx: CalcContext | None = None,
+) -> Totals:
     """Totais de um período, sem o limite de 366 dias (uso interno, ex.: ciclo de pagamento)."""
-    return _totals(_calculate(db, employee, date_from, date_to))
+    return _totals(_calculate(db, employee, date_from, date_to, ctx))
 
 
 def workdays(
@@ -117,20 +146,27 @@ def workdays(
     return days, _totals(days)
 
 
-def hour_bank(db: Session, employee_id: int, date_from: date, date_to: date) -> HourBank:
+def hour_bank(
+    db: Session,
+    employee_id: int,
+    date_from: date,
+    date_to: date,
+    *,
+    employee: Employee | None = None,
+    ctx: CalcContext | None = None,
+) -> HourBank:
     validate_period(date_from, date_to)
-    employee = employee_service.get(db, employee_id)
-    days = _calculate(db, employee, date_from, date_to)
+    employee = employee or employee_service.get(db, employee_id)
 
     # Saldo anterior: todos os dias desde a admissão até a véspera do período + lançamentos.
-    opening_days = (
-        _calculate(db, employee, employee.hire_date, date_from - timedelta(days=1))
-        if employee.hire_date < date_from
-        else []
-    )
+    # Um único cálculo cobre a admissão até o fim do período e é dividido na data inicial.
+    start = min(employee.hire_date, date_from)
+    all_days = _calculate(db, employee, start, date_to, ctx)
+    opening_days = [d for d in all_days if d.day < date_from]
+    days = [d for d in all_days if d.day >= date_from]
     all_entries = db.scalars(
         select(HourBankEntry)
-        .where(HourBankEntry.employee_id == employee_id, HourBankEntry.entry_date <= date_to)
+        .where(HourBankEntry.employee_id == employee.id, HourBankEntry.entry_date <= date_to)
         .order_by(HourBankEntry.entry_date, HourBankEntry.id)
     ).all()
     before = [e for e in all_entries if e.entry_date < date_from]
@@ -211,4 +247,7 @@ def summary(
     employees, total = employee_service.list_employees(
         db, q=q, status=status, sort="name", page=page, page_size=page_size
     )
-    return [(e, hour_bank(db, e.id, date_from, date_to)) for e in employees], total
+    ctx = load_context(db)
+    return [
+        (e, hour_bank(db, e.id, date_from, date_to, employee=e, ctx=ctx)) for e in employees
+    ], total

@@ -3,6 +3,7 @@
 Uso:
     python -m app.cli create-admin --email admin@empresa.com --name "Nome"
     python -m app.cli export-openapi > ../frontend/openapi.json
+    python -m app.cli maintenance          # limpeza diária (agendada em produção)
 
 A senha é pedida no terminal (não aparece no histórico do shell). Para automação, use
 `--password-stdin` e envie a senha pela entrada padrão.
@@ -61,6 +62,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     models.add_argument("--dir", default=None, help="Pasta de destino (padrão: FACE_MODELS_DIR)")
     sub.add_parser("purge-biometrics", help="Apaga de vez templates excluídos há mais de 30 dias")
+    sub.add_parser(
+        "maintenance",
+        help="Limpeza diária: expurgo da biometria excluída e de tokens vencidos",
+    )
     args = parser.parse_args(argv)
     if args.command == "create-admin":
         return create_admin(args.email, args.name, args.password_stdin)
@@ -70,6 +75,8 @@ def main(argv: list[str] | None = None) -> int:
         return download_models(args.dir)
     if args.command == "purge-biometrics":
         return purge_biometrics()
+    if args.command == "maintenance":
+        return maintenance()
     return 2
 
 
@@ -91,6 +98,19 @@ def purge_biometrics() -> int:
     with get_sessionmaker()() as db:
         removed = biometric_service.purge_deleted(db)
     print(f"{removed} template(s) apagado(s) definitivamente.")
+    return 0
+
+
+def maintenance() -> int:
+    from app.services import maintenance_service
+
+    with get_sessionmaker()() as db:
+        result = maintenance_service.run(db)
+    print(
+        f"Manutenção concluída: {result.biometric_templates} template(s), "
+        f"{result.kiosk_identifications} identificação(ões) do kiosk e "
+        f"{result.refresh_tokens} sessão(ões) vencida(s) apagadas."
+    )
     return 0
 
 

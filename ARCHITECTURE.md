@@ -2,8 +2,8 @@
 
 # Arquitetura — Sistema de Ponto Eletrônico
 
-> **Status:** Fases 1–5 implementadas: backend, painel do administrador, terminal de ponto com reconhecimento facial.
-> Preparação para produção (Fase 6) pendente. Instalação do terminal: `KIOSK.md`.
+> **Status:** Fases 1–6 concluídas: backend, painel do administrador, terminal com reconhecimento facial e produção.
+> Instalação do servidor: `DEPLOY.md`. Instalação do terminal: `KIOSK.md`.
 
 ---
 
@@ -27,9 +27,11 @@
                                                              └───────────────────────────┘
 ```
 
-Tudo roda em contêineres Docker, orquestrados por Docker Compose (desenvolvimento e produção simples).
-Um proxy reverso (Caddy ou Nginx — decidido na Fase 6) faz a terminação TLS e serve o frontend
-estático; o kiosk **exige HTTPS** porque navegadores só liberam a câmera em contexto seguro.
+Tudo roda em contêineres Docker, orquestrados por Docker Compose: `docker-compose.yml` (desenvolvimento) e
+`docker-compose.prod.yml` (produção). Em produção o **Caddy** faz a terminação TLS (Let's Encrypt ou CA interna) e
+encaminha ao nginx do frontend, que serve a SPA e repassa `/api` ao backend; o kiosk **exige HTTPS** porque
+navegadores só liberam a câmera em contexto seguro. Serviços auxiliares: `scheduler` (limpeza diária) e `backup`
+(`pg_dump` diário). Detalhes em `DEPLOY.md`.
 
 ---
 
@@ -56,7 +58,7 @@ estático; o kiosk **exige HTTPS** porque navegadores só liberam a câmera em c
 * **psycopg 3** (driver PostgreSQL);
 * **argon2-cffi** (hash de senha);
 * **PyJWT** (tokens de acesso);
-* **onnxruntime + OpenCV** (biometria, ver `BIOMETRICS.md`);
+* **OpenCV** (módulo DNN executa os modelos ONNX da biometria, ver `BIOMETRICS.md`);
 * **pytest** (testes), **ruff** (lint/format), **mypy** (tipagem).
 
 **Motivo:** a biometria é a parte de maior risco do projeto e precisa rodar no servidor
@@ -75,7 +77,7 @@ qualquer forma.
 
 ## 3. Frontend
 
-* React 18 + TypeScript + Vite;
+* React 19 + TypeScript + Vite;
 * Tailwind CSS;
 * React Router;
 * TanStack React Query (cache e estado de servidor);
@@ -126,7 +128,7 @@ sistema-ponto/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # criação do app FastAPI, middlewares, routers
-│   │   ├── cli.py               # comandos de servidor (create-admin)
+│   │   ├── cli.py               # comandos de servidor (create-admin, maintenance, download-models, ...)
 │   │   ├── core/                # config, relógio, segurança (JWT, hash), erros, contexto da requisição
 │   │   ├── db/                  # engine, sessão, base declarativa
 │   │   ├── models/              # modelos SQLAlchemy
@@ -147,7 +149,9 @@ sistema-ponto/
 │   │   └── kiosk/
 │   ├── package.json
 │   └── Dockerfile
-├── docker-compose.yml
+├── deploy/                      # Caddyfile, backup.sh, restore.sh (produção)
+├── docker-compose.yml           # desenvolvimento e testes
+├── docker-compose.prod.yml      # produção (DEPLOY.md)
 ├── .env.example
 └── *.md                         # documentação (este arquivo, DATABASE.md, ...)
 ```
@@ -203,11 +207,20 @@ Decisão crítica para um sistema de ponto:
 
 ---
 
-## 8. Observabilidade (detalhada na Fase 6)
+## 8. Observabilidade
 
-* Logs estruturados em JSON no stdout, com `request_id`.
-* Endpoints `GET /health/live` e `GET /health/ready` (este verifica o banco).
+* Logs no stdout (`app/core/logging.py`): JSON em produção (`LOG_FORMAT=json`), texto em desenvolvimento.
+  Cada requisição gera um evento `app.access` com método, caminho **sem query string**, status, duração, IP e
+  `request_id` (o mesmo devolvido em `X-Request-ID` e nos erros). Os logs do uvicorn usam o mesmo formato.
+* Endpoints `GET /health/live` e `GET /health/ready` (este verifica o banco), usados pelos healthchecks do Docker.
 * Nunca registrar em log: senhas, tokens, imagens, templates biométricos.
+
+## 8.1 Desempenho
+
+Resultados calculados sob demanda. Relatórios de vários funcionários carregam configurações e feriados uma vez e
+fazem um único cálculo por funcionário (admissão até o fim do período). Medições em `DEPLOY.md` §9.
+A API roda com um processo (limitador de taxa em memória); a inferência facial é CPU-bound e roda no pool de
+threads do FastAPI.
 
 ---
 
@@ -223,3 +236,5 @@ Decisão crítica para um sistema de ponto:
 | 2026-10-01 | Perfis: somente Administrador (senha) e Funcionário (rosto) | §6, `SECURITY.md` |
 | 2026-10-01 | Horário fixo por funcionário, informado no cadastro (com vigência); `/jornadas` incorporada a `/funcionarios` | §3.1, `BUSINESS-RULES.md` §3 |
 | 2026-10-01 | Funcionário consulta o próprio banco de horas no kiosk pelo rosto | `BUSINESS-RULES.md` §9.1 |
+| 2026-10-01 | Produção com Caddy (TLS automático), um processo uvicorn, limpeza e backup em contêineres próprios | §1, `DEPLOY.md` |
+| 2026-10-01 | Histórico imutável garantido por triggers no banco | `DATABASE.md`, `SECURITY.md` §8 |

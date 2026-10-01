@@ -1,5 +1,7 @@
 """Dados da requisição atual (id, IP, user agent), usados pela auditoria e pelos erros."""
 
+import logging
+import time
 import uuid
 from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
@@ -14,6 +16,8 @@ class RequestInfo:
     ip: str | None
     user_agent: str | None
 
+
+access_logger = logging.getLogger("app.access")
 
 _current: ContextVar[RequestInfo | None] = ContextVar("request_info", default=None)
 
@@ -36,8 +40,19 @@ async def request_context_middleware(
         user_agent=request.headers.get("user-agent"),
     )
     token = _current.set(info)
+    started = time.perf_counter()
     try:
         response = await call_next(request)
+        access_logger.info(
+            "request",
+            extra={
+                "method": request.method,
+                "path": request.url.path,  # sem query string
+                "status": response.status_code,
+                "duration_ms": round((time.perf_counter() - started) * 1000, 1),
+                "ip": info.ip,
+            },
+        )
     finally:
         _current.reset(token)
     response.headers["X-Request-ID"] = info.request_id

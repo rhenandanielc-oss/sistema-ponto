@@ -3,7 +3,7 @@
 # Terminal de ponto (kiosk)
 
 > **Status:** tela do terminal implementada na Fase 5 (`/kiosk`). Este documento descreve como preparar o
-> equipamento. A revisão final de produção (HTTPS, backup, deploy) é da Fase 6.
+> equipamento. Instalação do servidor (HTTPS, backup): `DEPLOY.md`.
 
 ---
 
@@ -27,7 +27,8 @@ Nenhuma foto é guardada: o quadro existe só durante a requisição.
 * Computador ou tablet com câmera frontal (720p ou melhor) e tela sensível ao toque (recomendado).
 * Navegador Chromium/Google Chrome atualizado.
 * Rede com acesso ao servidor do sistema.
-* **HTTPS obrigatório:** navegadores só liberam a câmera em páginas HTTPS (ou `localhost`).
+* **HTTPS obrigatório:** navegadores só liberam a câmera em páginas HTTPS (ou `localhost`). Se o servidor usa
+  certificado interno (`TLS_MODE=internal`), instale antes o certificado raiz no terminal (`DEPLOY.md` §3.1).
 * Local bem iluminado, sem luz forte atrás do funcionário, e visível (reduz tentativas de fraude com fotos).
 
 ---

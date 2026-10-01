@@ -3,7 +3,7 @@
 # Modelo de Dados — PostgreSQL 16
 
 > **Status:** §3 **implementada** (migrations `0001`, `0002`, `0004`); §4 **implementada** na Fase 2 (migration `0003`).
-> §5 **implementada** na Fase 5 (migration `0005`).
+> §5 **implementada** na Fase 5 (migration `0005`). §6 (imutabilidade) na Fase 6 (migration `0006`).
 > Este documento deve ser atualizado a cada migration.
 
 ---
@@ -127,7 +127,7 @@ almoço menor que o turno. Migration `0002` substituiu os antigos `lunch_start`/
 | before / after | jsonb | sem dados sensíveis (ver `SECURITY.md`) |
 | ip / user_agent / request_id | text | |
 
-Somente INSERT (o usuário de banco da aplicação não recebe `UPDATE`/`DELETE` nesta tabela — Fase 6).
+Somente INSERT: trigger recusa `UPDATE` e `DELETE` (migration `0006`, §6).
 Índices: `(entity_type, entity_id)`, `occurred_at`.
 
 ### settings
@@ -168,7 +168,7 @@ Alterações auditadas.
 Restrições:
 * **Duplicidade:** índice único parcial `(employee_id, workday_date, type) WHERE voided_at IS NULL`.
 * Índices: `(employee_id, recorded_at)`, `(workday_date)`.
-* A única alteração permitida é preencher `voided_*` (serviço de ajustes).
+* A única alteração permitida é preencher `voided_*` (serviço de ajustes) — garantido por trigger (§6).
 
 ### time_record_adjustments
 | Coluna | Tipo | Regras |
@@ -201,11 +201,12 @@ Restrições:
 | created_by_admin_id | FK admins | |
 | created_at | timestamptz | |
 
-Imutável: correção = novo lançamento compensatório.
+Imutável (trigger, §6): correção = novo lançamento compensatório.
 
 ### Resultados de cálculo
 **Decisão:** na v1 os resultados diários **não são persistidos** — são calculados sob demanda a partir dos registros.
-Se a performance exigir (Fase 6), adicionar cache `daily_summaries` invalidado por ajuste/feriado/horário.
+Medido na Fase 6 (`DEPLOY.md` §9): suficiente para centenas de funcionários. Para milhares, adicionar cache
+`daily_summaries` invalidado por ajuste/feriado/horário.
 
 ---
 
@@ -245,3 +246,19 @@ Token de identificação emitido após o reconhecimento facial.
 | expires_at | timestamptz | criação + 60 s |
 | used_at | timestamptz | preenchido quando uma batida consome o token |
 | created_at | timestamptz | |
+
+---
+
+## 6. Imutabilidade do histórico — Fase 6
+
+Migration `0006`. Triggers `BEFORE UPDATE OR DELETE` levantam erro (`insufficient_privilege`):
+
+| Tabela | Regra |
+|---|---|
+| `audit_logs` | sem `UPDATE` e sem `DELETE` |
+| `time_record_adjustments` | sem `UPDATE` e sem `DELETE` |
+| `hour_bank_entries` | sem `UPDATE` e sem `DELETE` |
+| `time_records` | sem `DELETE`; `UPDATE` só para anular (preencher `voided_at` e `voided_by_adjustment_id` de uma batida ainda não anulada, sem mudar nenhuma outra coluna) |
+
+`TRUNCATE` não é bloqueado (usado só pelos testes). Limpezas automáticas (`maintenance`) apagam apenas
+`biometric_templates` expurgáveis, `kiosk_identifications` e `refresh_tokens` vencidos há mais de 7 dias.

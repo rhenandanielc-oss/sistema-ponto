@@ -12,6 +12,18 @@ docker compose exec backend python -m app.cli create-admin --email voce@empresa.
 
 A senha do administrador é pedida no terminal. Não existe administrador ou senha padrão.
 
+Produção (HTTPS, backup, limpeza diária): `../DEPLOY.md`.
+
+## Comandos de servidor
+
+```bash
+python -m app.cli create-admin --email voce@empresa.com --name "Seu Nome"  # senha pedida no terminal
+python -m app.cli maintenance        # limpeza diária (agendada em produção pelo serviço scheduler)
+python -m app.cli purge-biometrics   # só o expurgo da biometria excluída há 30+ dias
+python -m app.cli download-models    # baixa e confere os modelos de reconhecimento facial
+python -m app.cli export-openapi     # OpenAPI para gerar os tipos do frontend
+```
+
 ## Testes
 
 ```bash

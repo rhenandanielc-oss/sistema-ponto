@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     app_timezone: str = "America/Sao_Paulo"
     cors_origins: list[str] = []
     rate_limit_enabled: bool = True
+    log_format: Literal["json", "text"] = "text"
+    log_level: str = "INFO"
 
     # Biometria (BIOMETRICS.md). A chave cifra os templates e NUNCA vai para o banco nem para o Git.
     biometric_key: str = DEV_BIOMETRIC_KEY

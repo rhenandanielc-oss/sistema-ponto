@@ -3,7 +3,8 @@
 # API REST — v1
 
 > **Status:** todos os endpoints abaixo estão **implementados** (Fases 1–5). O OpenAPI gerado pelo FastAPI
-> (`/api/v1/openapi.json`, UI em `/api/docs`) é a referência detalhada dos campos.
+> (`/api/v1/openapi.json`, UI em `/api/docs`) é a referência detalhada dos campos. Em produção ambos ficam
+> desligados; use o ambiente de desenvolvimento ou `python -m app.cli export-openapi`.
 
 ---
 

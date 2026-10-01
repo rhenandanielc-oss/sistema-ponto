@@ -30,8 +30,10 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live')"
 
-# Aplica as migrations e sobe a API.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Aplica as migrations e sobe a API. Um único processo: o limite de requisições é em memória
+# (SECURITY.md §6) e a inferência facial já roda em paralelo no pool de threads.
+# --proxy-headers usa o IP real do cliente vindo dos proxies em FORWARDED_ALLOW_IPS.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --no-access-log"]
 
 # Imagem de testes: inclui dependências de desenvolvimento.
 FROM base AS test

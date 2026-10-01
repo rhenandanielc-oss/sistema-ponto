@@ -10,15 +10,16 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 # STATUS GERAL
 
-**Status:** EM ANDAMENTO
+**Status:** CONCLUÍDO (todas as fases 0–6). Pendências conhecidas: ver "PENDÊNCIAS APÓS A FASE 6".
 
-**Fase atual:** Fase 5 — Biometria e Kiosk (CONCLUÍDA) → próxima: Fase 6 — Auditoria e produção
+**Fase atual:** Fase 6 — Auditoria e produção (CONCLUÍDA)
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: facial recognition kiosk and biometric enrollment` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: production deployment, security hardening and immutable history` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Iniciar a Fase 6 — auditoria final, produção (HTTPS, backup, deploy, agendamentos).
+**Próxima ação:** Instalar no servidor da empresa seguindo `DEPLOY.md` e `KIOSK.md`; nas primeiras semanas,
+calibrar o reconhecimento facial com os funcionários reais (`BIOMETRICS.md` §11).
 
 ---
 
@@ -235,7 +236,7 @@ estáveis no Vite e também contra o build servido pelo nginx com CSP). Backend:
 * [x] tratamento de erros: nenhum rosto, vários rostos, baixa qualidade, não reconhecido, inativo, rede, duplicado
 * [x] modo kiosk, inicialização automática, permissões e prevenção de acesso: documentados em `KIOSK.md`
 * [x] reconexão: erro de rede volta ao início e tenta de novo; terminal desativado volta à configuração
-* [ ] HTTPS de produção → Fase 6 (a câmera exige HTTPS)
+* [x] HTTPS de produção (Fase 6: Caddy, `DEPLOY.md` §3)
 
 ### Decisões
 
@@ -267,22 +268,44 @@ estáveis no Vite; também contra nginx com CSP de produção, verificando que o
 
 # Fase 6 — Auditoria e produção
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Objetivos
 
-* [ ] auditoria técnica
-* [ ] auditoria de segurança
-* [ ] testes finais
-* [ ] correção de bugs
-* [ ] Docker de produção
-* [ ] health checks
-* [ ] logs
-* [ ] backup
-* [ ] migrations de produção
-* [ ] `.env.example`
-* [ ] documentação de deploy
-* [ ] documentação do kiosk
+* [x] auditoria técnica (revisão do código, perfil de desempenho, reconstrução das imagens do zero)
+* [x] auditoria de segurança (`SECURITY.md` §10): `pip-audit` e `npm audit` sem vulnerabilidades; achada e
+  corrigida a "bomba" de imagem (390 KB → 2,7 GB de memória); `X-Forwarded-For` falso não burla o limite
+* [x] testes finais (backend 250, frontend lint/tsc/Vitest/build/E2E, pilha de produção manual)
+* [x] correção de bugs (imagem gigante; relatórios faziam o cálculo duas vezes por funcionário)
+* [x] Docker de produção (`docker-compose.prod.yml`: Caddy, frontend, backend, scheduler, backup, db; só 80/443 expostas)
+* [x] health checks (db, backend, frontend; `/health/ready` verifica o banco)
+* [x] logs (JSON com `request_id`, sem query string nem segredos)
+* [x] backup (`pg_dump` diário com retenção; `deploy/restore.sh` testado; guarda da `BIOMETRIC_KEY`)
+* [x] migrations de produção (aplicadas ao iniciar; `0006` torna o histórico imutável no banco)
+* [x] `.env.example` (domínio, modo TLS, backup, logs)
+* [x] documentação de deploy (`DEPLOY.md`)
+* [x] documentação do kiosk (`KIOSK.md`, certificado interno)
+
+### Decisões
+
+* **Caddy** como proxy de borda: certificado automático (Let's Encrypt) ou CA interna para rede local sem domínio.
+* Um processo uvicorn (limitador em memória); IP real via `--proxy-headers` restrito à rede interna.
+* Histórico imutável por **triggers** (valem mesmo com a senha do banco da aplicação), em vez de separar usuários
+  de banco — mais simples de operar e testável.
+* Limpeza diária (`maintenance`) num contêiner `scheduler` com o mesmo código do backend, sem cron no host.
+* Documentação interativa da API desligada em produção.
+
+### Arquivos importantes
+
+* `docker-compose.prod.yml`, `deploy/Caddyfile`, `deploy/backup.sh`, `deploy/restore.sh`, `DEPLOY.md`
+* `backend/app/core/logging.py`, `backend/app/services/maintenance_service.py`, `backend/app/biometrics/__init__.py`
+* `backend/migrations/versions/0006_immutable_history.py`, `backend/tests/integration/test_immutable_history.py`
+
+### Testes
+
+Backend 250 testes (248 locais + 2 do motor real, opcionais). Pilha de produção validada: HTTPS com CA interna,
+HSTS, redirecionamento HTTP → HTTPS, login, relatórios com 200 funcionários, kiosk no Chromium sem erro de CSP,
+backup diário, restauração, limpeza agendada.
 
 ---
 
@@ -401,11 +424,11 @@ Status:
 * [x] proteção de secrets (`.env` fora do Git; API recusa iniciar em produção com `JWT_SECRET` fraco)
 * [x] limitação de taxa (Fase 3; em memória, por processo)
 * [x] cabeçalhos de segurança e limite de tamanho de corpo (Fase 3)
-* [ ] permissões de banco somente-inserção em `audit_logs` (Fase 6)
-* [ ] proteção de biometria
-* [ ] controle de acesso
-* [ ] HTTPS
-* [ ] revisão final
+* [x] histórico imutável no banco (triggers em `audit_logs`, batidas, ajustes, lançamentos — Fase 6)
+* [x] proteção de biometria (cifragem, consentimento, expurgo diário, limite de pixels)
+* [x] controle de acesso (teste percorre todas as rotas)
+* [x] HTTPS (Caddy + HSTS)
+* [x] revisão final (`SECURITY.md` §10)
 
 ---
 
@@ -440,11 +463,11 @@ Status:
 
 ## Frontend
 
-* [ ] login
-* [ ] cadastro
-* [ ] histórico
-* [ ] banco de horas
-* [ ] kiosk
+* [x] login (E2E)
+* [x] cadastro (E2E)
+* [x] histórico (E2E)
+* [x] banco de horas (E2E)
+* [x] kiosk (E2E com câmera simulada)
 
 ---
 
@@ -459,6 +482,12 @@ Status:
 
 **Descrição:** a API devolvia instantes em UTC (`20:00Z`) em vez do fuso da empresa (`17:00-03:00`).
 **Status:** corrigido na Fase 2 (`LocalDatetime` em `app/schemas/common.py`), coberto por teste.
+
+### Imagem "bomba" podia esgotar a memória do servidor (corrigido)
+
+**Descrição:** um PNG de 390 KB declarando 20000 × 20000 pixels fazia o OpenCV alocar 2,7 GB por requisição
+(envio de foto no cadastro ou no kiosk).
+**Status:** corrigido na Fase 6 (limite de 4096 × 4096 pixels antes de decodificar), coberto por teste.
 
 ### Ambiente do Claude Code na nuvem: build Docker
 
@@ -535,6 +564,8 @@ Possíveis categorias:
 * **Fase 5 concluída:** reconhecimento facial e terminal. Testes acharam e corrigiram: corrida ao abrir a câmera em
   remontagem (React StrictMode) que desabilitava o botão "Tirar foto"; conflito de nome `update` no serviço de
   funcionários (lint).
+* **Fase 6 concluída:** produção (Caddy/HTTPS, backup, limpeza diária, logs JSON), histórico imutável no banco
+  (`0006`), correção da "bomba" de imagem, relatórios ~40% mais rápidos, `DEPLOY.md`. 250 testes no backend.
 * **Fase 4 concluída:** painel web do administrador (React). Testes de navegador acharam e corrigiram: CSP
   descartada pelo nginx (`add_header` em `location`) e um teste instável (corrigido no teste).
 
@@ -556,14 +587,17 @@ Formato:
 cd backend
 TEST_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_test uv run pytest -q
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
-uv run alembic upgrade head / downgrade / upgrade / check   (0001 → 0003)
+uv run alembic upgrade head / downgrade / upgrade / check   (0001 → 0006)
 
 cd frontend
 npm run lint && npm run typecheck && npm test && npm run build
 E2E_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_e2e npm run e2e
 ```
 
-**Resultado:**
+**Resultado (Fase 6):**
+Backend: 248 passed + 2 skipped (motor real, opcional); ruff, mypy (strict). Imagens do backend e do frontend
+reconstruídas do zero e pilha `docker-compose.prod.yml` validada (ver Fase 6).
+**Resultado (Fase 5):**
 Backend: 230 passed (local: 228 + 2 skipped sem os modelos; no contêiner com os modelos reais: 230 passed);
 ruff, mypy (strict), `alembic check` sem diferenças (0001 → 0005). Frontend: eslint, tsc, 13 testes Vitest,
 build, 3 testes E2E (Playwright/Chromium com câmera simulada), também contra o build no nginx com CSP.
@@ -573,6 +607,15 @@ Fase 5: corrida na abertura da câmera (corrigido); `update` do SQLAlchemy escon
 (corrigido); ruído mal dimensionado nos dados sintéticos de um teste do matcher (corrigido no teste).
 Docker Hub limitou downloads (429) neste ambiente: a imagem nova não foi reconstruída do zero; dependências,
 download dos modelos e testes foram validados dentro da imagem anterior.
+
+---
+
+# PENDÊNCIAS APÓS A FASE 6
+
+1. Calibrar limiar/margem do reconhecimento com os funcionários reais (`BIOMETRICS.md` §11).
+2. Anti-spoofing (foto/vídeo diante da câmera) — risco aceito e documentado.
+3. Rotação da `BIOMETRIC_KEY` com recifragem automática (hoje: procedimento manual, `DEPLOY.md` §6.3).
+4. Cópia dos backups para fora do servidor: depende da infraestrutura da empresa (`DEPLOY.md` §6.1).
 
 ---
 
@@ -608,10 +651,7 @@ Ao iniciar uma nova sessão:
 * Executada a **Fase 3 — API completa** (ver seção da fase).
 * Executada a **Fase 4 — Frontend** (ver seção da fase).
 * Executada a **Fase 5 — Biometria e Kiosk** (ver seção da fase).
-* Próxima sessão: **Fase 6 — Auditoria e produção**: revisão de segurança e desempenho; HTTPS (proxy de borda,
-  ex.: Caddy) para o painel e o kiosk; `uvicorn --proxy-headers`; agendamentos (expurgo biométrico diário);
-  permissões de banco somente-inserção em `audit_logs`; backup do PostgreSQL e guarda da `BIOMETRIC_KEY`;
-  logs estruturados; configuração de produção do compose; documentação de deploy; reconstruir as imagens.
+* Executada a **Fase 6 — Auditoria e produção** (ver seção da fase). Projeto concluído.
 
 ---
 

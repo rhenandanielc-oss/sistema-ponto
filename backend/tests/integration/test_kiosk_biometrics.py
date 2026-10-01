@@ -14,8 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.models import AuditLog, BiometricTemplate
-from app.services import biometric_service
+from app.models import AuditLog, BiometricTemplate, KioskIdentification
+from app.services import biometric_service, maintenance_service
 from tests.integration.helpers import create_employee, local
 
 KIOSK = "/api/v1/kiosk"
@@ -262,3 +262,24 @@ def test_purge_deleted_templates(client: TestClient, setup, auth_headers, db: Se
     assert biometric_service.purge_deleted(db) == 1
     remaining = db.scalars(select(BiometricTemplate.employee_id)).all()
     assert remaining == [setup["maria"]]
+
+
+def test_daily_maintenance_purges_templates_and_old_identifications(
+    client: TestClient, setup, auth_headers, db: Session
+) -> None:
+    identify(client, setup["kiosk"], b"FACE:maria#camera")
+    client.delete(f"/api/v1/employees/{setup['joao']}/biometric-templates", headers=auth_headers)
+
+    clock.freeze(local(1, "08:00") + timedelta(days=2))
+    first = maintenance_service.run(db)
+    assert (first.biometric_templates, first.kiosk_identifications) == (0, 0)
+
+    clock.freeze(local(1, "08:00") + timedelta(days=31))
+    second = maintenance_service.run(db)
+    assert (second.biometric_templates, second.kiosk_identifications) == (1, 1)
+    assert db.scalars(select(KioskIdentification)).all() == []
+    assert db.scalars(select(BiometricTemplate.employee_id)).all() == [setup["maria"]]
+    assert (
+        db.scalar(select(AuditLog).where(AuditLog.action == "system.maintenance").limit(1))
+        is not None
+    )

@@ -33,3 +33,8 @@ def test_create_admin_with_password_from_stdin(
     args = ["create-admin", "--email", "auto@empresa.com", "--name", "Auto", "--password-stdin"]
     assert cli.main(args) == 0
     assert login(client, "auto@empresa.com", "senha-automatizada-1").status_code == 200
+
+
+def test_maintenance_command(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["maintenance"]) == 0
+    assert "Manutenção concluída" in capsys.readouterr().out

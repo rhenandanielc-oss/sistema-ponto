@@ -168,3 +168,17 @@ Salvo indicação, os exemplos usam:
 | P09 | Validação | `payday` obrigatório, 1–31; mês inválido ⇒ 422 |
 | P10 | Horas a pagar | fixas + extras − faltantes: 32 + 1,5 − 8,5 = 25 h; variação dentro da tolerância não desconta (32 + 2 − 0 = 34 h) |
 
+
+## 10. Produção e segurança (Fase 6)
+
+| # | Caso | Onde | Esperado |
+|---|---|---|---|
+| S01 | Alterar/apagar auditoria, batidas, ajustes e lançamentos direto no banco | `test_immutable_history.py` | erro do banco; histórico intacto |
+| S02 | Desanular batida anulada | `test_immutable_history.py` | erro do banco |
+| S03 | Imagem "bomba" (PNG 20000 × 20000 em 400 KB) | `test_biometrics.py` | `INVALID_IMAGE`, sem alocar a imagem |
+| S04 | Segredos fracos / cookie inseguro em produção | `test_biometrics.py` | aplicação não inicia |
+| S05 | Documentação interativa em produção | `test_health_and_errors.py` | `/api/docs` e OpenAPI ⇒ 404 |
+| S06 | Log de acesso | `test_health_and_errors.py` | JSON com `request_id`; sem query string e sem senha |
+| S07 | Limpeza diária | `test_kiosk_biometrics.py`, `test_cli.py` | expurga templates excluídos há 30+ dias e identificações vencidas há 7+ dias; auditada |
+| S08 | Pilha de produção (manual, 2026-10-01) | `docker-compose.prod.yml` | HTTPS + HSTS, HTTP → HTTPS, login, relatórios, kiosk sem erro de CSP, backup diário, restauração com `deploy/restore.sh`, `X-Forwarded-For` falso não burla o limite de login |
+| S09 | Desempenho (manual) | `DEPLOY.md` §9 | 200 funcionários: relatórios em até ~1,6 s |

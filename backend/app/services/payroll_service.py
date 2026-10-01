@@ -15,7 +15,7 @@ from app.core.clock import today_local
 from app.core.errors import AppError
 from app.models import Employee
 from app.services import employee_service
-from app.services.hour_bank_service import Totals, period_totals
+from app.services.hour_bank_service import CalcContext, Totals, load_context, period_totals
 
 
 @dataclass(frozen=True)
@@ -37,11 +37,13 @@ def _period(
     return period_containing(reference_date or today_local(), employee.payday)
 
 
-def _payroll(db: Session, employee: Employee, period: PayPeriod) -> Payroll:
+def _payroll(
+    db: Session, employee: Employee, period: PayPeriod, ctx: CalcContext | None = None
+) -> Payroll:
     return Payroll(
         employee=employee,
         period=period,
-        totals=period_totals(db, employee, period.start, period.end),
+        totals=period_totals(db, employee, period.start, period.end, ctx),
         closed=period.end <= today_local(),
     )
 
@@ -67,4 +69,7 @@ def summary(
     employees, total = employee_service.list_employees(
         db, q=q, status=status, sort="name", page=page, page_size=page_size
     )
-    return [_payroll(db, e, _period(e, payment_month, reference_date)) for e in employees], total
+    ctx = load_context(db)
+    return [
+        _payroll(db, e, _period(e, payment_month, reference_date), ctx) for e in employees
+    ], total

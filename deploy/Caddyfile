@@ -1,0 +1,24 @@
+# Proxy de borda: HTTPS (obrigatório para a câmera do kiosk), HSTS e encaminhamento ao frontend.
+# DOMAIN e TLS_MODE vêm do .env (DEPLOY.md §3).
+#   TLS_MODE=public   → certificado Let's Encrypt (precisa de domínio público e portas 80/443 abertas)
+#   TLS_MODE=internal → certificado da CA interna do Caddy (rede local; instale a CA nos terminais)
+
+(public) {
+	# Certificado automático do Let's Encrypt (renovado pelo próprio Caddy).
+}
+
+(internal) {
+	tls internal
+}
+
+{$DOMAIN} {
+	import {$TLS_MODE}
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	# O Caddy substitui o X-Forwarded-For enviado pelo cliente pelo IP real da conexão,
+	# então o limite de requisições do backend não pode ser burlado com um cabeçalho falso.
+	reverse_proxy frontend:80
+}

@@ -115,7 +115,8 @@ controlado, licenças permissivas, custo zero e desempenho suficiente em CPU par
 * **Exclusão imediata** (lógica, deixa de ser usado no matching) quando: consentimento revogado,
   funcionário desativado/desligado, ou pedido do titular.
 * **Expurgo físico** dos templates excluídos há mais de 30 dias: comando `python -m app.cli purge-biometrics`
-  (implementado; o agendamento diário é da Fase 6). Templates expurgados não podem ser restaurados.
+  (implementado; roda todo dia no serviço `scheduler` do `docker-compose.prod.yml` via `python -m app.cli maintenance`).
+  Templates expurgados não podem ser restaurados.
 * A auditoria registra os eventos (cadastro, exclusão), **sem** o template.
 
 ---
@@ -193,6 +194,9 @@ pela configuração), porque o repositório não deve conter rostos reais. O mot
 `REAL_FACE_SAMPLE`) são informados. Validação feita em 2026-10-01 com uma imagem pública de exemplo do OpenCV:
 detecção correta e similaridade 0,84 entre a imagem original e uma versão alterada (escala e brilho) da mesma pessoa.
 
+* **Imagens enormes:** o OpenCV recusa decodificar imagens acima de 4096 × 4096 pixels
+  (`app/biometrics/__init__.py`), evitando que um arquivo pequeno ocupe gigabytes de memória (Fase 6).
+
 ---
 
 ## 11. Pendências
@@ -200,5 +204,6 @@ detecção correta e similaridade 0,84 entre a imagem original e uma versão alt
 1. **Calibração com os funcionários reais** (limiar e margem): acompanhar, nas primeiras semanas, as falhas
    `FACE_NOT_RECOGNIZED` na auditoria e os scores das batidas aceitas (no histórico).
 2. **Anti-spoofing** (foto/vídeo na frente da câmera): não implementado; avaliar modelo com licença compatível.
-3. **Agendamento** do expurgo diário (`purge-biometrics`) e da rotação de chave — Fase 6.
+3. ~~Agendamento do expurgo diário~~ — feito na Fase 6 (`maintenance`). **Rotação de chave** com recifragem
+   automática continua pendente; procedimento manual em `DEPLOY.md` §6.3.
 

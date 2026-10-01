@@ -1,6 +1,8 @@
 """Matching, cifragem e integridade dos modelos (BIOMETRICS.md)."""
 
 import base64
+import struct
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +12,7 @@ from pydantic import ValidationError
 
 from app.biometrics import model_files
 from app.biometrics.crypto import BiometricKeyError, TemplateCipher, parse_key
-from app.biometrics.engine import FaceError, FakeFaceEngine
+from app.biometrics.engine import FaceError, FakeFaceEngine, _decode
 from app.biometrics.matcher import best_match, normalize
 from app.core.config import DEV_BIOMETRIC_KEY, Settings
 
@@ -107,3 +109,54 @@ def test_fake_engine_contract() -> None:
         with pytest.raises(FaceError) as exc:
             engine.extract(content)
         assert exc.value.code == code
+
+
+def _blank_png(width: int, height: int) -> bytes:
+    """PNG em tons de cinza todo preto: poucos KB no arquivo, enorme depois de decodificado."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        crc = zlib.crc32(kind + data) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", crc)
+
+    rows = (b"\x00" * (width + 1)) * height
+    header = struct.pack(">IIBBBBB", width, height, 8, 0, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(rows, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def test_decompression_bomb_is_rejected_before_allocating() -> None:
+    bomb = _blank_png(20_000, 20_000)  # ~400 KB que virariam 1,2 GB de pixels
+    assert len(bomb) < 1024 * 1024
+    with pytest.raises(FaceError) as exc:
+        _decode(bomb)
+    assert exc.value.code == "INVALID_IMAGE"
+
+
+def test_normal_image_is_decoded_and_reduced() -> None:
+    assert _decode(_blank_png(2000, 1000)).shape == (640, 1280, 3)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"jwt_secret": "curto"}, "JWT_SECRET"),
+        ({"jwt_secret": "change-me-" + "x" * 40}, "JWT_SECRET"),
+        ({"cookie_secure": False}, "COOKIE_SECURE"),
+    ],
+)
+def test_production_rejects_weak_session_settings(
+    overrides: dict[str, object], message: str
+) -> None:
+    config: dict[str, object] = {
+        "environment": "production",
+        "jwt_secret": "x" * 48,
+        "cookie_secure": True,
+        "biometric_key": base64.b64encode(bytes(range(32))).decode(),
+        "face_engine": "opencv",
+    }
+    with pytest.raises(ValidationError, match=message):
+        Settings(**(config | overrides))  # type: ignore[arg-type]
