@@ -1,0 +1,246 @@
+# ==========================================
+# SISTEMA - GERAL
+# ==========================================
+
+# Arquivos de ambiente / secrets
+.env
+.env.*
+!.env.example
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Secrets e chaves
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+secret/
+credentials/
+credentials.json
+
+# Logs
+*.log
+logs/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+
+# ==========================================
+# NODE / REACT / VITE
+# ==========================================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build
+dist/
+build/
+.vite/
+.cache/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+
+# ==========================================
+# PYTHON / FASTAPI
+# ==========================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.venv/
+venv/
+env/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.coverage
+.coverage.*
+htmlcov/
+
+pip-wheel-metadata/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+
+# ==========================================
+# JAVA / SPRING (se houver)
+# ==========================================
+
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+.gradle/
+build/
+
+# Spring
+spring-boot-devtools.properties
+
+
+# ==========================================
+# DATABASE
+# ==========================================
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Dumps locais
+*.sql.gz
+*.dump
+*.backup
+
+# NÃO ignorar migrations versionadas.
+# Migrations devem permanecer no Git.
+
+
+# ==========================================
+# DOCKER
+# ==========================================
+
+docker-compose.override.yml
+
+# Volumes locais
+docker-data/
+docker-volumes/
+postgres-data/
+mysql-data/
+
+# ==========================================
+# IDE / EDITORES
+# ==========================================
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+.idea/
+*.iml
+
+*.code-workspace
+
+
+# ==========================================
+# SISTEMA OPERACIONAL
+# ==========================================
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+Thumbs.db
+Desktop.ini
+
+
+# ==========================================
+# TESTES / RELATÓRIOS
+# ==========================================
+
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+reports/
+
+
+# ==========================================
+# BIOMETRIA
+# IMPORTANTE PARA O SISTEMA DE PONTO
+# ==========================================
+
+# Não versionar imagens/arquivos biométricos reais
+biometric-data/
+biometrics/
+face-data/
+face-images/
+faces/
+
+# Arquivos de embeddings biométricos
+*.embedding
+*.embeddings
+*.face
+*.face-data
+
+# Capturas temporárias de câmera
+camera-captures/
+face-captures/
+snapshots/
+
+
+# ==========================================
+# UPLOADS LOCAIS
+# ==========================================
+
+uploads/
+tmp/
+temp/
+
+
+# ==========================================
+# BACKUPS LOCAIS
+# ==========================================
+
+backups/
+backup/
+*.bak
+
+
+# ==========================================
+# CLAUDE / IA / ARQUIVOS TEMPORÁRIOS
+# ==========================================
+
+# Arquivos temporários gerados por ferramentas
+.claude/tmp/
+.claude/cache/
+
+# NÃO ignorar:
+# MASTER-PROMPT.md
+# PROJECT-STATE.md
+# ARCHITECTURE.md
+# DATABASE.md
+# API.md
+# BUSINESS-RULES.md
+# FINANCIAL-RULES.md
+# BIOMETRICS.md
+# TEST-PLAN.md
+# DASHBOARD.md
+
+
+# ==========================================
+# ARQUIVOS DE DEPLOY LOCAL
+# ==========================================
+
+*.local
+!.env.example
