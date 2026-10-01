@@ -25,7 +25,7 @@
 
 ```
 admins ──< refresh_tokens
-employees ─┬─< employee_workloads ──< employee_workload_days
+employees ─┬─< employee_schedules ──< employee_schedule_days
            ├─< time_records >──── devices
            ├─< time_record_adjustments
            ├─< hour_bank_entries
@@ -84,29 +84,34 @@ com senha fixa.
 
 Índices: `lower(name)` (pesquisa), `status`.
 
-### employee_workloads
-Vigência da carga horária do funcionário.
+### employee_schedules
+Vigência do horário fixo do funcionário.
 
 | Coluna | Tipo | Regras |
 |---|---|---|
 | id | bigint PK | |
 | employee_id | FK employees | |
 | valid_from | date | not null |
-| valid_to | date | null = vigente |
-| created_by_admin_id | FK admins | |
+| valid_to | date | null = vigente; `>= valid_from` |
+| created_by_admin_id | FK admins | null (criado por comando de linha) |
 | created_at | timestamptz | |
 
 Sem sobreposição por funcionário:
 `EXCLUDE USING gist (employee_id WITH =, daterange(valid_from, valid_to, '[]') WITH &&)` (extensão `btree_gist`).
 
-### employee_workload_days
+### employee_schedule_days
 | Coluna | Tipo | Regras |
 |---|---|---|
-| workload_id | FK employee_workloads | |
+| schedule_id | FK employee_schedules (on delete cascade) | |
 | weekday | smallint | 0=segunda … 6=domingo |
-| planned_minutes | integer | `> 0` e `<= 1440` |
+| start_time | time | entrada prevista |
+| lunch_start | time | null = dia sem intervalo |
+| lunch_end | time | null se `lunch_start` nulo |
+| end_time | time | saída prevista; `end_time <= start_time` ⇒ termina no dia seguinte |
 
-PK `(workload_id, weekday)`. Dia ausente = folga. Toda vigência tem ao menos um dia.
+PK `(schedule_id, weekday)`. Dia ausente = folga. Toda vigência tem ao menos um dia.
+A carga planejada é **calculada** a partir dos horários (não é armazenada). O serviço valida: intervalo dentro do
+turno, `lunch_start < lunch_end`, turno com até 16 h.
 
 ### audit_logs
 | Coluna | Tipo | Regras |
@@ -127,7 +132,7 @@ Somente INSERT (o usuário de banco da aplicação não recebe `UPDATE`/`DELETE`
 
 ### settings
 `key text PK`, `value jsonb`, `updated_at`. Parâmetros configuráveis de `BUSINESS-RULES.md`
-(tolerância, `max_shift_hours`, intervalo mínimo entre batidas, período noturno, tempo da tela do kiosk, fuso).
+(tolerâncias, `max_shift_hours`, intervalo mínimo entre batidas, período noturno, tempo da tela do kiosk, fuso).
 Alterações auditadas.
 
 ---
@@ -200,7 +205,7 @@ Imutável: correção = novo lançamento compensatório.
 
 ### Resultados de cálculo
 **Decisão:** na v1 os resultados diários **não são persistidos** — são calculados sob demanda a partir dos registros.
-Se a performance exigir (Fase 6), adicionar cache `daily_summaries` invalidado por ajuste/feriado/carga.
+Se a performance exigir (Fase 6), adicionar cache `daily_summaries` invalidado por ajuste/feriado/horário.
 
 ---
 

@@ -11,7 +11,7 @@
 
 | Perfil | Como acessa | O que pode fazer |
 |---|---|---|
-| **Administrador** | `/login` com e-mail e **senha** | Tudo: funcionários, carga horária, biometria, feriados, histórico, ajustes, banco de horas de todos, dispositivos, configurações, auditoria, outros administradores |
+| **Administrador** | `/login` com e-mail e **senha** | Tudo: funcionários, horários, biometria, feriados, histórico, ajustes, banco de horas de todos, dispositivos, configurações, auditoria, outros administradores |
 | **Funcionário** | **Rosto**, no kiosk — sem senha | Registrar a própria batida (escolhendo o tipo) e consultar o **próprio** banco de horas |
 
 Não existem outros perfis. Toda rota administrativa exige administrador autenticado e ativo.
@@ -102,7 +102,7 @@ Eventos auditados (mínimo):
 
 * login do administrador: sucesso, falha, bloqueio, logout, reuso de refresh token;
 * administradores, dispositivos, configurações: criar/alterar/desativar;
-* funcionários e carga horária: criar/alterar/ativar/desativar (antes/depois);
+* funcionários e horários: criar/alterar/ativar/desativar (antes/depois);
 * registros: criado, **rejeitado** (com motivo), ajustado, anulado;
 * consulta do banco de horas no kiosk (funcionário, dispositivo, horário);
 * banco de horas: lançamentos;

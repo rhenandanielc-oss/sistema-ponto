@@ -45,7 +45,7 @@ Parâmetros por recurso. Períodos: `date_from`, `date_to`, **inclusivos**.
 | 401 | `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `IDENTIFICATION_REQUIRED` |
 | 403 | `FORBIDDEN`, `DEVICE_NOT_AUTHORIZED` |
 | 404 | `NOT_FOUND`, `EMPLOYEE_NOT_FOUND` |
-| 409 | `DUPLICATE_RECORD`, `INVALID_SEQUENCE`, `EMPLOYEE_INACTIVE`, `NO_APPLICABLE_WORKLOAD`, `WORKLOAD_OVERLAP`, `CONFLICT` |
+| 409 | `DUPLICATE_RECORD`, `INVALID_SEQUENCE`, `EMPLOYEE_INACTIVE`, `NO_APPLICABLE_SCHEDULE`, `SCHEDULE_OVERLAP`, `CONFLICT` |
 | 422 | `VALIDATION_ERROR`, `FACE_NOT_FOUND`, `MULTIPLE_FACES`, `LOW_QUALITY` |
 | 423 | `ACCOUNT_LOCKED` |
 | 429 | `RATE_LIMITED` |
@@ -80,16 +80,16 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | PATCH | `/admins/{id}` (nome, senha) | 1 |
 | POST | `/admins/{id}/activate`, `/admins/{id}/deactivate` (não pode desativar a si mesmo nem o último ativo) | 1 |
 
-### Funcionários e carga horária
+### Funcionários e horário fixo
 | Método | Rota | Descrição | Fase |
 |---|---|---|---|
 | GET | `/employees` | Filtros: `q` (nome/matrícula), `status`. Ordenação: `name`, `registration_number`, `hire_date` | 1 |
-| POST | `/employees` | Cadastro **com carga horária inicial**: `{name, registration_number, cpf?, hire_date, workload: {days: [{weekday, planned_minutes}]}}` | 1 |
-| GET / PATCH | `/employees/{id}` | Detalhe (inclui carga vigente) / edição cadastral | 1 |
+| POST | `/employees` | Cadastro **com horário fixo inicial**: `{name, registration_number, cpf?, hire_date, schedule: {days: [{weekday, start_time, lunch_start?, lunch_end?, end_time}]}}` (o rosto é cadastrado na mesma tela — endpoint de biometria, Fase 5) | 1 |
+| GET / PATCH | `/employees/{id}` | Detalhe (inclui horário vigente e carga diária calculada) / edição cadastral | 1 |
 | POST | `/employees/{id}/activate`, `/employees/{id}/deactivate` | | 1 |
 | GET | `/employees/{id}/history` | Alterações cadastrais (auditoria) | 1 |
-| GET | `/employees/{id}/workloads` | Vigências de carga horária | 1 |
-| POST | `/employees/{id}/workloads` | Nova carga a partir de `valid_from` (encerra a anterior) | 1 |
+| GET | `/employees/{id}/schedules` | Vigências do horário fixo | 1 |
+| POST | `/employees/{id}/schedules` | Novo horário a partir de `valid_from` (encerra o anterior em `valid_from − 1`) | 1 |
 
 ### Feriados
 | Método | Rota | Fase |

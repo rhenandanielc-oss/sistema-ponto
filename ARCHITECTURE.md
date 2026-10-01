@@ -15,7 +15,7 @@
 │ React + TS + Vite        │                                 │ Python 3.12 + FastAPI     │
 │                          │ ◀────────────────────────────── │                           │
 │ • Painel administrativo  │                                 │ • Login do administrador  │
-│ • Kiosk (/kiosk)         │   frame JPEG do rosto (kiosk)   │ • Funcionários / carga    │
+│ • Kiosk (/kiosk)         │   frame JPEG do rosto (kiosk)   │ • Funcionários / horários │
 │   - câmera (getUserMedia)│ ──────────────────────────────▶ │ • Registros de ponto      │
 │   - detecção local (UX)  │                                 │ • Motor de cálculo        │
 └──────────────────────────┘                                 │ • Biometria (ONNX local)  │
@@ -95,12 +95,12 @@ O kiosk é a mesma SPA na rota `/kiosk`, autenticada com **credencial de disposi
 |---|---|---|
 | `/kiosk` | Funcionário (rosto) | Reconhecimento facial → escolher tipo de batida ou ver o próprio banco de horas |
 | `/login` | Administrador | E-mail e senha |
-| `/funcionarios` | Administrador | Cadastro, edição, ativação/desativação, pesquisa, **carga horária diária e dias trabalhados**, cadastro do rosto |
+| `/funcionarios` | Administrador | Cadastro, edição, ativação/desativação, pesquisa, **nome, horário fixo (entrada, almoço, saída) por dia da semana e rosto** |
 | `/historico` | Administrador | Batidas com filtros (funcionário, hoje, semana, mês, período) e ajustes |
 | `/banco-de-horas` | Administrador | Banco de horas de qualquer funcionário, por período, com detalhe diário |
 | `/admin` | Administrador | Feriados, dispositivos (kiosks), administradores, configurações, auditoria |
 
-A rota `/jornadas` prevista no `MASTER-PROMPT.md` foi incorporada a `/funcionarios`: a carga horária é informada
+A rota `/jornadas` prevista no `MASTER-PROMPT.md` foi incorporada a `/funcionarios`: o horário fixo é informado
 no cadastro do funcionário (decisão do responsável, 2026-10-01).
 
 ---
@@ -116,7 +116,7 @@ sistema-ponto/
 │   │   ├── db/                  # engine, sessão, base declarativa
 │   │   ├── models/              # modelos SQLAlchemy
 │   │   ├── schemas/             # modelos Pydantic (entrada/saída)
-│   │   ├── api/                 # routers por recurso (auth, employees, workloads, kiosk, ...)
+│   │   ├── api/                 # routers por recurso (auth, admins, employees, kiosk, ...)
 │   │   ├── services/            # regras de negócio e transações
 │   │   ├── calculation/         # motor de cálculo de jornada (funções puras, sem I/O)
 │   │   └── biometrics/          # detecção, extração de template, matching
@@ -205,5 +205,5 @@ Decisão crítica para um sistema de ponto:
 | 2026-10-01 | Registros imutáveis; correção por ajuste auditado | §7, `BUSINESS-RULES.md` |
 | 2026-10-01 | Reconhecimento facial processado no servidor com modelo local | `BIOMETRICS.md` |
 | 2026-10-01 | Perfis: somente Administrador (senha) e Funcionário (rosto) | §6, `SECURITY.md` |
-| 2026-10-01 | Carga horária diária no cadastro do funcionário, sem horário fixo; `/jornadas` incorporada a `/funcionarios` | §3.1, `BUSINESS-RULES.md` §3 |
+| 2026-10-01 | Horário fixo por funcionário, informado no cadastro (com vigência); `/jornadas` incorporada a `/funcionarios` | §3.1, `BUSINESS-RULES.md` §3 |
 | 2026-10-01 | Funcionário consulta o próprio banco de horas no kiosk pelo rosto | `BUSINESS-RULES.md` §9.1 |

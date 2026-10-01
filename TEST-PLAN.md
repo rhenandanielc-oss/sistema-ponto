@@ -33,8 +33,9 @@ Regras:
 Salvo indicação, os exemplos usam:
 
 * Fuso: `America/Sao_Paulo`.
-* Funcionário **F1**: carga de **480 min** (8 h) por dia, de segunda a sexta; sábado e domingo folga.
-* Tolerância diária: 10 min sobre o saldo.
+* Funcionário **F1**: horário fixo de segunda a sexta — entrada 08:00, almoço 12:00–13:00, saída 17:00
+  (**480 min** planejados); sábado e domingo folga.
+* Tolerância: 5 min por batida, 10 min por dia.
 * Datas em setembro de 2026 (01/09/2026 é terça-feira; 07/09/2026 é feriado nacional, segunda-feira).
 
 ---
@@ -46,21 +47,21 @@ Salvo indicação, os exemplos usam:
 | C01 | Jornada normal | F1, 01/09: ENTRY 08:00, LUNCH_EXIT 12:00, LUNCH_RETURN 13:00, EXIT 17:00 | worked 480, break 60, balance 0, status OK |
 | C02 | Intervalo normal | Igual a C01 | break 60, sem `INSUFFICIENT_BREAK` |
 | C03 | Intervalo insuficiente | 08:00 / 12:00 / 12:30 / 17:00 | worked 510, break 30, `INSUFFICIENT_BREAK`, balance +30 |
-| C04 | Atraso | ENTRY 08:20, demais iguais a C01 | worked 460, missing 20, balance −20 |
-| C05 | Dentro da tolerância | ENTRY 08:06, demais iguais a C01 | worked 474, saldo −6 ≤ 10 ⇒ balance 0 |
-| C06 | Tolerância excedida | ENTRY 08:11, demais iguais a C01 | worked 469 ⇒ balance −11 (integral) |
-| C07 | Saída antecipada | EXIT 16:00 | worked 420, missing 60, balance −60 |
+| C04 | Atraso | ENTRY 08:20, demais iguais a C01 | late 20, worked 460, missing 20, balance −20 |
+| C05 | Dentro da tolerância | ENTRY 08:04, EXIT 17:03 | desvios 4 e 3 (cada ≤ 5, soma 7 ≤ 10) ⇒ late 0, balance 0 |
+| C06 | Tolerância diária excedida | ENTRY 08:05, EXIT 16:54 | desvios 5 e 6 ⇒ computa tudo: late 5, early_leave 6, balance −11 |
+| C07 | Saída antecipada | EXIT 16:00 | early_leave 60, worked 420, balance −60 |
 | C08 | Hora extra | EXIT 18:30 | worked 570, overtime 90, balance +90 |
 | C09 | Falta | 02/09 (quarta) sem registros | ABSENT, worked 0, balance −480, entra no banco |
 | C10 | Registro incompleto | 03/09: ENTRY 08:00, LUNCH_EXIT 12:00 | INCOMPLETE, worked 240, `counts_for_bank=false` |
-| C11 | Carga diferente | F2: 360 min seg–sex; 01/09: 09:00 / 12:00 / 12:15 / 15:15 | planned 360, worked 360, break 15, balance 0 |
-| C12 | Dias trabalhados diferentes | F3: seg–sex 440 min + sábado 240 min; 05/09 (sábado) sem registros | ABSENT, balance −240 |
+| C11 | Horário diferente | F2: seg–sex 09:00, almoço 12:00–12:15, saída 15:15 (360 min); batidas iguais ao horário | planned 360, worked 360, break 15, balance 0 |
+| C12 | Dias trabalhados diferentes | F3: horário de F1 + sábado 08:00–12:00 sem almoço; 05/09 (sábado) sem registros | ABSENT, balance −240 |
 | C13 | Final de semana trabalhado | F1, 05/09 (sábado) 08:00–12:00 | DAY_OFF, planned 0, overtime 240, balance +240 |
 | C14 | Final de semana sem trabalho | F1, 06/09 (domingo) sem registros | DAY_OFF, balance 0, **não** é falta |
 | C15 | Feriado sem trabalho | F1, 07/09 sem registros | HOLIDAY, planned 0, balance 0, não é falta |
 | C16 | Feriado trabalhado | F1, 07/09 08:00–12:00 | overtime 240, `holiday_work=true` |
-| C17 | Jornada atravessando a meia-noite | F4: 420 min seg–sex. ENTRY qui 10/09 22:00, LUNCH_EXIT 02:00, LUNCH_RETURN 03:00, EXIT sex 11/09 06:00 | workday_date 10/09, worked 420, balance 0, night_minutes 360, night_minutes_reduced ≈ 411 |
-| C18 | Troca de carga horária | F1 com 480 até 15/09 e 360 a partir de 16/09 | 15/09 planned 480; 16/09 planned 360 |
+| C17 | Jornada atravessando a meia-noite | F4: seg–sex 22:00, almoço 02:00–03:00, saída 06:00 (420 min). ENTRY qui 10/09 22:00, LUNCH_EXIT 02:00, LUNCH_RETURN 03:00, EXIT sex 11/09 06:00 | workday_date 10/09, worked 420, balance 0, night_minutes 360, night_minutes_reduced ≈ 411 |
+| C18 | Troca de horário | F1 até 15/09; a partir de 16/09: 09:00, almoço 12:00–13:00, saída 16:00 | 15/09 planned 480; 16/09 planned 360 e atraso medido a partir de 09:00 |
 | C19 | Período de consulta inclusivo | 01/09/2026 a 30/09/2026 | **30** dias, primeiro 01/09, último 30/09 |
 | C20 | Período de um dia | 01/09 a 01/09 | 1 dia |
 | C21 | Banco de horas | OPENING_BALANCE +120; dias C04 (−20), C08 (+90), C10 (ignorado); COMPENSATION −60 | saldo final = 120 − 20 + 90 − 60 = **+130** |
@@ -84,13 +85,14 @@ Salvo indicação, os exemplos usam:
 | R08 | **Concorrência**: duas ENTRY simultâneas do mesmo funcionário | uma 201 e uma 409; um registro no banco |
 | R09 | **Funcionário inativo** | 409 `EMPLOYEE_INACTIVE`, tentativa auditada |
 | R10 | Funcionário inexistente (ajuste) | 404 `EMPLOYEE_NOT_FOUND` |
-| R11 | Sem carga horária vigente | 409 `NO_APPLICABLE_WORKLOAD` |
+| R11 | Sem horário vigente | 409 `NO_APPLICABLE_SCHEDULE` |
 | R12 | **Registro inválido**: tipo desconhecido; corpo com horário enviado pelo cliente | 422; horário do cliente ignorado |
 | R13 | Saída de turno noturno após a meia-noite | EXIT 11/09 06:00 vinculado ao dia 10/09 |
 | R14 | Ciclo aberto há mais de 16 h | não se vincula; só ENTRY aceito em novo dia |
 | R15 | Dispositivo desativado | 403 `DEVICE_NOT_AUTHORIZED` |
 | R16 | Ajuste sem justificativa | 422 |
 | R17 | Ajuste VOID | registro marcado como anulado, não excluído; cálculo desconsidera; auditoria |
+| R18 | Entrada antecipada para turno do dia seguinte | turno 00:00–08:00 de sexta; ENTRY qui 23:50 | dia de jornada = sexta |
 
 ---
 
@@ -114,14 +116,16 @@ Salvo indicação, os exemplos usam:
 
 ---
 
-## 6. Funcionários e carga horária (integração, Fase 1)
+## 6. Funcionários e horário fixo (integração, Fase 1)
 
-* Cadastro exige carga horária inicial (pelo menos um dia trabalhado, minutos entre 1 e 1440).
+* Cadastro exige horário inicial (pelo menos um dia trabalhado).
+* Validação do horário: almoço com início e fim juntos, dentro do turno; turno de até 16 h; dias da semana sem repetição.
+* Carga diária calculada: 08:00/12:00/13:00/17:00 ⇒ 480; 22:00/02:00/03:00/06:00 ⇒ 420; 08:00–12:00 sem almoço ⇒ 240.
 * CRUD, pesquisa por nome/matrícula, paginação, ordenação.
 * Matrícula e CPF duplicados ⇒ 409.
 * Desativação mantém histórico.
 * Histórico do funcionário reflete alterações (antes/depois).
-* Nova carga com `valid_from` encerra a anterior em `valid_from − 1`; sobreposição ⇒ 409 `WORKLOAD_OVERLAP`.
+* Novo horário com `valid_from` encerra o anterior em `valid_from − 1`; `valid_from` anterior ou igual ao início do vigente ⇒ 409 `SCHEDULE_OVERLAP`.
 
 ---
 

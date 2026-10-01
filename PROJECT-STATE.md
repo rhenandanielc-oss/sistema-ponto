@@ -44,7 +44,7 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 * [x] `DATABASE.md` — tabelas por fase, restrições de integridade e duplicidade
 * [x] `API.md` — convenções (paginação, filtros, ordenação, erros) e endpoints por fase
 * [x] `SECURITY.md` — perfis (Administrador/Funcionário), ameaças, autenticação, kiosk, segredos, auditoria
-* [x] `BUSINESS-RULES.md` — carga horária, sequência, duplicidade, dia de jornada, motor de cálculo, tolerância, noturno, feriados, banco de horas, consulta pelo kiosk
+* [x] `BUSINESS-RULES.md` — horário fixo do funcionário, sequência, duplicidade, dia de jornada, motor de cálculo, tolerância, noturno, feriados, banco de horas, consulta pelo kiosk
 * [x] `BIOMETRICS.md` — comparação de alternativas, decisão, armazenamento, retenção, riscos
 * [x] `TEST-PLAN.md` — estratégia e casos obrigatórios com exemplos numéricos (C01–C24, R01–R17, A01–A13)
 
@@ -73,7 +73,7 @@ Ver seção DECISÕES TÉCNICAS.
 * [ ] autenticação
 * [ ] autorização
 * [ ] funcionários
-* [ ] carga horária diária no cadastro do funcionário
+* [ ] horário fixo no cadastro do funcionário
 
 ### Testes
 
@@ -116,7 +116,7 @@ Pendente.
 
 * [ ] autenticação
 * [ ] funcionários
-* [ ] carga horária
+* [ ] horário fixo dos funcionários
 * [ ] registros
 * [ ] histórico
 * [ ] cálculos
@@ -152,7 +152,7 @@ Pendente.
 
 * [ ] login
 * [ ] gerenciamento de funcionários
-* [ ] carga horária no cadastro do funcionário
+* [ ] cadastro do funcionário com nome, horário fixo e rosto
 * [ ] histórico
 * [ ] banco de horas
 * [ ] administração
@@ -245,7 +245,7 @@ Pendente.
 1. Apenas dois perfis: **Administrador** (único com senha) e **Funcionário** (sem senha, identificado pelo rosto).
 2. No kiosk o funcionário é reconhecido pela face e **só escolhe o tipo de batida**.
 3. O funcionário consulta o **próprio banco de horas** no kiosk, também pelo rosto; o servidor só devolve os dados de quem reconheceu.
-4. Os horários dos funcionários não são conhecidos: o cadastro do funcionário recebe a **carga horária diária** e os dias trabalhados (com vigência). Sem horário fixo, atraso e saída antecipada aparecem como "horas faltantes" e a tolerância (10 min) se aplica ao saldo do dia.
+4. Cada funcionário tem um **horário fixo** (entrada, almoço, retorno, saída por dia da semana), ainda desconhecido hoje: por isso é informado **no cadastro do funcionário**, junto com o nome e o rosto, com vigência. Com ele o sistema calcula atraso, saída antecipada, horas faltantes e horas extras (tolerância CLT 5/10 min por batida). *(Corrigido em 2026-10-01: a versão anterior falava em "carga horária diária sem horário fixo", por engano.)*
 5. Portaria MTP 671/2021 e alternativa à biometria (PIN) **não serão tratadas**.
 **Impacto:** tabelas `roles`/`permissions` removidas (há só `admins`); jornadas FIXED/ROTATING removidas; `/jornadas` incorporada a `/funcionarios`; registro web removido (só kiosk + ajuste do administrador). Documentos atualizados: todos os da Fase 0. `MASTER-PROMPT.md` não foi editado; esta decisão prevalece sobre ele.
 
@@ -254,7 +254,7 @@ Pendente.
 # DECISÕES PENDENTES (precisam do responsável pelo projeto)
 
 1. **Retenção** dos registros de ponto e da auditoria (prazo da empresa). Não bloqueia a Fase 1.
-2. **Valores padrão** (configuráveis, podem ser ajustados depois): tolerância diária 10 min, intervalo mínimo entre batidas 2 min, `max_shift_hours` 16 h, tela do banco de horas no kiosk fecha em 30 s.
+2. **Valores padrão** (configuráveis, podem ser ajustados depois): tolerância 5 min por batida / 10 min por dia, intervalo mínimo entre batidas 2 min, `max_shift_hours` 16 h, tela do banco de horas no kiosk fecha em 30 s.
 
 Formato recomendado:
 
@@ -334,7 +334,7 @@ Status:
 
 * [ ] autenticação
 * [ ] funcionários
-* [ ] carga horária
+* [ ] horário fixo dos funcionários
 * [ ] registros
 * [ ] cálculos
 * [ ] histórico
@@ -409,7 +409,7 @@ Possíveis categorias:
 * Testes: não aplicável (sem código).
 * Resultado: arquitetura definida; 4 decisões pendentes listadas.
 * Revisão com as definições do responsável: perfis Administrador/Funcionário, kiosk só com escolha de batida,
-  consulta do banco de horas pelo rosto, carga horária diária no cadastro do funcionário; pontos de Portaria 671 e PIN descartados.
+  consulta do banco de horas pelo rosto, horário fixo no cadastro do funcionário; pontos de Portaria 671 e PIN descartados.
 
 Formato:
 
@@ -460,7 +460,7 @@ Ao iniciar uma nova sessão:
 * Executada a Fase 0 (documentação de arquitetura) e revisada com as definições do responsável.
 * Próxima sessão: resolver/confirmar as DECISÕES PENDENTES e iniciar a **Fase 1 — Backend base**
   (estrutura `backend/`, Docker Compose com PostgreSQL, Alembic, modelos da Fase 1 em `DATABASE.md` §3,
-  login do administrador, administradores, funcionários com carga horária e testes A01–A10 e seção 6 do `TEST-PLAN.md`).
+  login do administrador, administradores, funcionários com horário fixo e testes A01–A10 e seção 6 do `TEST-PLAN.md`).
 
 ---
 

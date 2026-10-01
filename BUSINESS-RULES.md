@@ -12,11 +12,12 @@
 
 | Termo | Definição |
 |---|---|
-| **Administrador** | Único perfil com login e senha. Gerencia funcionários, cargas horárias, feriados, ajustes, dispositivos e relatórios. |
+| **Administrador** | Único perfil com login e senha. Gerencia funcionários, horários, feriados, ajustes, dispositivos e relatórios. |
 | **Funcionário** | Não tem login nem senha. É identificado **somente pelo rosto** no kiosk, onde registra o ponto e consulta o próprio banco de horas. |
 | **Registro (batida)** | Um evento de ponto: `ENTRY`, `LUNCH_EXIT`, `LUNCH_RETURN` ou `EXIT`, com horário oficial do servidor. |
 | **Dia de jornada (workday)** | A data (no fuso da empresa) à qual um conjunto de registros pertence. Para turno noturno, é a data da **entrada**. |
-| **Carga horária** | Minutos que o funcionário deve trabalhar em cada dia da semana, informados no cadastro. |
+| **Horário fixo** | Horários de entrada, almoço e saída de cada dia da semana, informados no cadastro do funcionário. |
+| **Carga planejada** | Minutos que o funcionário deveria trabalhar no dia, derivados do horário fixo. |
 | **Minutos trabalhados** | Soma dos períodos efetivamente trabalhados (excluindo intervalo). |
 | **Saldo diário** | `trabalhado − planejado`, após aplicação da tolerância. |
 | **Banco de horas** | Saldo acumulado dos dias fechados + lançamentos manuais do administrador. |
@@ -26,7 +27,7 @@
 ## 2. Funcionários
 
 * Cadastro feito pelo administrador. Campos: nome, matrícula (única), CPF (opcional, único), data de admissão,
-  data de desligamento (opcional), situação (`ACTIVE`/`INACTIVE`) e **carga horária** (§3).
+  data de desligamento (opcional), situação (`ACTIVE`/`INACTIVE`) e **horário fixo** (§3).
 * O cadastro biométrico (rosto) é feito pelo administrador junto com o funcionário (ver `BIOMETRICS.md`).
 * **Desativação** não apaga dados: o funcionário deixa de ser reconhecido no kiosk e não registra ponto.
   Histórico e banco de horas continuam consultáveis pelo administrador.
@@ -35,31 +36,35 @@
 
 ---
 
-## 3. Carga horária
+## 3. Horário fixo do funcionário
 
-O responsável ainda não conhece os horários de cada funcionário; por isso o sistema **não exige horário de
-entrada/saída**. Cada funcionário tem apenas:
+Cada funcionário tem um **horário fixo de trabalho**, informado pelo administrador **no cadastro do funcionário**
+(junto com o nome e o rosto). O horário ainda não é conhecido hoje; por isso ele é um campo do cadastro, e não um
+valor fixo no sistema.
 
-* **carga diária** (ex.: 8 h = 480 min);
-* **dias da semana trabalhados** (padrão: segunda a sexta).
+Para cada dia da semana trabalhado, o horário define:
 
-Na tela de cadastro o administrador informa uma carga diária e marca os dias trabalhados; o sistema grava a
-carga por dia da semana, o que permite, se necessário, um valor diferente em algum dia (ex.: sábado com 4 h).
-Dias não marcados são folga.
+| Campo | Exemplo | Obrigatório |
+|---|---|---|
+| Entrada | 08:00 | sim |
+| Saída para almoço | 12:00 | não (dia sem intervalo) |
+| Retorno do almoço | 13:00 | sim, se houver saída para almoço |
+| Saída | 17:00 | sim |
+
+* Na tela de cadastro o administrador preenche o horário uma vez e marca os dias da semana trabalhados
+  (padrão: segunda a sexta); se algum dia for diferente (ex.: sábado 08:00–12:00), ajusta só aquele dia.
+* Dias não marcados são folga.
+* **Carga planejada do dia** = `(saída − entrada) − (retorno do almoço − saída para almoço)`.
+  Ex.: 08:00–12:00 / 13:00–17:00 ⇒ 480 min.
+* Saída menor que a entrada ⇒ o turno termina no dia seguinte (turno noturno, ex.: 22:00–06:00).
+  O intervalo precisa estar dentro do turno.
 
 ### 3.1 Vigência
 
-* A carga horária tem **vigência** (`valid_from`, `valid_to` opcional). Ao alterar a carga, o administrador
-  informa a partir de quando vale; a anterior é encerrada no dia anterior. Vigências não se sobrepõem.
-* O cálculo de um dia usa a carga vigente **naquele dia** — alterar a carga hoje não muda o passado.
+* O horário tem **vigência** (`valid_from`, `valid_to` opcional). Ao alterar o horário, o administrador informa a
+  partir de quando vale; o anterior é encerrado no dia anterior. Vigências não se sobrepõem.
+* O cálculo de um dia usa o horário vigente **naquele dia** — alterar o horário hoje não muda o passado.
 * A primeira vigência começa na data de admissão (obrigatória no cadastro).
-
-### 3.2 Consequências de não haver horário fixo
-
-* **Atraso** e **saída antecipada** não são calculados separadamente (não há horário de referência).
-  Eles aparecem como **horas faltantes** do dia (`missing_minutes`), reduzindo o saldo.
-* A tolerância é aplicada sobre o saldo do dia (§6).
-* Se no futuro horários fixos forem necessários, o modelo pode ser estendido sem perder dados.
 
 ---
 
@@ -104,6 +109,8 @@ Ao receber um registro no instante `t`:
 1. Se existe um ciclo **aberto** (tem `ENTRY` e não tem `EXIT`) cujo `ENTRY` ocorreu há no máximo
    **16 horas** (configurável, `max_shift_hours`), o registro pertence a esse dia de jornada.
 2. Caso contrário, só `ENTRY` é aceito, e o dia de jornada é a **data local de `t`**.
+   Exceção: se `t` cai até **4 horas antes** (configurável, `early_entry_window_hours`) da entrada de um turno
+   previsto para o dia seguinte local (ex.: entrada às 23:50 para turno que começa 00:00), o dia de jornada é o do turno.
 3. Um ciclo aberto há mais de `max_shift_hours` é considerado **incompleto**; a correção é por ajuste do administrador.
 
 Exemplo: entrada 22:00 de 10/09 e saída 06:00 de 11/09 ⇒ ambos pertencem ao dia de jornada **10/09**.
@@ -114,7 +121,7 @@ Exemplo: entrada 22:00 de 10/09 e saída 06:00 de 11/09 ⇒ ambos pertencem ao d
 |---|---|
 | Funcionário existe | `EMPLOYEE_NOT_FOUND` (404) |
 | Funcionário ativo e dentro do período de admissão/desligamento | `EMPLOYEE_INACTIVE` (409) |
-| Carga horária vigente | `NO_APPLICABLE_WORKLOAD` (409) |
+| Horário vigente | `NO_APPLICABLE_SCHEDULE` (409) |
 | Funcionário identificado pelo servidor (token de identificação válido) | `IDENTIFICATION_REQUIRED` (401) |
 | Sequência | `INVALID_SEQUENCE` (409) |
 | Duplicidade | `DUPLICATE_RECORD` (409) |
@@ -139,11 +146,13 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 
 | Campo | Regra |
 |---|---|
-| `day_type` | `WORKDAY`, `DAY_OFF` (dia não trabalhado na carga), `HOLIDAY`, `NOT_EMPLOYED` |
-| `planned_minutes` | Carga vigente daquele dia da semana; **0** em `DAY_OFF`, `HOLIDAY`, `NOT_EMPLOYED` |
+| `day_type` | `WORKDAY`, `DAY_OFF` (dia não trabalhado no horário), `HOLIDAY`, `NOT_EMPLOYED` |
+| `planned_minutes` | Carga do horário vigente naquele dia da semana; **0** em `DAY_OFF`, `HOLIDAY`, `NOT_EMPLOYED` |
 | `worked_minutes` | `(LUNCH_EXIT − ENTRY) + (EXIT − LUNCH_RETURN)`, ou `EXIT − ENTRY` sem intervalo |
 | `break_minutes` | `LUNCH_RETURN − LUNCH_EXIT` (0 se não houve intervalo) |
-| `missing_minutes` | `max(0, −saldo)` — horas faltantes (cobre atraso e saída antecipada) |
+| `late_minutes` | `max(0, ENTRY − entrada prevista)` — atraso |
+| `early_leave_minutes` | `max(0, saída prevista − EXIT)` — saída antecipada |
+| `missing_minutes` | `max(0, −saldo)` — horas faltantes no dia |
 | `overtime_minutes` | `max(0, saldo)` — horas extras |
 | `night_minutes` | Minutos trabalhados entre 22:00 e 05:00 (§7) |
 | `balance_minutes` | `worked − planned`, após tolerância (§6) |
@@ -163,13 +172,16 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 
 ---
 
-## 6. Tolerância
+## 6. Tolerância (CLT art. 58 §1º)
 
-* Como não há horário fixo, a tolerância é aplicada ao **saldo diário**: se `|balance| ≤ 10 min`
-  (configurável, `tolerance_daily_minutes`) ⇒ `balance = 0`.
-* Acima do limite, o saldo é computado **integralmente** (não se desconta a tolerância) — mesmo critério do
-  CLT art. 58 §1º.
-* Aplica-se somente a dias `WORKDAY` completos.
+* Variações de até **5 minutos por batida**, com limite de **10 minutos no dia**, não são computadas
+  (configuráveis: `tolerance_per_mark_minutes`, `tolerance_daily_minutes`).
+* Regra (somente dias `WORKDAY` completos):
+  1. Calcula-se o desvio absoluto de cada batida em relação ao horário previsto
+     (entrada, saída para almoço, retorno do almoço, saída).
+  2. Se **todo** desvio ≤ 5 min **e** a soma dos desvios ≤ 10 min ⇒ `balance=0`, `late=0`, `early_leave=0`,
+     `overtime=0`, `missing=0`.
+  3. Caso contrário, os minutos são computados **integralmente** (não se desconta a tolerância).
 
 ---
 
@@ -178,8 +190,7 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 * Período noturno: **22:00 às 05:00** no fuso da empresa (configurável).
 * O motor informa `night_minutes` (reais) e `night_minutes_reduced` (`× 60 / 52,5`, hora noturna reduzida — CLT art. 73).
 * O saldo e o banco de horas usam **minutos reais**; os minutos noturnos são informativos para a folha.
-* Turno noturno conta no dia da **entrada**: o dia da semana da entrada precisa estar marcado como dia trabalhado
-  na carga do funcionário.
+* Turno noturno conta no dia da **entrada** prevista (ex.: turno 22:00–06:00 de quinta conta na quinta).
 
 ---
 
