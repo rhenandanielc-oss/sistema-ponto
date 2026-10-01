@@ -169,3 +169,29 @@ def test_hour_bank_entry_validation(client: TestClient, auth_headers) -> None:
     )
     assert unknown.status_code == 404
     assert client.get(url, headers=auth_headers).json() == []
+
+
+def test_extra_day_outside_registered_days_is_overtime(
+    client: TestClient, auth_headers, db: Session
+) -> None:
+    """Funcionário de segunda a sexta que trabalha no sábado: tudo vira hora extra."""
+    employee = create_employee(
+        client,
+        auth_headers,
+        schedule={
+            "weekdays": ["segunda", "terça", "quarta", "quinta", "sexta"],
+            "start_time": "08:00",
+            "end_time": "16:00",
+            "lunch_minutes": 60,
+        },
+    )
+    full_day(db, employee, 5, "08:00", "12:00", "12:30", "14:00")  # sábado 05/09
+    clock.freeze(local(6, "08:00"))
+    day = get_bank(client, auth_headers, employee, "2026-09-05", "2026-09-05")["days"][0]
+    assert (day["day_type"], day["planned_minutes"]) == ("DAY_OFF", 0)
+    assert (day["worked_minutes"], day["overtime_minutes"], day["balance_minutes"]) == (
+        330,
+        330,
+        330,
+    )
+    assert "DAY_OFF_WORK" in day["flags"]

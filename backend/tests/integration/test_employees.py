@@ -297,3 +297,36 @@ def test_database_rejects_overlapping_schedules(
         db.rollback()
     else:
         raise AssertionError("A sobreposição de vigências deveria ser rejeitada pelo banco")
+
+
+def test_admin_types_name_days_schedule_and_lunch(client: TestClient, auth_headers) -> None:
+    """Cadastro como o administrador digita: nome, dias de trabalho, horário fixo e almoço."""
+    response = create(
+        client,
+        auth_headers,
+        name="João",
+        schedule={
+            "weekdays": ["Segunda-feira", "terça", "QUA", "qui", "sex", "sábado"],
+            "start_time": "08:00",
+            "end_time": "16:00",
+            "lunch_minutes": 30,
+        },
+    )
+    assert response.status_code == 201, response.text
+    days = response.json()["current_schedule"]["days"]
+    assert [d["weekday"] for d in days] == [0, 1, 2, 3, 4, 5]
+    assert {d["planned_minutes"] for d in days} == {450}  # 8 h - 30 min
+
+
+def test_invalid_weekday_name(client: TestClient, auth_headers) -> None:
+    response = create(
+        client,
+        auth_headers,
+        schedule={"weekdays": ["segunda", "feriado"], "start_time": "08:00", "end_time": "16:00"},
+    )
+    assert response.status_code == 422
+    assert "feriado" in str(response.json()["error"]["details"])
+    empty = create(
+        client, auth_headers, schedule={"weekdays": [], "start_time": "08:00", "end_time": "16:00"}
+    )
+    assert empty.status_code == 422

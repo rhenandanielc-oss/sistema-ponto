@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import date, time
 from typing import Any, Literal
 
@@ -33,6 +34,23 @@ def normalize_cpf(value: str | None) -> str | None:
     return digits
 
 
+_WEEKDAY_PREFIXES = ("seg", "ter", "qua", "qui", "sex", "sab", "dom")
+
+
+def parse_weekday(value: Any) -> Any:
+    """Aceita o dia como número (0 = segunda … 6 = domingo) ou nome ("segunda", "sáb", ...)."""
+    if not isinstance(value, str):
+        return value
+    text = unicodedata.normalize("NFKD", value.strip().lower())
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    if text.isdigit():
+        return int(text)
+    for index, prefix in enumerate(_WEEKDAY_PREFIXES):
+        if text.startswith(prefix):
+            return index
+    raise ValueError(f"dia da semana inválido: {value!r} (use segunda, terça, … domingo)")
+
+
 def _strip_required(value: str) -> str:
     value = value.strip()
     if not value:
@@ -50,6 +68,8 @@ class ScheduleDayIn(BaseModel):
         default=DEFAULT_LUNCH_MINUTES, ge=0, le=MAX_SHIFT_MINUTES, description="Duração do almoço"
     )
 
+    _weekday = field_validator("weekday", mode="before")(parse_weekday)
+
     def to_domain(self) -> DaySchedule:
         return DaySchedule(
             weekday=self.weekday,
@@ -63,7 +83,8 @@ class ScheduleDaysIn(BaseModel):
     """Horário fixo. Aceita a forma simples ou dia a dia.
 
     Forma simples (mesmo horário em vários dias):
-        {"start_time": "08:00", "end_time": "16:00", "lunch_minutes": 60, "weekdays": [0, 1, 2]}
+        {"start_time": "08:00", "end_time": "16:00", "lunch_minutes": 60,
+         "weekdays": ["segunda", "terça", "quarta", "quinta", "sexta", "sábado"]}
     Dia a dia:
         {"days": [{"weekday": 0, "start_time": "08:00", "end_time": "16:00"}, ...]}
     """
@@ -75,8 +96,8 @@ class ScheduleDaysIn(BaseModel):
     def _expand_simple_form(cls, data: Any) -> Any:
         if isinstance(data, dict) and "days" not in data and "start_time" in data:
             weekdays = data.get("weekdays", DEFAULT_WEEKDAYS)
-            if not isinstance(weekdays, list):
-                raise ValueError("weekdays deve ser uma lista de dias (0 = segunda … 6 = domingo)")
+            if not isinstance(weekdays, list) or not weekdays:
+                raise ValueError('weekdays deve ser uma lista de dias, ex.: ["segunda", "sábado"]')
             common = {k: data[k] for k in ("start_time", "end_time", "lunch_minutes") if k in data}
             rest = {
                 k: v

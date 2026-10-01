@@ -43,7 +43,7 @@ Cada funcionário tem um **horário fixo de trabalho**, informado pelo administr
 (junto com o nome e o rosto). O horário ainda não é conhecido hoje; por isso ele é um campo do cadastro, e não um
 valor fixo no sistema.
 
-Exemplo do cadastro: **Nome:** João — **Horário fixo:** 08:00 – 16:00.
+Exemplo do cadastro: **Nome:** João — **Dias:** segunda a sexta — **Horário fixo:** 08:00 – 16:00 — **Almoço:** 60 min.
 
 Para cada dia da semana trabalhado, o horário define:
 
@@ -58,7 +58,10 @@ Para cada dia da semana trabalhado, o horário define:
   para calcular a carga do dia.
 * Na tela de cadastro o administrador digita o horário uma vez e marca os dias da semana trabalhados
   (padrão: segunda a sexta); se algum dia for diferente (ex.: sábado 08:00–12:00 sem almoço), ajusta só aquele dia.
-* Dias não marcados são folga.
+* O administrador digita os **dias de trabalho** pelo nome ("segunda", "terça-feira", "sáb"…) ou número
+  (0 = segunda … 6 = domingo). Dias não informados são folga.
+* **Trabalho em dia fora da escala conta inteiro como hora extra** (ex.: funcionário de segunda a sexta que trabalha
+  no sábado — `DAY_OFF_WORK`, §5.1).
 * **Carga planejada do dia** = `(saída − entrada) − duração do almoço`.
   Ex.: João, 08:00–16:00 com 60 min de almoço ⇒ **420 min (7 h)**.
 * O almoço real é medido pelas batidas (`LUNCH_RETURN − LUNCH_EXIT`): quem almoça menos que o previsto trabalha
