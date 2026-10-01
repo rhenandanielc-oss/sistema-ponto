@@ -169,9 +169,9 @@ Pendente.
 * [ ] documentação
 * [ ] câmera
 * [ ] detecção facial
+* [ ] identificação
 * [ ] registro (funcionário só escolhe o tipo de batida)
 * [ ] consulta do próprio banco de horas pelo rosto
-* [ ] registro
 * [ ] confirmação
 * [ ] tratamento de erros
 * [ ] modo kiosk
