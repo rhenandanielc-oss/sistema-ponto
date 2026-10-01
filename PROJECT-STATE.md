@@ -10,15 +10,15 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 # STATUS GERAL
 
-**Status:** NÃO INICIADO
+**Status:** EM ANDAMENTO
 
-**Fase atual:** Fase 0 — Arquitetura
+**Fase atual:** Fase 0 — Arquitetura (CONCLUÍDA) → próxima: Fase 1 — Backend base
 
-**Última atualização:** A preencher pelo Claude Code.
+**Última atualização:** 2026-10-01
 
-**Último commit:** A preencher.
+**Último commit:** `docs: define phase 0 architecture` (branch `claude/oi-xu1bph`; ver `git log`)
 
-**Próxima ação:** Criar e revisar a documentação arquitetural inicial.
+**Próxima ação:** Revisar as decisões pendentes (seção DECISÕES PENDENTES) e iniciar a Fase 1.
 
 ---
 
@@ -26,7 +26,7 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 ## Fase 0 — Arquitetura
 
-**Status:** PENDENTE
+**Status:** CONCLUÍDA (2026-10-01)
 
 ### Objetivos
 
@@ -40,21 +40,22 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 ### Entregáveis
 
-* [ ] `ARCHITECTURE.md`
-* [ ] `DATABASE.md`
-* [ ] `API.md`
-* [ ] `SECURITY.md`
-* [ ] `BUSINESS-RULES.md`
-* [ ] `BIOMETRICS.md`
-* [ ] `TEST-PLAN.md`
+* [x] `ARCHITECTURE.md` — stack, camadas, estrutura de pastas, timezone, concorrência
+* [x] `DATABASE.md` — tabelas por fase, restrições de integridade e duplicidade
+* [x] `API.md` — convenções (paginação, filtros, ordenação, erros) e endpoints por fase
+* [x] `SECURITY.md` — ameaças, autenticação, kiosk, matriz RBAC, segredos, auditoria
+* [x] `BUSINESS-RULES.md` — sequência, duplicidade, dia de jornada, motor de cálculo, tolerância, noturno, feriados, banco de horas
+* [x] `BIOMETRICS.md` — comparação de alternativas, decisão, armazenamento, retenção, riscos
+* [x] `TEST-PLAN.md` — estratégia e casos obrigatórios com exemplos numéricos (C01–C24, R01–R17, A01–A12)
 
 ### Testes
 
-Ainda não executados.
+Não aplicável (fase apenas de documentação; nenhum código criado). Os exemplos numéricos do
+`TEST-PLAN.md` foram conferidos manualmente (dias da semana de set/2026 e contas de minutos).
 
 ### Decisões
 
-Ainda não definidas.
+Ver seção DECISÕES TÉCNICAS.
 
 ---
 
@@ -202,7 +203,48 @@ Pendente.
 
 # DECISÕES TÉCNICAS
 
-Nenhuma decisão registrada.
+### 2026-10-01 — Backend em Python 3.12 + FastAPI
+
+**Problema:** o MASTER-PROMPT deixa a tecnologia do backend em aberto.
+**Opções analisadas:** FastAPI (Python), NestJS (Node/TS), Spring Boot (Java).
+**Decisão:** FastAPI + SQLAlchemy 2 + Alembic + Pydantic v2 + pytest.
+**Motivo:** biometria precisa rodar no servidor e Python tem o melhor ecossistema (onnxruntime/OpenCV); motor de cálculo simples de testar.
+**Impacto:** duas linguagens; tipos do frontend serão gerados do OpenAPI. Detalhes em `ARCHITECTURE.md` §2.
+
+### 2026-10-01 — Horário oficial, timezone e imutabilidade
+
+**Decisão:** horário oficial = `now()` do servidor; `timestamptz` em UTC; fuso de referência `America/Sao_Paulo` configurável; registros imutáveis, correção apenas por ajuste auditado.
+**Motivo:** confiabilidade jurídica e de auditoria. Detalhes em `ARCHITECTURE.md` §5 e `BUSINESS-RULES.md` §4.
+
+### 2026-10-01 — Dia de jornada e jornada noturna
+
+**Decisão:** registros de um ciclo aberto (até 16 h) pertencem ao dia da ENTRY; um ciclo (ENTRY…EXIT) por dia na v1.
+**Motivo:** resolve turnos que atravessam a meia-noite sem ambiguidade. `BUSINESS-RULES.md` §4.4.
+
+### 2026-10-01 — Cálculo sob demanda
+
+**Decisão:** resultados diários não são persistidos na v1; calculados a partir dos registros.
+**Motivo:** evita inconsistência após ajustes. Cache pode ser adicionado na Fase 6. `DATABASE.md` §4.
+
+### 2026-10-01 — Arquitetura biométrica
+
+**Opções analisadas:** face-api.js, TensorFlow.js, MediaPipe, backend com ONNX local (YuNet + SFace), InsightFace, APIs externas.
+**Decisão:** MediaPipe no navegador só para UX (detecção/enquadramento); identificação no servidor com YuNet + SFace (ONNX, local); apenas embeddings cifrados (AES-256-GCM) são armazenados, nunca imagens; registro exige token de identificação emitido pelo servidor.
+**Motivo:** privacidade (sem terceiros), confiança (decisão no servidor), licenças permissivas, sem dependência de internet. InsightFace descartado por licença não comercial dos modelos; APIs externas descartadas por LGPD/dependência de internet.
+**Impacto:** sem detecção de vivacidade por padrão (risco registrado). Detalhes em `BIOMETRICS.md`.
+
+### 2026-10-01 — Autenticação
+
+**Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly; kiosk com token de dispositivo; RBAC com perfis ADMIN, HR, MANAGER, EMPLOYEE. `SECURITY.md`.
+
+---
+
+# DECISÕES PENDENTES (precisam do responsável pelo projeto)
+
+1. **Portaria MTP 671/2021 (REP-P):** o sistema precisa ser um REP-P conforme (comprovante, AFD/AEJ, atestado técnico)? Hoje está **fora do escopo**; a arquitetura não impede. `BUSINESS-RULES.md` §11.
+2. **Alternativa à biometria** para quem não consentir: proposta de matrícula + PIN auditado. `BIOMETRICS.md` §4.
+3. **Retenção** dos registros de ponto e da auditoria (prazo legal/contábil da empresa). `SECURITY.md` §8.
+4. **Valores padrão** a confirmar: tolerância 5/10 min, intervalo mínimo entre marcações 2 min, `max_shift_hours` 16 h, prazo de banco de horas, feriado zerar escala 12x36.
 
 Formato recomendado:
 
@@ -323,7 +365,15 @@ Formato:
 
 # RISCOS
 
-Nenhum risco registrado.
+| Categoria | Risco | Mitigação planejada |
+|---|---|---|
+| biometria | Fraude com foto/vídeo (sem detecção de vivacidade) | Kiosk supervisionado, auditoria, avaliar anti-spoofing com licença compatível na Fase 5 |
+| biometria | Licenças dos modelos (YuNet/SFace) | Confirmar licença dos arquivos exatos na Fase 5 antes de usar |
+| privacidade | Biometria é dado sensível (LGPD) | Consentimento, sem imagens, templates cifrados, exclusão e expurgo |
+| conformidade | Portaria 671/2021 não contemplada | Decisão pendente nº 1; não declarar conformidade |
+| timezone | Erros em turnos noturnos e horário de verão | `zoneinfo`, casos C17/R13/R14 |
+| concorrência | Registros simultâneos duplicados | `SELECT ... FOR UPDATE` + índice único parcial; teste R08 |
+| kiosk | Câmera/rede instáveis | Tratamento de erros e reconexão (Fase 5) |
 
 Possíveis categorias:
 
@@ -342,7 +392,12 @@ Possíveis categorias:
 
 # ÚLTIMAS ALTERAÇÕES
 
-Nenhuma.
+### 2026-10-01
+
+* Fase 0 concluída: criada a documentação de arquitetura.
+* Arquivos: `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `SECURITY.md`, `BUSINESS-RULES.md`, `BIOMETRICS.md`, `TEST-PLAN.md`, `PROJECT-STATE.md`.
+* Testes: não aplicável (sem código).
+* Resultado: arquitetura definida; 4 decisões pendentes listadas.
 
 Formato:
 
@@ -358,13 +413,13 @@ Formato:
 # TESTES DA ÚLTIMA SESSÃO
 
 **Comando:**
-A preencher.
+Nenhum (Fase 0 é só documentação).
 
 **Resultado:**
-A preencher.
+Não aplicável.
 
 **Falhas:**
-A preencher.
+Nenhuma.
 
 ---
 
@@ -385,9 +440,15 @@ Ao iniciar uma nova sessão:
 
 # LOG DE SESSÕES
 
-## Sessão 1
+## Sessão 1 — 2026-10-01
 
-**Status:** Não iniciada.
+**Status:** Concluída.
+
+* Lidos `MASTER-PROMPT.md` e `PROJECT-STATE.md`; repositório sem código.
+* Executada a Fase 0 (documentação de arquitetura).
+* Próxima sessão: resolver/confirmar as DECISÕES PENDENTES e iniciar a **Fase 1 — Backend base**
+  (estrutura `backend/`, Docker Compose com PostgreSQL, Alembic, modelos da Fase 1 em `DATABASE.md` §3,
+  autenticação/autorização, usuários, funcionários, jornadas e testes A01–A12 e seção 6 do `TEST-PLAN.md`).
 
 ---
 
