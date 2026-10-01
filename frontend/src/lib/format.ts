@@ -75,3 +75,8 @@ export function formatDateTime(isoInstant: string): string {
 export function shortTime(time: string): string {
   return time.slice(0, 5);
 }
+
+/** 7.5 → "7,50" (horas decimais, para multiplicar pelo valor da hora). */
+export function formatDecimalHours(hours: number): string {
+  return hours.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}

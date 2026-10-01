@@ -111,6 +111,7 @@ function CreateEmployeeModal({ onClose }: { onClose: () => void }) {
   const [registration, setRegistration] = useState("");
   const [cpf, setCpf] = useState("");
   const [hireDate, setHireDate] = useState(() => toIsoDate(new Date()));
+  const [payday, setPayday] = useState(5);
   const [schedule, setSchedule] = useState<ScheduleForm>(DEFAULT_SCHEDULE);
 
   const mutation = useMutation({
@@ -122,6 +123,7 @@ function CreateEmployeeModal({ onClose }: { onClose: () => void }) {
           registration_number: registration,
           cpf: cpf || null,
           hire_date: hireDate,
+          payday,
           schedule: scheduleToApi(schedule),
         },
       }),
@@ -177,6 +179,24 @@ function CreateEmployeeModal({ onClose }: { onClose: () => void }) {
               value={hireDate}
               onChange={(e) => setHireDate(e.target.value)}
             />
+          </div>
+          <div>
+            <label className="label" htmlFor="payday">
+              Dia do pagamento
+            </label>
+            <input
+              id="payday"
+              type="number"
+              min={1}
+              max={31}
+              required
+              className="input"
+              value={payday}
+              onChange={(e) => setPayday(Number(e.target.value))}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              As horas são somadas do dia seguinte ao pagamento anterior até este dia.
+            </p>
           </div>
         </div>
         <h3 className="border-t border-slate-200 pt-4 font-semibold text-slate-800">Horário fixo</h3>

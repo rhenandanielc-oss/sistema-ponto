@@ -527,6 +527,46 @@ export interface paths {
         patch: operations["update_settings_api_v1_settings_patch"];
         trace?: never;
     };
+    "/api/v1/employees/{employee_id}/payroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Employee Payroll
+         * @description Horas do funcionário no ciclo de pagamento. O valor é calculado pelo administrador.
+         */
+        get: operations["employee_payroll_api_v1_employees__employee_id__payroll_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payroll Summary
+         * @description Horas de todos os funcionários, cada um no seu ciclo de pagamento.
+         */
+        get: operations["payroll_summary_api_v1_payroll_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kiosk/ping": {
         parameters: {
             query?: never;
@@ -869,6 +909,11 @@ export interface components {
              * Format: date
              */
             hire_date: string;
+            /**
+             * Payday
+             * @description Dia do mês do pagamento (31 = último dia)
+             */
+            payday: number;
             schedule: components["schemas"]["ScheduleDaysIn"];
         };
         /** EmployeeDetail */
@@ -893,6 +938,8 @@ export interface components {
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";
+            /** Payday */
+            payday: number;
             /** Created At */
             created_at: string;
             /** Updated At */
@@ -921,6 +968,8 @@ export interface components {
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";
+            /** Payday */
+            payday: number;
             /** Created At */
             created_at: string;
             /** Updated At */
@@ -938,6 +987,8 @@ export interface components {
             hire_date?: string | null;
             /** Termination Date */
             termination_date?: string | null;
+            /** Payday */
+            payday?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1175,6 +1226,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[PayrollOut] */
+        Page_PayrollOut_: {
+            /** Items */
+            items: components["schemas"]["PayrollOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** Page[TimeRecordOut] */
         Page_TimeRecordOut_: {
             /** Items */
@@ -1185,6 +1247,65 @@ export interface components {
             page_size: number;
             /** Total */
             total: number;
+        };
+        /** PayrollOut */
+        PayrollOut: {
+            /** Employee Id */
+            employee_id: number;
+            /** Name */
+            name: string;
+            /** Registration Number */
+            registration_number: string;
+            /** Payday */
+            payday: number;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /**
+             * Closed
+             * @description false = ciclo em andamento; as horas ainda podem mudar
+             */
+            closed: boolean;
+            /** Worked Minutes */
+            worked_minutes: number;
+            /**
+             * Worked Hours
+             * @description Horas trabalhadas em decimal (7h30 = 7.5)
+             */
+            worked_hours: number;
+            /** Planned Minutes */
+            planned_minutes: number;
+            /** Planned Hours */
+            planned_hours: number;
+            /** Overtime Minutes */
+            overtime_minutes: number;
+            /** Overtime Hours */
+            overtime_hours: number;
+            /** Missing Minutes */
+            missing_minutes: number;
+            /** Missing Hours */
+            missing_hours: number;
+            /** Balance Minutes */
+            balance_minutes: number;
+            /** Absences */
+            absences: number;
+            /**
+             * Incomplete Days
+             * @description Dias com batida faltando: corrija antes de pagar
+             */
+            incomplete_days: number;
         };
         /** PingOut */
         PingOut: {
@@ -2798,6 +2919,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanySettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    employee_payroll_api_v1_employees__employee_id__payroll_get: {
+        parameters: {
+            query?: {
+                /** @description Mês do pagamento (AAAA-MM). Sem ele, usa o ciclo que contém reference_date. */
+                payment_month?: string | null;
+                /** @description Data dentro do ciclo desejado (padrão: hoje) */
+                reference_date?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payroll_summary_api_v1_payroll_get: {
+        parameters: {
+            query?: {
+                /** @description Mês do pagamento (AAAA-MM). Sem ele, usa o ciclo que contém reference_date. */
+                payment_month?: string | null;
+                /** @description Data dentro do ciclo desejado (padrão: hoje) */
+                reference_date?: string | null;
+                q?: string | null;
+                status?: ("ACTIVE" | "INACTIVE") | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PayrollOut_"];
                 };
             };
             /** @description Validation Error */

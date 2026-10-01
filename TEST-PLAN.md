@@ -2,8 +2,8 @@
 
 # Plano de Testes
 
-> **Status:** Fases 1–4 implementadas. Backend: C01–C24, R01–R18, A01–A10, §6 e testes da API (180 testes).
-> Frontend: Vitest (11 testes) e Playwright E2E (login, cadastro, histórico, ajustes, banco de horas, administração).
+> **Status:** Fases 1–4 implementadas. Backend: C01–C24, R01–R18, A01–A10, §6, testes da API e do pagamento (200 testes).
+> Frontend: Vitest (12 testes) e Playwright E2E (login, cadastro, histórico, ajustes, banco de horas, administração).
 > A11–A13 e §7: Fase 5.
 
 ---
@@ -151,3 +151,20 @@ Salvo indicação, os exemplos usam:
 * Testes de fases anteriores continuam passando.
 * `ruff`, `mypy` (backend) e `tsc`/lint (frontend) sem erros.
 * Resultado registrado em `PROJECT-STATE.md` (comando, resultado, falhas).
+
+---
+
+## 9. Pagamento (BUSINESS-RULES.md §11)
+
+| # | Caso | Esperado |
+|---|---|---|
+| P01 | Pagamento dia 5, data 01/09 | ciclo 06/08–05/09 |
+| P02 | Dia do pagamento entra no ciclo | 05/09 → ciclo que termina em 05/09 |
+| P03 | Dia 31 em fevereiro / abril | último dia do mês (28/02, 30/04); bissexto 29/02 |
+| P04 | Virada de ano | pagamento dia 10: 11/12–10/01 |
+| P05 | Ciclos consecutivos | cobrem todos os dias, sem sobreposição |
+| P06 | Horas do ciclo | 8h + 9h30 + falta + 7h30 ⇒ 25,00 h trabalhadas; 1,50 h extras; 8,50 h faltantes |
+| P07 | Dia incompleto no ciclo | contado em `incomplete_days` |
+| P08 | Resumo | cada funcionário no seu próprio ciclo (dias 5 e 20) |
+| P09 | Validação | `payday` obrigatório, 1–31; mês inválido ⇒ 422 |
+

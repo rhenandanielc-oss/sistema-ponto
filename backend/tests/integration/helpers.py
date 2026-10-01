@@ -25,6 +25,7 @@ def create_employee(
     registration: str = "001",
     name: str = "João",
     hire_date: str = "2026-09-01",
+    payday: int = 5,
     schedule: dict[str, Any] | None = None,
 ) -> int:
     response = client.post(
@@ -33,6 +34,7 @@ def create_employee(
             "name": name,
             "registration_number": registration,
             "hire_date": hire_date,
+            "payday": payday,
             "schedule": schedule or {"start_time": "08:00", "end_time": "17:00"},
         },
         headers=headers,

@@ -12,6 +12,7 @@ import { HourBankEmployeePage } from "./pages/HourBankEmployeePage";
 import { HourBankPage } from "./pages/HourBankPage";
 import { KioskPage } from "./pages/KioskPage";
 import { LoginPage } from "./pages/LoginPage";
+import { PayrollPage } from "./pages/PayrollPage";
 
 /** Rotas administrativas: sem sessão, vai para /login e volta depois. */
 function RequireAdmin({ children }: { children: ReactNode }) {
@@ -41,6 +42,7 @@ export function App() {
         <Route path="/historico" element={<HistoryPage />} />
         <Route path="/banco-de-horas" element={<HourBankPage />} />
         <Route path="/banco-de-horas/:id" element={<HourBankEmployeePage />} />
+        <Route path="/pagamento" element={<PayrollPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/funcionarios" replace />} />

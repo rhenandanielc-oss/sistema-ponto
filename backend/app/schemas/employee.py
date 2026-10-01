@@ -160,6 +160,7 @@ class EmployeeCreate(BaseModel):
     registration_number: str = Field(max_length=50)
     cpf: str | None = None
     hire_date: date
+    payday: int = Field(ge=1, le=31, description="Dia do mês do pagamento (31 = último dia)")
     schedule: ScheduleDaysIn
 
     _name = field_validator("name", "registration_number")(_strip_required)
@@ -172,6 +173,7 @@ class EmployeeUpdate(BaseModel):
     cpf: str | None = None
     hire_date: date | None = None
     termination_date: date | None = None
+    payday: int | None = Field(default=None, ge=1, le=31)
 
     @field_validator("name", "registration_number")
     @classmethod
@@ -189,6 +191,7 @@ class EmployeeOut(ORMModel):
     hire_date: date
     termination_date: date | None
     status: Literal["ACTIVE", "INACTIVE"]
+    payday: int
     created_at: LocalDatetime
     updated_at: LocalDatetime
 

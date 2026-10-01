@@ -26,6 +26,7 @@ def payload(**overrides: Any) -> dict[str, Any]:
         "registration_number": "001",
         "cpf": "529.982.247-25",
         "hire_date": "2026-09-01",
+        "payday": 5,
         "schedule": week(),
     }
     data.update(overrides)

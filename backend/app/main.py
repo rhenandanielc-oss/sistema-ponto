@@ -10,6 +10,7 @@ from app.api import (
     holidays,
     hour_bank,
     kiosk,
+    payroll,
     time_records,
 )
 from app.api import audit as audit_api
@@ -42,6 +43,10 @@ TAGS = [
         "description": "Histórico de batidas e ajustes do administrador.",
     },
     {"name": "cálculo e banco de horas", "description": "Resultado diário, saldos e lançamentos."},
+    {
+        "name": "pagamento",
+        "description": "Horas do ciclo de pagamento (o valor é calculado à parte).",
+    },
     {"name": "feriados", "description": "Feriados fixos e recorrentes."},
     {"name": "dispositivos", "description": "Terminais de ponto autorizados."},
     {"name": "configurações", "description": "Tolerâncias e parâmetros da empresa."},
@@ -87,6 +92,7 @@ def create_app() -> FastAPI:
         holidays,
         devices,
         settings_api,
+        payroll,
         kiosk,
     ):
         api.include_router(module.router)

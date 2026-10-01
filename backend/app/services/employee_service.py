@@ -28,6 +28,7 @@ def _snapshot(employee: Employee) -> dict[str, Any]:
         "hire_date": employee.hire_date,
         "termination_date": employee.termination_date,
         "status": employee.status,
+        "payday": employee.payday,
     }
 
 
@@ -135,6 +136,7 @@ def create(db: Session, data: EmployeeCreate, actor: audit.Actor) -> Employee:
         registration_number=data.registration_number,
         cpf=data.cpf,
         hire_date=data.hire_date,
+        payday=data.payday,
         status="ACTIVE",
     )
     schedule = EmployeeSchedule(
@@ -182,7 +184,7 @@ def current_schedule(
 def update(db: Session, employee_id: int, data: EmployeeUpdate, actor: audit.Actor) -> Employee:
     employee = get(db, employee_id, for_update=True)
     changes = data.model_dump(exclude_unset=True)
-    for required in ("name", "registration_number", "hire_date"):
+    for required in ("name", "registration_number", "hire_date", "payday"):
         if required in changes and changes[required] is None:
             raise AppError(422, "VALIDATION_ERROR", f"O campo {required} não pode ser vazio.")
     _check_unique(

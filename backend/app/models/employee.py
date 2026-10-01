@@ -30,6 +30,7 @@ class Employee(TimestampMixin, Base):
             "termination_date IS NULL OR termination_date >= hire_date", name="termination_date"
         ),
         CheckConstraint("cpf IS NULL OR cpf ~ '^[0-9]{11}$'", name="cpf_digits"),
+        CheckConstraint("payday BETWEEN 1 AND 31", name="payday"),
         Index("ix_employees_name_lower", text("lower(name)")),
     )
 
@@ -40,6 +41,8 @@ class Employee(TimestampMixin, Base):
     hire_date: Mapped[date] = mapped_column(Date, nullable=False)
     termination_date: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="ACTIVE", index=True)
+    # Dia do mês em que o funcionário recebe; define o ciclo de pagamento (BUSINESS-RULES.md §11).
+    payday: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 
     schedules: Mapped[list["EmployeeSchedule"]] = relationship(
         back_populates="employee", order_by="EmployeeSchedule.valid_from"

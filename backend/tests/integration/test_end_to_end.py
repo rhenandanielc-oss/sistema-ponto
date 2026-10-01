@@ -19,6 +19,7 @@ def test_month_of_work(client: TestClient, admin, db: Session) -> None:
             "name": "João",
             "registration_number": "100",
             "hire_date": "2026-09-01",
+            "payday": 5,
             "schedule": {
                 "weekdays": ["segunda", "terça", "quarta", "quinta", "sexta"],
                 "start_time": "08:00",

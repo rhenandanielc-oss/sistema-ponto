@@ -103,6 +103,11 @@ def _totals(days: list[DayResult]) -> Totals:
     )
 
 
+def period_totals(db: Session, employee: Employee, date_from: date, date_to: date) -> Totals:
+    """Totais de um período, sem o limite de 366 dias (uso interno, ex.: ciclo de pagamento)."""
+    return _totals(_calculate(db, employee, date_from, date_to))
+
+
 def workdays(
     db: Session, employee_id: int, date_from: date, date_to: date
 ) -> tuple[list[DayResult], Totals]:

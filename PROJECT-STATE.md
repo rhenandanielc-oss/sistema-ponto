@@ -16,7 +16,7 @@ Ele deve ser atualizado pelo Claude Code ao final de cada etapa significativa.
 
 **Última atualização:** 2026-10-01
 
-**Último commit:** `feat: implement admin web interface` (branch `claude/oi-xu1bph`; ver `git log`)
+**Último commit:** `feat: payday and payroll hours per employee` (branch `claude/oi-xu1bph`; ver `git log`)
 
 **Próxima ação:** Iniciar a Fase 5 — reconhecimento facial e terminal de ponto (kiosk).
 
@@ -190,6 +190,8 @@ duas conexões), banco de horas via API, feriados, terminais e configurações.
 * [x] administração: feriados, terminais (chave exibida uma vez, nova chave, ativar/desativar),
   administradores, configurações, auditoria
 * [x] interface em português, funciona em desktop, tablet e celular
+* [x] **pagamento** (adicionado a pedido do responsável): dia do pagamento no cadastro; página `/pagamento` com
+  as horas do ciclo de cada funcionário (horas e minutos e horas decimais); ficha mostra o ciclo atual
 
 ### Decisões
 
@@ -300,6 +302,11 @@ estáveis no Vite e também contra o build servido pelo nginx com CSP). Backend:
 3. O funcionário consulta o **próprio banco de horas** no kiosk, também pelo rosto; o servidor só devolve os dados de quem reconheceu.
 4. Cada funcionário tem um **horário fixo** (entrada, almoço, retorno, saída por dia da semana), ainda desconhecido hoje: por isso é informado **no cadastro do funcionário**, junto com o nome e o rosto, com vigência. Com ele o sistema calcula atraso, saída antecipada, horas faltantes e horas extras (tolerância CLT 5/10 min por batida). *(Corrigido em 2026-10-01: a versão anterior falava em "carga horária diária sem horário fixo", por engano.)*
 5. Portaria MTP 671/2021 e alternativa à biometria (PIN) **não serão tratadas**.
+7. *(2026-10-01)* **Dia do pagamento** no cadastro do funcionário. O sistema calcula **somente as horas** do ciclo
+   (do dia seguinte ao pagamento anterior até o dia do pagamento, inclusive; dia inexistente no mês = último dia),
+   inclusive em horas decimais; **o administrador multiplica pelo valor da hora**. Nenhum valor em dinheiro é
+   guardado. Página `/pagamento`, endpoints `/payroll`, migration `0004`. Ciclo assumido pelo Claude Code —
+   o responsável pode pedir outro corte (ex.: fechar alguns dias antes do pagamento).
 6. *(2026-10-01)* O horário fixo é **só entrada e saída** (ex.: João, 08:00 – 16:00). **O almoço é livre**: o funcionário
    sai e volta quando quiser e o sistema não recusa almoço fora de hora. O cadastro guarda a **duração prevista do
    almoço** (padrão 60 min, ajustável, pode ser 0), descontada da carga: 08:00–16:00 ⇒ 7 h. Migration `0002`.
@@ -492,6 +499,7 @@ Possíveis categorias:
   motor de cálculo, feriados, banco de horas, terminais, configurações. Migration `0003`. 165 testes passando.
 * Cadastro aceita dias por nome. **Fase 3 concluída:** auditoria consultável, resumo do banco de horas, limites de
   requisição, cabeçalhos de segurança, OpenAPI. A auditoria passou a usar o relógio do backend. 179 testes passando.
+* Dia do pagamento e horas por ciclo de pagamento (`/pagamento`); migration `0004`. 200 testes no backend.
 * **Fase 4 concluída:** painel web do administrador (React). Testes de navegador acharam e corrigiram: CSP
   descartada pelo nginx (`add_header` em `location`) e um teste instável (corrigido no teste).
 
@@ -521,7 +529,7 @@ E2E_DATABASE_URL=postgresql+psycopg://ponto:ponto@localhost:5433/ponto_e2e npm r
 ```
 
 **Resultado:**
-Backend: 180 passed; ruff, mypy (strict). Frontend: eslint, tsc, 11 testes Vitest, build, 2 testes E2E
+Backend: 200 passed; ruff, mypy (strict). Frontend: eslint, tsc, 12 testes Vitest, build, 2 testes E2E
 (Playwright/Chromium) estáveis em 6 execuções; E2E também contra nginx + build de produção.
 
 **Falhas:**

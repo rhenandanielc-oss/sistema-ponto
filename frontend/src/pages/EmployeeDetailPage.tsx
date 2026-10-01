@@ -5,7 +5,7 @@ import { Link, useParams } from "react-router";
 import { api, type Schemas } from "../api/client";
 import { DEFAULT_SCHEDULE, ScheduleFields, scheduleToApi, type ScheduleForm } from "../components/ScheduleFields";
 import { Badge, ErrorMessage, Loading, Modal, PageHeader } from "../components/ui";
-import { WEEKDAYS, formatDate, formatDateTime, formatMinutes, shortTime } from "../lib/format";
+import { WEEKDAYS, formatDate, formatDateTime, formatDecimalHours, formatMinutes, shortTime } from "../lib/format";
 import { toIsoDate } from "../lib/period";
 
 type Employee = Schemas["EmployeeDetail"];
@@ -30,6 +30,10 @@ export function EmployeeDetailPage() {
   const schedules = useQuery({
     queryKey: ["employee", id, "schedules"],
     queryFn: () => api<Schedule[]>(`/employees/${id}/schedules`),
+  });
+  const payroll = useQuery({
+    queryKey: ["payroll", id, "current"],
+    queryFn: () => api<Schemas["PayrollOut"]>(`/employees/${id}/payroll`),
   });
   const history = useQuery({
     queryKey: ["employee", id, "history"],
@@ -98,6 +102,23 @@ export function EmployeeDetailPage() {
             <span className="text-slate-500">Desligamento: </span>
             {e.termination_date ? formatDate(e.termination_date) : "—"}
           </p>
+          <p>
+            <span className="text-slate-500">Dia do pagamento: </span>
+            {e.payday}
+          </p>
+          {payroll.data && (
+            <div className="mt-3 rounded-md bg-indigo-50 p-3">
+              <p className="text-xs text-indigo-800">
+                Ciclo atual: {formatDate(payroll.data.period_start)} a {formatDate(payroll.data.period_end)}
+              </p>
+              <p className="text-lg font-semibold text-indigo-900">
+                {formatMinutes(payroll.data.worked_minutes)} trabalhadas ({formatDecimalHours(payroll.data.worked_hours)} h)
+              </p>
+              <Link className="text-xs text-indigo-700 hover:underline" to="/pagamento">
+                Ver pagamento
+              </Link>
+            </div>
+          )}
           <p className="pt-2 text-xs text-slate-500">Rosto para o terminal: disponível na Fase 5.</p>
         </section>
 
@@ -208,16 +229,23 @@ function EditEmployeeModal({ employee, onClose }: { employee: Employee; onClose:
     cpf: employee.cpf ?? "",
     hire_date: employee.hire_date,
     termination_date: employee.termination_date ?? "",
+    payday: String(employee.payday),
   });
   const mutation = useMutation({
     mutationFn: () =>
       api<Employee>(`/employees/${employee.id}`, {
         method: "PATCH",
-        body: { ...form, cpf: form.cpf || null, termination_date: form.termination_date || null },
+        body: {
+          ...form,
+          cpf: form.cpf || null,
+          termination_date: form.termination_date || null,
+          payday: Number(form.payday),
+        },
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["employee", employee.id] });
       void queryClient.invalidateQueries({ queryKey: ["employees"] });
+      void queryClient.invalidateQueries({ queryKey: ["payroll"] });
       onClose();
     },
   });
@@ -252,6 +280,7 @@ function EditEmployeeModal({ employee, onClose }: { employee: Employee; onClose:
           {field("cpf", "CPF (opcional)", "text", false)}
           {field("hire_date", "Admissão", "date")}
           {field("termination_date", "Desligamento (opcional)", "date", false)}
+          {field("payday", "Dia do pagamento (1 a 31)", "number")}
         </div>
         <div className="flex justify-end gap-2">
           <button type="button" className="btn-secondary" onClick={onClose}>

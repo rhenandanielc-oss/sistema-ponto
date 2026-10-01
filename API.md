@@ -106,6 +106,14 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | GET | `/employees/{id}/schedules` | Vigências do horário fixo | 1 |
 | POST | `/employees/{id}/schedules` | Novo horário a partir de `valid_from` (encerra o anterior em `valid_from − 1`) | 1 |
 
+### Pagamento (horas do ciclo)
+| Método | Rota | Descrição | Fase |
+|---|---|---|---|
+| GET | `/employees/{id}/payroll?payment_month=AAAA-MM` ou `?reference_date=AAAA-MM-DD` | Horas do ciclo de pagamento (padrão: ciclo que contém hoje), em minutos e em horas decimais | 4 |
+| GET | `/payroll?payment_month&reference_date&q&status` | Mesmo cálculo para todos os funcionários, cada um no seu ciclo (paginado) | 4 |
+
+O cadastro (`POST /employees`) exige `payday` (1 a 31); `PATCH /employees/{id}` permite alterá-lo.
+
 ### Feriados
 | Método | Rota | Fase |
 |---|---|---|

@@ -33,6 +33,7 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await dialog.getByLabel("Nome").fill("João da Silva");
   await dialog.getByLabel("Matrícula").fill("100");
   await dialog.getByLabel("Data de admissão").fill(isoDay(-40));
+  await dialog.getByLabel("Dia do pagamento").fill("5");
   await dialog.getByText("Sáb", { exact: true }).click(); // segunda a sábado
   await dialog.getByLabel("Entrada").fill("08:00");
   await dialog.getByLabel("Saída").fill("16:00");
@@ -44,6 +45,8 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await expect(scheduleRows).toHaveCount(6);
   await expect(scheduleRows.first()).toContainText("08:00");
   await expect(scheduleRows.first()).toContainText("7h30"); // 8 h - 30 min de almoço, calculado pelo backend
+  await expect(page.getByText("Dia do pagamento: 5")).toBeVisible();
+  await expect(page.getByText("Ciclo atual:")).toBeVisible();
 
   // Validação vinda do backend: almoço maior que o turno.
   await page.getByRole("button", { name: "Alterar horário" }).click();
@@ -98,6 +101,15 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await page.getByLabel("Data inicial").fill(isoDay(-1));
   await page.getByLabel("Data final").fill(isoDay(-1));
   await expect(page.getByText("Incompleto").first()).toBeVisible(); // ontem ficou só com a entrada
+
+  // Pagamento: horas do ciclo, em decimal para multiplicar pelo valor da hora.
+  await page.getByRole("link", { name: "Pagamento" }).click();
+  await expect(page.getByRole("heading", { name: "Pagamento" })).toBeVisible();
+  const payRow = page.locator("tr", { hasText: "João da Silva" });
+  await expect(payRow).toContainText(/\d+,\d{2} h/);
+  await payRow.getByRole("link", { name: "Detalhe" }).click();
+  await expect(page.getByRole("heading", { name: /Banco de horas — João da Silva/ })).toBeVisible();
+  await expect(page.getByLabel("Data inicial")).toBeVisible(); // período do ciclo já aplicado
 
   // Administração: feriado e terminal (chave exibida uma única vez).
   await page.getByRole("link", { name: "Administração" }).click();

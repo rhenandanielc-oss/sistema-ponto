@@ -31,7 +31,13 @@ test("capturas das telas", async ({ page }) => {
   ]) {
     await page.request.post("/api/v1/employees", {
       headers,
-      data: { name, registration_number: reg, hire_date: isoDay(-20), schedule: { start_time: start, end_time: end } },
+      data: {
+        name,
+        registration_number: reg,
+        hire_date: isoDay(-20),
+        payday: 5,
+        schedule: { start_time: start, end_time: end },
+      },
     });
   }
   const add = (type: string, day: number, time: string, employee = 1) =>
@@ -75,6 +81,10 @@ test("capturas das telas", async ({ page }) => {
   await page.getByLabel("Data final").fill(isoDay(0));
   await expect(page.getByText("Saldo final")).toBeVisible();
   await page.screenshot({ path: `${dir}/06-banco-de-horas.png`, fullPage: true });
+
+  await page.goto("/pagamento");
+  await expect(page.locator("tr", { hasText: "João da Silva" })).toBeVisible();
+  await page.screenshot({ path: `${dir}/08-pagamento.png`, fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/funcionarios");

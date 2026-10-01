@@ -98,6 +98,7 @@ O kiosk é a mesma SPA na rota `/kiosk`, autenticada com **credencial de disposi
 | `/funcionarios` | Administrador | Cadastro, edição, ativação/desativação, pesquisa, **nome, horário fixo (entrada, almoço, saída) por dia da semana e rosto** |
 | `/historico` | Administrador | Batidas com filtros (funcionário, hoje, semana, mês, período) e ajustes |
 | `/banco-de-horas` | Administrador | Banco de horas de qualquer funcionário, por período, com detalhe diário |
+| `/pagamento` | Administrador | Horas de cada funcionário no ciclo de pagamento (o administrador multiplica pelo valor da hora) |
 | `/admin` | Administrador | Feriados, dispositivos (kiosks), administradores, configurações, auditoria |
 
 A rota `/jornadas` prevista no `MASTER-PROMPT.md` foi incorporada a `/funcionarios`: o horário fixo é informado

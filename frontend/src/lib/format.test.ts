@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDate, formatDateTime, formatMinutes, formatTime, weekdayOf } from "./format";
+import { formatDate, formatDateTime, formatDecimalHours, formatMinutes, formatTime, weekdayOf } from "./format";
 
 describe("formatação", () => {
   it("formata minutos como horas", () => {
@@ -9,6 +9,12 @@ describe("formatação", () => {
     expect(formatMinutes(90, true)).toBe("+1h30");
     expect(formatMinutes(-20, true)).toBe("-0h20");
     expect(formatMinutes(0, true)).toBe("0h00");
+  });
+
+  it("formata horas decimais para multiplicar pelo valor da hora", () => {
+    expect(formatDecimalHours(25)).toBe("25,00");
+    expect(formatDecimalHours(7.5)).toBe("7,50");
+    expect(formatDecimalHours(1.33)).toBe("1,33");
   });
 
   it("formata datas de calendário sem depender do fuso do navegador", () => {

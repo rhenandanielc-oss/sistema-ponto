@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 
 import { api, type Schemas } from "../api/client";
 import { PeriodPicker } from "../components/PeriodPicker";
@@ -36,8 +36,11 @@ function statusTone(day: Day): "green" | "red" | "amber" | "slate" | "indigo" {
 
 export function HourBankEmployeePage() {
   const id = Number(useParams().id);
-  const [preset, setPreset] = useState<PeriodPreset>("month");
-  const [period, setPeriod] = useState(() => presetPeriod("month"));
+  // Período vindo de outra tela (ex.: Pagamento): /banco-de-horas/1?de=2026-08-06&ate=2026-09-05
+  const [params] = useSearchParams();
+  const linked = params.get("de") && params.get("ate") ? { from: params.get("de")!, to: params.get("ate")! } : null;
+  const [preset, setPreset] = useState<PeriodPreset>(linked ? "custom" : "month");
+  const [period, setPeriod] = useState(() => linked ?? presetPeriod("month"));
   const [addingEntry, setAddingEntry] = useState(false);
 
   const employee = useQuery({

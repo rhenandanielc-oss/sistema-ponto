@@ -6,6 +6,7 @@ const LINKS = [
   { to: "/funcionarios", label: "Funcionários" },
   { to: "/historico", label: "Histórico" },
   { to: "/banco-de-horas", label: "Banco de horas" },
+  { to: "/pagamento", label: "Pagamento" },
   { to: "/admin", label: "Administração" },
 ];
 

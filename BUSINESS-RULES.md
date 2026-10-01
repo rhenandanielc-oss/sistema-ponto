@@ -244,3 +244,22 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 * Na API, `date_from`/`date_to` são datas no fuso da empresa; internamente o filtro é
   `[início de date_from, início do dia seguinte a date_to)`.
 * Período máximo por consulta de cálculo: **366 dias**.
+
+---
+
+## 11. Horas para pagamento
+
+Decisão do responsável (2026-10-01): **o sistema calcula somente as horas; o administrador multiplica pelo valor da hora.**
+Nenhum valor em dinheiro é guardado ou calculado.
+
+* Cada funcionário tem um **dia do pagamento** (1 a 31) no cadastro.
+* **Ciclo de pagamento:** do dia seguinte ao pagamento anterior até o dia do pagamento, **inclusive**.
+  Ex.: pagamento dia 5 → o pagamento de 05/09 cobre **06/08 a 05/09**.
+* Se o dia não existir no mês (ex.: 31 em fevereiro), vale o **último dia do mês**.
+* Para cada ciclo o sistema informa: horas trabalhadas, previstas, extras, faltantes, faltas e dias incompletos,
+  em horas e minutos e em **horas decimais** (7h30 = 7,50), para multiplicar pelo valor da hora.
+* "Horas trabalhadas" é a soma do tempo efetivamente trabalhado (batidas), inclusive em folgas e feriados.
+* Dias incompletos (batida faltando) são sinalizados: devem ser corrigidos antes de pagar.
+* Ciclo ainda não encerrado aparece como "em andamento" (as horas ainda podem mudar).
+* Dias antes da admissão não contam (`NOT_EMPLOYED`).
+

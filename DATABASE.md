@@ -2,7 +2,7 @@
 
 # Modelo de Dados — PostgreSQL 16
 
-> **Status:** §3 **implementada** na Fase 1 (migrations `0001`, `0002`); §4 **implementada** na Fase 2 (migration `0003`).
+> **Status:** §3 **implementada** (migrations `0001`, `0002`, `0004`); §4 **implementada** na Fase 2 (migration `0003`).
 > §5 entra na Fase 5.
 > Este documento deve ser atualizado a cada migration.
 
@@ -80,6 +80,7 @@ com senha fixa.
 | hire_date | date | not null |
 | termination_date | date | null; `>= hire_date` |
 | status | text | `ACTIVE` / `INACTIVE` |
+| payday | smallint | dia do pagamento, 1 a 31 (migration `0004`; `BUSINESS-RULES.md` §11) |
 | created_at / updated_at | timestamptz | |
 
 Índices: `lower(name)` (pesquisa), `status`.
