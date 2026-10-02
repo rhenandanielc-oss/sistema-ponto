@@ -98,9 +98,17 @@ $terminal.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -F
 $terminal.WorkingDirectory = $Root
 $terminal.IconLocation = 'shell32.dll,265'
 $terminal.Save()
-$adminUrl = "[InternetShortcut]`r`nURL=$(Get-AppUrl '/login')`r`n"
-[IO.File]::WriteAllText((Join-Path $desktop 'Ponto - Administração.url'), $adminUrl)
-Write-Host 'Atalhos criados na Área de Trabalho: "Ponto - Terminal" e "Ponto - Administração".' -ForegroundColor Green
+# Mesmo mecanismo do atalho do terminal; nome sem acentos para não depender da codificação do Windows.
+$admin = $shell.CreateShortcut((Join-Path $desktop 'Ponto - Administrador.lnk'))
+$admin.TargetPath = 'powershell.exe'
+$admin.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $PSScriptRoot 'abrir-administracao.ps1')`""
+$admin.WorkingDirectory = $Root
+$admin.IconLocation = 'shell32.dll,47'
+$admin.Save()
+if (-not (Test-Path (Join-Path $desktop 'Ponto - Administrador.lnk'))) {
+    Write-Host "Não foi possível criar o atalho do administrador. Abra $(Get-AppUrl '/login') no navegador." -ForegroundColor Yellow
+}
+Write-Host 'Atalhos criados na Área de Trabalho: "Ponto - Terminal" e "Ponto - Administrador".' -ForegroundColor Green
 
 $startup = Join-Path ([Environment]::GetFolderPath('Startup')) 'Ponto - Terminal.lnk'
 $answer = Read-Host 'Abrir o terminal de ponto automaticamente ao ligar o computador? (S/N)'
