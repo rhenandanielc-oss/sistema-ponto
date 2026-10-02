@@ -183,6 +183,8 @@ reports/
 # Não versionar imagens/arquivos biométricos reais
 biometric-data/
 biometrics/
+# ...exceto o código do módulo de biometria (não contém dados biométricos)
+!backend/app/biometrics/
 face-data/
 face-images/
 faces/
@@ -244,3 +246,8 @@ backup/
 
 *.local
 !.env.example
+
+# Modelos de reconhecimento facial (baixados por "python -m app.cli download-models")
+backend/models/
+frontend/public/mediapipe/
+backups/

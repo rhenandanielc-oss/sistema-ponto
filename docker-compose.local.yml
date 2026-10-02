@@ -1,0 +1,104 @@
+# Um único computador que é servidor e terminal ao mesmo tempo (INSTALACAO-WINDOWS.md).
+#   docker compose -f docker-compose.local.yml up -d --build
+#
+# Abre só em http://localhost: o navegador libera a câmera em "localhost" sem certificado, e nenhum
+# outro aparelho da rede (ex.: Wi-Fi do estabelecimento) consegue acessar o sistema.
+# Para acessar de outros aparelhos use docker-compose.prod.yml (DEPLOY.md).
+name: ponto
+
+x-backend-env: &backend-env
+  ENVIRONMENT: production
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ponto}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ponto}
+  JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+  BIOMETRIC_KEY: ${BIOMETRIC_KEY:?defina BIOMETRIC_KEY no .env}
+  BIOMETRIC_KEY_ID: ${BIOMETRIC_KEY_ID:-k1}
+  COOKIE_SECURE: "true" # o navegador aceita cookie seguro em http://localhost
+  APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}
+  CORS_ORIGINS: "[]"
+  LOG_FORMAT: json
+  FACE_MATCH_THRESHOLD: ${FACE_MATCH_THRESHOLD:-0.363}
+  FACE_MATCH_MARGIN: ${FACE_MATCH_MARGIN:-0.05}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ponto}
+      POSTGRES_USER: ${POSTGRES_USER:-ponto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+  backend:
+    build:
+      context: ./backend
+      target: base
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      FORWARDED_ALLOW_IPS: 172.30.0.0/24
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+
+  # Limpeza diária. Roda ao ligar o computador e depois a cada 24 h.
+  scheduler:
+    build:
+      context: ./backend
+      target: base
+    restart: unless-stopped
+    environment: *backend-env
+    command: ["sh", "-c", "while :; do python -m app.cli maintenance; sleep 86400; done"]
+    healthcheck:
+      disable: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [internal]
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:${PORT:-80}:80" # só o próprio computador
+    networks: [internal]
+
+  # Backup ao ligar o computador e a cada 4 h. Aponte BACKUP_DIR para uma pasta do OneDrive/Google Drive
+  # para ter cópia automática fora do computador.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ponto}
+      POSTGRES_USER: ${POSTGRES_USER:-ponto}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-60}
+      BACKUP_INTERVAL_SECONDS: "14400"
+    entrypoint: ["sh", "/backup.sh"]
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      backend: # espera as migrations: o primeiro backup já sai com as tabelas
+        condition: service_healthy
+    networks: [internal]
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  postgres-data:
