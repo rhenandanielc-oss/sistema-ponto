@@ -4,6 +4,8 @@ Uso:
     python -m app.cli create-admin --email admin@empresa.com --name "Nome"
     python -m app.cli export-openapi > ../frontend/openapi.json
     python -m app.cli maintenance          # limpeza diária (agendada em produção)
+    python -m app.cli list-admins
+    python -m app.cli reset-password --email admin@empresa.com   # senha esquecida
 
 A senha é pedida no terminal (não aparece no histórico do shell). Para automação, use
 `--password-stdin` e envie a senha pela entrada padrão.
@@ -22,14 +24,20 @@ from app.schemas.admin import AdminCreate
 from app.services import admin_service, audit
 
 
-def create_admin(email: str, name: str, password_stdin: bool = False) -> int:
+def _read_new_password(password_stdin: bool) -> str | None:
     if password_stdin:
-        password = sys.stdin.readline().rstrip("\n")
-    else:
-        password = getpass.getpass("Senha: ")
-        if password != getpass.getpass("Confirme a senha: "):
-            print("As senhas não conferem.", file=sys.stderr)
-            return 1
+        return sys.stdin.readline().rstrip("\n")
+    password = getpass.getpass("Senha: ")
+    if password != getpass.getpass("Confirme a senha: "):
+        print("As senhas não conferem.", file=sys.stderr)
+        return None
+    return password
+
+
+def create_admin(email: str, name: str, password_stdin: bool = False) -> int:
+    password = _read_new_password(password_stdin)
+    if password is None:
+        return 1
     try:
         data = AdminCreate(email=email, name=name, password=password)
     except ValidationError as exc:
@@ -45,6 +53,50 @@ def create_admin(email: str, name: str, password_stdin: bool = False) -> int:
     return 0
 
 
+def list_admins() -> int:
+    from sqlalchemy import select
+
+    from app.models import Admin
+
+    with get_sessionmaker()() as db:
+        admins = db.scalars(select(Admin).order_by(Admin.id)).all()
+    if not admins:
+        print("Nenhum administrador cadastrado.")
+    for a in admins:
+        print(f"{a.email}  ({a.name}{'' if a.is_active else ', desativado'})")
+    return 0
+
+
+def reset_password(email: str, password_stdin: bool = False) -> int:
+    """Troca a senha de um administrador pelo servidor (senha esquecida) e desfaz o bloqueio."""
+    from sqlalchemy import func, select
+
+    from app.models import Admin
+    from app.schemas.admin import AdminUpdate
+
+    password = _read_new_password(password_stdin)
+    if password is None:
+        return 1
+    try:
+        data = AdminUpdate(password=password)
+    except ValidationError:
+        print("A senha precisa ter no mínimo 10 caracteres.", file=sys.stderr)
+        return 1
+    with get_sessionmaker()() as db:
+        admin = db.scalar(select(Admin).where(func.lower(Admin.email) == email.lower()))
+        if admin is None:
+            print(
+                "Administrador não encontrado. Use list-admins para ver os e-mails.",
+                file=sys.stderr,
+            )
+            return 1
+        admin.failed_login_count = 0
+        admin.locked_until = None
+        admin_service.update(db, admin.id, data, audit.SYSTEM)
+    print(f"Senha de {admin.email} alterada.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -54,6 +106,10 @@ def main(argv: list[str] | None = None) -> int:
     create.add_argument(
         "--password-stdin", action="store_true", help="Lê a senha da entrada padrão"
     )
+    sub.add_parser("list-admins", help="Lista os administradores (e-mail e nome)")
+    reset = sub.add_parser("reset-password", help="Troca a senha de um administrador")
+    reset.add_argument("--email", required=True)
+    reset.add_argument("--password-stdin", action="store_true", help="Lê a senha da entrada padrão")
     sub.add_parser(
         "export-openapi", help="Imprime o OpenAPI (usado para gerar os tipos do frontend)"
     )
@@ -69,6 +125,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "create-admin":
         return create_admin(args.email, args.name, args.password_stdin)
+    if args.command == "list-admins":
+        return list_admins()
+    if args.command == "reset-password":
+        return reset_password(args.email, args.password_stdin)
     if args.command == "export-openapi":
         return export_openapi()
     if args.command == "download-models":

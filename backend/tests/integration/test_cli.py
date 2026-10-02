@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import cli
-from tests.conftest import login
+from tests.conftest import ADMIN_PASSWORD, login
 
 
 def answers(*values: str) -> Iterator[str]:
@@ -38,3 +38,29 @@ def test_create_admin_with_password_from_stdin(
 def test_maintenance_command(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["maintenance"]) == 0
     assert "Manutenção concluída" in capsys.readouterr().out
+
+
+def test_reset_password_unlocks_and_replaces_old_password(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient, admin, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for _ in range(5):
+        login(client, "admin@empresa.com", "senha-errada-123")
+    assert login(client, "admin@empresa.com", "senha-errada-123").status_code == 423  # bloqueado
+
+    assert cli.main(["list-admins"]) == 0
+    assert "admin@empresa.com" in capsys.readouterr().out
+
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("nova-senha-segura-1\n"))
+    args = ["reset-password", "--email", "ADMIN@empresa.com", "--password-stdin"]
+    assert cli.main(args) == 0
+    assert login(client, "admin@empresa.com", "nova-senha-segura-1").status_code == 200
+    assert login(client, "admin@empresa.com", ADMIN_PASSWORD).status_code == 401
+
+
+def test_reset_password_rejects_unknown_email_and_short_password(
+    monkeypatch: pytest.MonkeyPatch, admin
+) -> None:
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("nova-senha-segura-1\n"))
+    assert cli.main(["reset-password", "--email", "x@x.com", "--password-stdin"]) == 1
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("curta\n"))
+    assert cli.main(["reset-password", "--email", "admin@empresa.com", "--password-stdin"]) == 1
