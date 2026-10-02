@@ -64,3 +64,13 @@ def test_reset_password_rejects_unknown_email_and_short_password(
     assert cli.main(["reset-password", "--email", "x@x.com", "--password-stdin"]) == 1
     monkeypatch.setattr(cli.sys, "stdin", io.StringIO("curta\n"))
     assert cli.main(["reset-password", "--email", "admin@empresa.com", "--password-stdin"]) == 1
+
+
+def test_password_from_windows_pipe_ignores_crlf(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient, admin
+) -> None:
+    """O PowerShell do Windows envia a senha pelo pipe terminada em CRLF."""
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("nova-senha-ção-1\r\n"))
+    args = ["reset-password", "--email", "admin@empresa.com", "--password-stdin"]
+    assert cli.main(args) == 0
+    assert login(client, "admin@empresa.com", "nova-senha-ção-1").status_code == 200

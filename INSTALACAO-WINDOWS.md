@@ -51,8 +51,7 @@ Se o Docker reclamar de "virtualization", a virtualização está desligada no n
    * gera sozinho as senhas internas e a **chave da biometria** e as grava no arquivo `C:\Ponto\.env`;
    * mostra a **chave da biometria**: **anote e guarde** em papel guardado ou num cofre de senhas (§7);
    * monta e liga o sistema — **a primeira vez demora de 10 a 20 minutos**;
-   * pede **e-mail, nome e senha do administrador** (a senha tem no mínimo 10 caracteres e não aparece enquanto
-     você digita);
+   * pede **e-mail, nome e senha do administrador** (a senha tem no mínimo 10 caracteres e aparece como `*****`);
    * cria dois atalhos na Área de Trabalho: **"Ponto - Terminal"** e **"Ponto - Administrador"**;
    * pergunta se o terminal deve abrir sozinho ao ligar o computador (responda **S**).
 3. Os backups automáticos vão para a pasta **`OneDrive\Ponto-Backups`** (ou `Documentos\Ponto-Backups` se não
@@ -115,7 +114,7 @@ de novo.
 | "Câmera indisponível" | Feche outros programas que usam a câmera (Teams, Câmera, janela de cadastro de rosto) |
 | Aviso amarelo de relógio | Reinicie o notebook (ou no ícone da baleia do Docker: **Restart**) |
 | Funcionário "não reconhecido" com frequência | Cadastre mais fotos do rosto dele (até 5), com boa luz |
-| Esqueceu a senha do administrador, digitou errado na instalação ou a conta ficou bloqueada | Duplo clique em `C:\Ponto\windows\trocar-senha.cmd`: mostra os e-mails cadastrados, pede o e-mail e a nova senha duas vezes (ela não aparece enquanto você digita) e desbloqueia a conta |
+| Esqueceu a senha do administrador, digitou errado na instalação ou a conta ficou bloqueada | Duplo clique em `C:\Ponto\windows\trocar-senha.cmd`: mostra os e-mails cadastrados, pede o e-mail e a nova senha duas vezes (aparece como `*****`) e desbloqueia a conta |
 
 ## 9. Primeira instalação acompanhada
 

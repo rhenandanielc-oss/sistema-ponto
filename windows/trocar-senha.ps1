@@ -19,15 +19,15 @@ $email = Read-Host 'E-mail do administrador (copie da lista acima)'
 
 for ($attempt = 1; $attempt -le 3; $attempt++) {
     Write-Host ''
-    Write-Host 'Digite a nova senha (mínimo 10 caracteres). Ela NÃO aparece enquanto você digita;'
-    Write-Host 'digite com calma e aperte Enter. Depois digite a mesma senha de novo.'
-    docker @ComposeArgs exec backend python -m app.cli reset-password --email $email
+    $password = Read-NewPassword
+    Invoke-CliWithPassword $password @('reset-password', '--email', $email)
     if ($LASTEXITCODE -eq 0) {
         Write-Host ''
         Write-Host 'Senha alterada. Entre no painel com a nova senha.' -ForegroundColor Green
         Read-Host 'Pressione Enter para fechar'
         exit 0
     }
-    Write-Host 'Não deu certo (veja a mensagem acima). Vamos tentar de novo.' -ForegroundColor Yellow
+    Write-Host 'Não deu certo (veja a mensagem acima). Confira o e-mail e tente de novo.' -ForegroundColor Yellow
+    $email = Read-Host 'E-mail do administrador'
 }
 Stop-WithError 'A senha não foi alterada.'

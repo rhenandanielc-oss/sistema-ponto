@@ -26,7 +26,8 @@ from app.services import admin_service, audit
 
 def _read_new_password(password_stdin: bool) -> str | None:
     if password_stdin:
-        return sys.stdin.readline().rstrip("\n")
+        # "\r\n": o PowerShell do Windows termina a linha enviada pelo pipe com CRLF.
+        return sys.stdin.readline().rstrip("\r\n")
     password = getpass.getpass("Senha: ")
     if password != getpass.getpass("Confirme a senha: "):
         print("As senhas não conferem.", file=sys.stderr)
