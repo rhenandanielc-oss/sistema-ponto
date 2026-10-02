@@ -184,3 +184,18 @@ def test_r11_without_schedule(db: Session, employee: int) -> None:
     with pytest.raises(AppError) as exc:
         punch(db, employee, "ENTRY", local(1, "08:00"))
     assert error_code(exc) == "NO_APPLICABLE_SCHEDULE"
+
+
+def test_colleagues_leaving_together_do_not_wait(
+    client: TestClient, auth_headers, db: Session
+) -> None:
+    """O intervalo mínimo vale por funcionário: colegas batem um atrás do outro, segundos depois."""
+    team = [
+        create_employee(client, auth_headers, registration=f"10{i}", name=f"Colega {i}")
+        for i in range(4)
+    ]
+    for employee in team:
+        punch(db, employee, "ENTRY", local(1, "08:00"))
+    for i, employee in enumerate(team):
+        record = punch(db, employee, "EXIT", local(1, "17:00", second=5 * i))
+        assert record.type == "EXIT"

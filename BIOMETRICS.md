@@ -64,7 +64,7 @@
   ( Entrada )  ( Saída para almoço )  ( Retorno do almoço )  ( Saída )   ← só os permitidos ficam habilitados
   ( Ver meu banco de horas )                                  ( Cancelar )
         │
-        ├─ batida → [Entrada registrada às 08:02 ✔] → volta ao início após 5 s
+        ├─ batida → [Entrada registrada às 08:02 ✔] → volta ao início após 2,5 s (ou num toque)
         └─ banco  → [Saldo, horas extras e faltantes do mês, detalhe diário] → fecha em 30 s ou em "Sair"
 ```
 

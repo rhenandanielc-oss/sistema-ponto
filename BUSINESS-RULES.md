@@ -110,7 +110,9 @@ Para cada dia da semana trabalhado, o horário define:
 
 * Um mesmo tipo não pode existir duas vezes no mesmo dia de jornada ⇒ `DUPLICATE_RECORD`
   (garantido também por restrição única no banco).
-* Dois registros do mesmo funcionário com menos de **2 minutos** (configurável) de diferença ⇒ `DUPLICATE_RECORD`.
+* Dois registros do **mesmo** funcionário com menos de **2 minutos** (configurável em Administração → Configurações;
+  0 desliga) de diferença ⇒ `DUPLICATE_RECORD`. Evita batida dupla por toque repetido. **Não** afeta funcionários
+  diferentes: colegas que saem juntos batem um atrás do outro, sem espera.
 
 ### 4.4 Atribuição ao dia de jornada (inclui turno noturno)
 

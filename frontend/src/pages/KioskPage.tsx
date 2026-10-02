@@ -22,7 +22,7 @@ type State =
 
 const RECORD_TYPES = ["ENTRY", "LUNCH_EXIT", "LUNCH_RETURN", "EXIT"] as const;
 const IDLE_MS = 15_000; // sem toque na tela de botões, volta ao início
-const DONE_MS = 5_000;
+const DONE_MS = 2_500; // curto: colegas que saem juntos batem um atrás do outro (toque pula a espera)
 const ERROR_RETRY_MS = 3_000;
 const STABLE_FRAMES = 3; // quadros bons seguidos antes de enviar
 const CLOCK_CHECK_MS = 5 * 60_000; // confere o relógio do servidor a cada 5 min
@@ -286,9 +286,15 @@ export function KioskPage() {
         )}
 
         {state.kind === "done" && (
-          <p role="status" className="rounded-2xl bg-green-600 px-10 py-8 text-center text-3xl font-semibold">
+          <button
+            type="button"
+            role="status"
+            onClick={reset}
+            className="rounded-2xl bg-green-600 px-10 py-8 text-center text-3xl font-semibold"
+          >
             ✔ {state.message}
-          </p>
+            <span className="mt-2 block text-lg font-normal">Toque para o próximo</span>
+          </button>
         )}
 
         {state.kind === "error" && (

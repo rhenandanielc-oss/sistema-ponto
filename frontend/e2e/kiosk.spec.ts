@@ -74,9 +74,11 @@ test("cadastro do rosto e batida no terminal", async ({ page, context }) => {
   await kiosk.getByRole("button", { name: "Entrada" }).click();
   await expect(kiosk.getByRole("status")).toContainText("Entrada registrada às");
 
+  // Um toque na confirmação libera o terminal na hora para o próximo colega (sem ele, some em 2,5 s).
+  await kiosk.getByRole("status").click();
+  await expect(kiosk.getByRole("button", { name: "Identificar" })).toBeVisible({ timeout: 1_000 });
+
   // Consulta do próprio banco de horas.
-  // A confirmação some sozinha e o terminal volta ao início.
-  await expect(kiosk.getByRole("button", { name: "Identificar" })).toBeVisible({ timeout: 10_000 });
   await kiosk.getByRole("button", { name: "Identificar" }).click();
   await expect(kiosk.getByRole("button", { name: "Entrada" })).toBeDisabled();
   await kiosk.getByRole("button", { name: "Ver meu banco de horas" }).click();

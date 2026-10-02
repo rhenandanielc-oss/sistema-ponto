@@ -16,7 +16,8 @@
 3. O servidor reconhece o funcionário (YuNet + SFace, local) e devolve o nome e as batidas permitidas.
 4. O funcionário toca em **Entrada**, **Saída para almoço**, **Retorno do almoço** ou **Saída**
    (só a próxima batida válida fica habilitada) ou em **Ver meu banco de horas**.
-5. O servidor registra a batida com o **horário oficial do servidor** e o terminal mostra a confirmação.
+5. O servidor registra a batida com o **horário oficial do servidor** e o terminal mostra a confirmação por 2,5 s; um toque
+   nela libera o terminal na hora para o próximo colega.
 6. Depois de alguns segundos o terminal volta ao início sozinho.
 
 Nenhuma foto é guardada: o quadro existe só durante a requisição.

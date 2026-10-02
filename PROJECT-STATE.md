@@ -575,6 +575,10 @@ Possíveis categorias:
 * **Fase 5 concluída:** reconhecimento facial e terminal. Testes acharam e corrigiram: corrida ao abrir a câmera em
   remontagem (React StrictMode) que desabilitava o botão "Tirar foto"; conflito de nome `update` no serviço de
   funcionários (lint).
+* Pedido do cliente (saídas em grupo): confirmado que não há limite entre funcionários diferentes (o intervalo de
+  2 min vale só para o mesmo funcionário; a tolerância de 10 min é do cálculo de atraso, não das batidas). A tela de
+  confirmação do terminal caiu de 5 s para 2,5 s e um toque libera para o próximo. Teste novo com 4 colegas
+  batendo a saída com 5 s de diferença.
 * Instalação em notebook Windows único: `docker-compose.local.yml`, `windows/`, `INSTALACAO-WINDOWS.md`,
   `.gitattributes`; aviso de relógio no terminal. Teste achou e corrigiu: o primeiro backup saía antes das
   migrations (vazio) — o serviço de backup agora espera o backend.
