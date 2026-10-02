@@ -51,8 +51,7 @@ Se o Docker reclamar de "virtualization", a virtualização está desligada no n
    * gera sozinho as senhas internas e a **chave da biometria** e as grava no arquivo `C:\Ponto\.env`;
    * mostra a **chave da biometria**: **anote e guarde** em papel guardado ou num cofre de senhas (§7);
    * monta e liga o sistema — **a primeira vez demora de 10 a 20 minutos**;
-   * pede **e-mail, nome e senha do administrador** (a senha tem no mínimo 10 caracteres e não aparece enquanto
-     você digita);
+   * pede **e-mail, nome e senha do administrador** (a senha tem no mínimo 10 caracteres e aparece como `*****`);
    * cria dois atalhos na Área de Trabalho: **"Ponto - Terminal"** e **"Ponto - Administrador"**;
    * pergunta se o terminal deve abrir sozinho ao ligar o computador (responda **S**).
 3. Os backups automáticos vão para a pasta **`OneDrive\Ponto-Backups`** (ou `Documentos\Ponto-Backups` se não
@@ -109,13 +108,13 @@ de novo.
 |---|---|
 | Restaurar um backup (dados apagados por engano, notebook com problema) | Duplo clique em `C:\Ponto\windows\restaurar-backup.cmd`, escolha o backup e digite `RESTAURAR` |
 | Notebook novo | Passos 2 e 3; copie o `.env` guardado para `C:\Ponto`; se o usuário do Windows mudou, corrija a linha `BACKUP_DIR` no `.env` (Bloco de Notas); copie os backups para essa pasta; rode `instalar.cmd`; depois `restaurar-backup.cmd` |
-| Atualizar o sistema | Baixe o ZIP novo e extraia **por cima** de `C:\Ponto` (substituir arquivos; o `.env` é mantido); rode `instalar.cmd` |
+| Atualizar o sistema | Baixe o ZIP novo e extraia **por cima** da pasta do sistema (substituir arquivos; o `.env` é mantido); **rode `instalar.cmd` antes de qualquer outro script** — os arquivos novos só valem depois que ele remonta o sistema |
 | Atalho "Ponto - Administrador" não aparece na Área de Trabalho | Duplo clique em `C:\Ponto\windows\abrir-administracao.cmd`, ou digite `localhost/login` no navegador (se não abrir, `localhost:8080/login`). Rodar o `instalar.cmd` de novo recria os atalhos sem apagar nada |
 | Terminal mostra "O sistema de ponto não ligou" | Abra o Docker Desktop, espere "Engine running" e abra o atalho "Ponto - Terminal" |
 | "Câmera indisponível" | Feche outros programas que usam a câmera (Teams, Câmera, janela de cadastro de rosto) |
 | Aviso amarelo de relógio | Reinicie o notebook (ou no ícone da baleia do Docker: **Restart**) |
 | Funcionário "não reconhecido" com frequência | Cadastre mais fotos do rosto dele (até 5), com boa luz |
-| Esqueceu a senha do administrador, digitou errado na instalação ou a conta ficou bloqueada | Duplo clique em `C:\Ponto\windows\trocar-senha.cmd`: mostra os e-mails cadastrados, pede o e-mail e a nova senha duas vezes (ela não aparece enquanto você digita) e desbloqueia a conta |
+| Esqueceu a senha do administrador, digitou errado na instalação ou a conta ficou bloqueada | Duplo clique em `C:\Ponto\windows\trocar-senha.cmd`: mostra os e-mails cadastrados, pede o e-mail e a nova senha duas vezes (aparece como `*****`) e desbloqueia a conta |
 
 ## 9. Primeira instalação acompanhada
 
