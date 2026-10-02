@@ -109,7 +109,7 @@ de novo.
 |---|---|
 | Restaurar um backup (dados apagados por engano, notebook com problema) | Duplo clique em `C:\Ponto\windows\restaurar-backup.cmd`, escolha o backup e digite `RESTAURAR` |
 | Notebook novo | Passos 2 e 3; copie o `.env` guardado para `C:\Ponto`; se o usuário do Windows mudou, corrija a linha `BACKUP_DIR` no `.env` (Bloco de Notas); copie os backups para essa pasta; rode `instalar.cmd`; depois `restaurar-backup.cmd` |
-| Atualizar o sistema | Baixe o ZIP novo e extraia **por cima** de `C:\Ponto` (substituir arquivos; o `.env` é mantido); rode `instalar.cmd` |
+| Atualizar o sistema | Baixe o ZIP novo e extraia **por cima** da pasta do sistema (substituir arquivos; o `.env` é mantido); **rode `instalar.cmd` antes de qualquer outro script** — os arquivos novos só valem depois que ele remonta o sistema |
 | Atalho "Ponto - Administrador" não aparece na Área de Trabalho | Duplo clique em `C:\Ponto\windows\abrir-administracao.cmd`, ou digite `localhost/login` no navegador (se não abrir, `localhost:8080/login`). Rodar o `instalar.cmd` de novo recria os atalhos sem apagar nada |
 | Terminal mostra "O sistema de ponto não ligou" | Abra o Docker Desktop, espere "Engine running" e abra o atalho "Ponto - Terminal" |
 | "Câmera indisponível" | Feche outros programas que usam a câmera (Teams, Câmera, janela de cadastro de rosto) |
