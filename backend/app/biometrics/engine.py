@@ -75,7 +75,9 @@ def _decode(image: bytes) -> np.ndarray:
     h, w = decoded.shape[:2]
     scale = MAX_SIDE / max(h, w)
     if scale < 1:
-        decoded = cv2.resize(decoded, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        decoded = cv2.resize(
+            decoded, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA
+        )
     return decoded
 
 
@@ -87,7 +89,9 @@ class OpenCVFaceEngine:
     def __init__(self, models_dir: Path, min_face_px: int) -> None:
         detector = model_files.verified_path(models_dir, model_files.DETECTOR)
         recognizer = model_files.verified_path(models_dir, model_files.RECOGNIZER)
-        self._detector = cv2.FaceDetectorYN.create(str(detector), "", (320, 320), DETECTION_SCORE, 0.3, 50)
+        self._detector = cv2.FaceDetectorYN.create(
+            str(detector), "", (320, 320), DETECTION_SCORE, 0.3, 50
+        )
         self._recognizer = cv2.FaceRecognizerSF.create(str(recognizer), "")
         self._min_face_px = min_face_px
         self._lock = Lock()  # os objetos do OpenCV não são seguros para threads
@@ -114,7 +118,9 @@ class OpenCVFaceEngine:
                 raise low_quality("Iluminação inadequada. Procure um local mais iluminado.")
             sharpness = float(cv2.Laplacian(gray, cv2.CV_64F).var())
             if sharpness < MIN_SHARPNESS:
-                raise low_quality("Imagem tremida ou desfocada. Fique parado olhando para a câmera.")
+                raise low_quality(
+                    "Imagem tremida ou desfocada. Fique parado olhando para a câmera."
+                )
             feature = self._recognizer.feature(crop)
         quality = min(1.0, float(face[14]) * min(1.0, sharpness / 200))
         return Extraction(embedding=normalize(feature), quality=quality)

@@ -115,7 +115,7 @@ de novo.
 | "Câmera indisponível" | Feche outros programas que usam a câmera (Teams, Câmera, janela de cadastro de rosto) |
 | Aviso amarelo de relógio | Reinicie o notebook (ou no ícone da baleia do Docker: **Restart**) |
 | Funcionário "não reconhecido" com frequência | Cadastre mais fotos do rosto dele (até 5), com boa luz |
-| Esqueceu a senha do administrador | Crie outro administrador: abra o PowerShell em `C:\Ponto` e rode `docker compose -f docker-compose.local.yml exec backend python -m app.cli create-admin --email novo@email --name "Nome"` |
+| Esqueceu a senha do administrador, digitou errado na instalação ou a conta ficou bloqueada | Duplo clique em `C:\Ponto\windows\trocar-senha.cmd`: mostra os e-mails cadastrados, pede o e-mail e a nova senha duas vezes (ela não aparece enquanto você digita) e desbloqueia a conta |
 
 ## 9. Primeira instalação acompanhada
 

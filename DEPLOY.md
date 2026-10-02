@@ -156,6 +156,7 @@ e saem no expurgo após a exclusão.
 | Saúde | `curl https://DOMAIN/api/v1/health/ready` → `{"status":"ok","database":"ok"}` |
 | Último backup | `ls -lt backups/ \| head` e `docker compose -f docker-compose.prod.yml logs backup` |
 | Rodar a limpeza agora | `docker compose -f docker-compose.prod.yml exec backend python -m app.cli maintenance` |
+| Senha esquecida (também desbloqueia) | `docker compose -f docker-compose.prod.yml exec backend python -m app.cli reset-password --email ...` |
 | Novo administrador | `docker compose -f docker-compose.prod.yml exec backend python -m app.cli create-admin ...` |
 
 Os logs registram método, caminho (sem parâmetros), status, duração e IP de cada requisição, com o `request_id`

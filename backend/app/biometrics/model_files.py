@@ -4,7 +4,8 @@ Licenças confirmadas em 2026-10-01 no repositório opencv/opencv_zoo:
 * YuNet (detecção de rosto): MIT.
 * SFace (reconhecimento): Apache 2.0.
 
-Os arquivos não ficam no Git: são baixados por `python -m app.cli download-models` e conferidos pelo SHA-256.
+Os arquivos não ficam no Git: são baixados por `python -m app.cli download-models` e conferidos
+pelo SHA-256.
 """
 
 import hashlib
@@ -54,7 +55,8 @@ def verified_path(directory: Path, model: ModelFile) -> Path:
     path = directory / model.name
     if not path.is_file():
         raise ModelIntegrityError(
-            f"Modelo {model.name} não encontrado em {directory}. Rode: python -m app.cli download-models"
+            f"Modelo {model.name} não encontrado em {directory}. "
+            "Rode: python -m app.cli download-models"
         )
     if sha256_of(path) != model.sha256:
         raise ModelIntegrityError(f"Modelo {model.name} com SHA-256 diferente do esperado.")
@@ -68,7 +70,8 @@ def download(directory: Path) -> list[Path]:
         path = directory / model.name
         if not (path.is_file() and sha256_of(path) == model.sha256):
             tmp = path.with_suffix(".part")
-            urllib.request.urlretrieve(model.url, tmp)  # noqa: S310 - URL fixa, conferida pelo hash
+            # URL fixa; o arquivo é conferido pelo SHA-256 logo abaixo.
+            urllib.request.urlretrieve(model.url, tmp)
             if sha256_of(tmp) != model.sha256:
                 tmp.unlink()
                 raise ModelIntegrityError(f"Download de {model.name} com SHA-256 inesperado.")
