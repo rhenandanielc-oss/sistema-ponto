@@ -53,7 +53,7 @@ Se o Docker reclamar de "virtualization", a virtualização está desligada no n
    * monta e liga o sistema — **a primeira vez demora de 10 a 20 minutos**;
    * pede **e-mail, nome e senha do administrador** (a senha tem no mínimo 10 caracteres e não aparece enquanto
      você digita);
-   * cria dois atalhos na Área de Trabalho: **"Ponto - Terminal"** e **"Ponto - Administração"**;
+   * cria dois atalhos na Área de Trabalho: **"Ponto - Terminal"** e **"Ponto - Administrador"**;
    * pergunta se o terminal deve abrir sozinho ao ligar o computador (responda **S**).
 3. Os backups automáticos vão para a pasta **`OneDrive\Ponto-Backups`** (ou `Documentos\Ponto-Backups` se não
    houver OneDrive). Com o OneDrive conectado, eles ficam guardados também na nuvem, sem custo extra.
@@ -63,7 +63,7 @@ apontam para o endereço certo.
 
 ## 5. Primeira configuração
 
-1. Abra **"Ponto - Administração"** e entre com o e-mail e a senha do administrador.
+1. Abra **"Ponto - Administrador"** e entre com o e-mail e a senha do administrador.
 2. **Administração → Terminais**: nome "Notebook" → **Cadastrar terminal**. Copie a **chave** que aparece (ela só aparece
    uma vez).
 3. Abra **"Ponto - Terminal"**, cole a chave e toque em **Ativar terminal**. Na primeira vez, o navegador pergunta
@@ -110,6 +110,7 @@ de novo.
 | Restaurar um backup (dados apagados por engano, notebook com problema) | Duplo clique em `C:\Ponto\windows\restaurar-backup.cmd`, escolha o backup e digite `RESTAURAR` |
 | Notebook novo | Passos 2 e 3; copie o `.env` guardado para `C:\Ponto`; se o usuário do Windows mudou, corrija a linha `BACKUP_DIR` no `.env` (Bloco de Notas); copie os backups para essa pasta; rode `instalar.cmd`; depois `restaurar-backup.cmd` |
 | Atualizar o sistema | Baixe o ZIP novo e extraia **por cima** de `C:\Ponto` (substituir arquivos; o `.env` é mantido); rode `instalar.cmd` |
+| Atalho "Ponto - Administrador" não aparece na Área de Trabalho | Duplo clique em `C:\Ponto\windows\abrir-administracao.cmd`, ou digite `localhost/login` no navegador (se não abrir, `localhost:8080/login`). Rodar o `instalar.cmd` de novo recria os atalhos sem apagar nada |
 | Terminal mostra "O sistema de ponto não ligou" | Abra o Docker Desktop, espere "Engine running" e abra o atalho "Ponto - Terminal" |
 | "Câmera indisponível" | Feche outros programas que usam a câmera (Teams, Câmera, janela de cadastro de rosto) |
 | Aviso amarelo de relógio | Reinicie o notebook (ou no ícone da baleia do Docker: **Restart**) |
