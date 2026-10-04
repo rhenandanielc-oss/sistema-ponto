@@ -5,7 +5,7 @@ import { CameraError, captureFrame, openCamera, stopCamera } from "../kiosk/came
 import { clockSkewMinutes, clockWarning } from "../kiosk/clock";
 import { analyzeFrame, framingMessage, loadFaceDetector } from "../kiosk/faceDetector";
 import { getDeviceToken, kioskApi, setDeviceToken } from "../kiosk/api";
-import { RECORD_TYPE_LABELS, formatDate, formatMinutes, formatTime } from "../lib/format";
+import { RECORD_TYPE_LABELS, formatDate, formatMinutes, formatMoney, formatTime } from "../lib/format";
 
 type Identified = Schemas["IdentifyOut"];
 type Bank = Schemas["KioskHourBankOut"];
@@ -328,6 +328,7 @@ function BankScreen({ data, onClose }: { data: Bank; onClose: () => void }) {
       <p className="mt-3 text-sm text-slate-600">
         Ciclo de pagamento {formatDate(data.pay_period_start)} a {formatDate(data.pay_period_end)}: extras{" "}
         {formatMinutes(data.pay_period_overtime_minutes)}, faltantes {formatMinutes(data.pay_period_missing_minutes)}.
+        {data.pay_period_consumption_cents > 0 && ` Consumo: ${formatMoney(data.pay_period_consumption_cents)}.`}
       </p>
       <ul className="mt-4 max-h-64 divide-y divide-slate-100 overflow-y-auto text-sm">
         {[...data.days].reverse().map((d) => (

@@ -37,6 +37,7 @@ export const FLAG_LABELS: Record<string, string> = {
   INSUFFICIENT_BREAK: "Intervalo insuficiente",
   HOLIDAY_WORK: "Trabalho em feriado",
   DAY_OFF_WORK: "Trabalho em folga",
+  WEEKLY_DAY_OFF: "Folga da semana",
 };
 
 /** 480 → "8h00"; com `signed`, 90 → "+1h30" e -20 → "-0h20". */
@@ -79,4 +80,16 @@ export function shortTime(time: string): string {
 /** 7.5 → "7,50" (horas decimais, para multiplicar pelo valor da hora). */
 export function formatDecimalHours(hours: number): string {
   return hours.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** 1250 centavos → "R$ 12,50". */
+export function formatMoney(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/** "6", "6,5", "6,50", "R$ 1.234,56" → centavos; null se não for um valor válido. */
+export function parseMoney(text: string): number | null {
+  const clean = text.replace(/R\$|\s/g, "").replace(/\./g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return null;
+  return Math.round(Number(clean) * 100);
 }

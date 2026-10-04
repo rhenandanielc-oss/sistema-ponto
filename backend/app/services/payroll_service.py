@@ -14,7 +14,7 @@ from app.calculation.payroll import PayPeriod, period_containing, period_ending_
 from app.core.clock import today_local
 from app.core.errors import AppError
 from app.models import Employee
-from app.services import employee_service
+from app.services import consumption_service, employee_service
 from app.services.hour_bank_service import CalcContext, Totals, load_context, period_totals
 
 
@@ -24,6 +24,7 @@ class Payroll:
     period: PayPeriod
     totals: Totals
     closed: bool  # o ciclo já terminou (dia do pagamento já passou ou é hoje)
+    consumption_cents: int  # consumo no ciclo, a descontar (BUSINESS-RULES.md §12)
 
 
 def _period(
@@ -44,6 +45,9 @@ def _payroll(
         employee=employee,
         period=period,
         totals=period_totals(db, employee, period.start, period.end, ctx),
+        consumption_cents=consumption_service.total_cents(
+            db, employee.id, period.start, period.end
+        ),
         closed=period.end <= today_local(),
     )
 

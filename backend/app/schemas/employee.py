@@ -90,6 +90,8 @@ class ScheduleDaysIn(BaseModel):
     """
 
     days: list[ScheduleDayIn] = Field(min_length=1, max_length=7)
+    # Uma folga por semana em qualquer dos dias acima, escolhida pelo sistema (BUSINESS-RULES §3.2).
+    weekly_day_off: bool = False
 
     @model_validator(mode="before")
     @classmethod
@@ -113,6 +115,8 @@ class ScheduleDaysIn(BaseModel):
             validate_week([d.to_domain() for d in self.days])
         except ScheduleError as exc:
             raise ValueError(str(exc)) from exc
+        if self.weekly_day_off and len(self.days) < 2:
+            raise ValueError("Com folga semanal, informe pelo menos 2 dias de trabalho.")
         return self
 
 
@@ -151,6 +155,7 @@ class ScheduleOut(ORMModel):
     id: int
     valid_from: date
     valid_to: date | None
+    weekly_day_off: bool
     days: list[ScheduleDayOut]
     created_at: LocalDatetime
 

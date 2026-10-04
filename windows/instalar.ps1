@@ -84,8 +84,8 @@ if ("$admins".Trim() -eq '0') {
     Write-Host 'Criar o administrador (único acesso com senha):' -ForegroundColor Cyan
     $email = Read-Host 'E-mail do administrador'
     $name = Read-Host 'Nome do administrador'
-    Write-Host 'Digite a senha (mínimo 10 caracteres; ela não aparece na tela):'
-    docker @ComposeArgs exec backend python -m app.cli create-admin --email $email --name $name
+    $password = Read-NewPassword
+    Invoke-CliWithPassword $password @('create-admin', '--email', $email, '--name', $name)
     if ($LASTEXITCODE -ne 0) { Write-Host 'Administrador não criado. Rode o instalar.cmd de novo para tentar outra vez.' -ForegroundColor Red }
 }
 

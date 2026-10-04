@@ -10,7 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.calculation.records import Punch
-from app.calculation.workday import ABSENT, INCOMPLETE, DayInput, DayResult, Rules, calculate_day
+from app.calculation.weekly_day_off import calculate_days, week_start
+from app.calculation.workday import ABSENT, INCOMPLETE, DayInput, DayResult, Rules
 from app.core.clock import now_utc
 from app.core.errors import AppError
 from app.models import Employee, Holiday, HourBankEntry, TimeRecord
@@ -80,7 +81,10 @@ def _calculate(
     ctx = ctx or load_context(db)
     rules = ctx.rules
     table = load_schedules(db, employee.id)
-    holidays = holiday_service.expand(ctx.holidays, date_from, date_to)
+    # A folga semanal depende da semana inteira: o cálculo começa na segunda-feira e enxerga
+    # até 6 dias depois do fim do período (BUSINESS-RULES.md §3.2).
+    requested_from, date_from = date_from, week_start(date_from)
+    holidays = holiday_service.expand(ctx.holidays, date_from, date_to + timedelta(days=6))
     punches: dict[date, list[Punch]] = defaultdict(list)
     for record in db.scalars(
         select(TimeRecord).where(
@@ -92,23 +96,38 @@ def _calculate(
     ):
         punches[record.workday_date].append(Punch(record.type, record.recorded_at))
 
-    now = now_utc()
-    results = []
-    day = date_from
-    while day <= date_to:
-        employed = employee.hire_date <= day and (
+    def employed(day: date) -> bool:
+        return employee.hire_date <= day and (
             employee.termination_date is None or day <= employee.termination_date
         )
-        inp = DayInput(
-            day=day,
-            schedule=table.day_schedule(day),
-            employed=employed,
-            holiday=day in holidays,
-            punches=tuple(punches.get(day, ())),
+
+    def rotating(day: date) -> bool:
+        schedule = table.vigente(day)
+        return schedule is not None and schedule.weekly_day_off
+
+    def is_candidate_day(day: date) -> bool:
+        return (
+            employed(day)
+            and day not in holidays
+            and table.day_schedule(day) is not None
+            and rotating(day)
         )
-        results.append(calculate_day(inp, rules, now))
+
+    inputs = []
+    day = date_from
+    while day <= date_to:
+        inputs.append(
+            DayInput(
+                day=day,
+                schedule=table.day_schedule(day),
+                employed=employed(day),
+                holiday=day in holidays,
+                punches=tuple(punches.get(day, ())),
+            )
+        )
         day += timedelta(days=1)
-    return results
+    results = calculate_days(inputs, rules, now_utc(), rotating, is_candidate_day)
+    return [r for r in results if r.day >= requested_from]
 
 
 def _totals(days: list[DayResult]) -> Totals:

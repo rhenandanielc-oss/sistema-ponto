@@ -1,6 +1,7 @@
 from app.models.admin import Admin, RefreshToken
 from app.models.audit import AuditLog
 from app.models.biometrics import BiometricConsent, BiometricTemplate, KioskIdentification
+from app.models.consumption import ConsumptionEntry, ConsumptionItem
 from app.models.employee import Employee, EmployeeSchedule, EmployeeScheduleDay
 from app.models.setting import Setting
 from app.models.timekeeping import (
@@ -18,6 +19,8 @@ __all__ = [
     "AuditLog",
     "BiometricConsent",
     "BiometricTemplate",
+    "ConsumptionEntry",
+    "ConsumptionItem",
     "Device",
     "Employee",
     "EmployeeSchedule",

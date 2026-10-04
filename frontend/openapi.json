@@ -3274,6 +3274,421 @@
     }
    }
   },
+  "/api/v1/consumption-items": {
+   "get": {
+    "tags": [
+     "consumo"
+    ],
+    "summary": "List Items",
+    "operationId": "list_items_api_v1_consumption_items_get",
+    "parameters": [
+     {
+      "name": "include_inactive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": true,
+       "title": "Include Inactive"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ConsumptionItemOut"
+         },
+         "title": "Response List Items Api V1 Consumption Items Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "consumo"
+    ],
+    "summary": "Create Item",
+    "operationId": "create_item_api_v1_consumption_items_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsumptionItemIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsumptionItemOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/consumption-items/{item_id}": {
+   "patch": {
+    "tags": [
+     "consumo"
+    ],
+    "summary": "Update Item",
+    "operationId": "update_item_api_v1_consumption_items__item_id__patch",
+    "parameters": [
+     {
+      "name": "item_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Item Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsumptionItemUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsumptionItemOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}/consumption": {
+   "get": {
+    "tags": [
+     "consumo"
+    ],
+    "summary": "List Entries",
+    "description": "Padrão: o ciclo de pagamento atual do funcionário.",
+    "operationId": "list_entries_api_v1_employees__employee_id__consumption_get",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date From"
+      }
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date To"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsumptionList"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "consumo"
+    ],
+    "summary": "Add Entry",
+    "operationId": "add_entry_api_v1_employees__employee_id__consumption_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsumptionEntryIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsumptionEntryOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/consumption/{entry_id}/cancel": {
+   "post": {
+    "tags": [
+     "consumo"
+    ],
+    "summary": "Cancel Entry",
+    "operationId": "cancel_entry_api_v1_consumption__entry_id__cancel_post",
+    "parameters": [
+     {
+      "name": "entry_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Entry Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsumptionCancelIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsumptionEntryOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/kiosk/ping": {
    "get": {
     "tags": [
@@ -4314,6 +4729,288 @@
     "type": "object",
     "title": "ConsentIn"
    },
+   "ConsumptionCancelIn": {
+    "properties": {
+     "reason": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 3,
+      "title": "Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "reason"
+    ],
+    "title": "ConsumptionCancelIn"
+   },
+   "ConsumptionEntryIn": {
+    "properties": {
+     "item_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Item Id"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 120,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "unit_price_cents": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 10000000.0,
+        "exclusiveMinimum": 0.0,
+        "description": "Valor em centavos (R$ 6,00 = 600)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Price Cents"
+     },
+     "quantity": {
+      "type": "integer",
+      "maximum": 1000.0,
+      "minimum": 1.0,
+      "title": "Quantity",
+      "default": 1
+     },
+     "entry_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entry Date",
+      "description": "Padrão: hoje"
+     }
+    },
+    "type": "object",
+    "title": "ConsumptionEntryIn",
+    "description": "Um item cadastrado (`item_id`) ou um consumo avulso (`description` + `unit_price_cents`)."
+   },
+   "ConsumptionEntryOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "employee_id": {
+      "type": "integer",
+      "title": "Employee Id"
+     },
+     "entry_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Entry Date"
+     },
+     "item_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Item Id"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "quantity": {
+      "type": "integer",
+      "title": "Quantity"
+     },
+     "unit_price_cents": {
+      "type": "integer",
+      "title": "Unit Price Cents"
+     },
+     "total_cents": {
+      "type": "integer",
+      "title": "Total Cents"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "canceled_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Canceled At"
+     },
+     "cancel_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cancel Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "employee_id",
+     "entry_date",
+     "item_id",
+     "description",
+     "quantity",
+     "unit_price_cents",
+     "total_cents",
+     "created_at",
+     "canceled_at",
+     "cancel_reason"
+    ],
+    "title": "ConsumptionEntryOut"
+   },
+   "ConsumptionItemIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "price_cents": {
+      "type": "integer",
+      "maximum": 10000000.0,
+      "exclusiveMinimum": 0.0,
+      "title": "Price Cents",
+      "description": "Valor em centavos (R$ 6,00 = 600)"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "price_cents"
+    ],
+    "title": "ConsumptionItemIn"
+   },
+   "ConsumptionItemOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "price_cents": {
+      "type": "integer",
+      "title": "Price Cents"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "price_cents",
+     "is_active"
+    ],
+    "title": "ConsumptionItemOut"
+   },
+   "ConsumptionItemUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 120,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "price_cents": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 10000000.0,
+        "exclusiveMinimum": 0.0,
+        "description": "Valor em centavos (R$ 6,00 = 600)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Cents"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     }
+    },
+    "type": "object",
+    "title": "ConsumptionItemUpdate"
+   },
+   "ConsumptionList": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ConsumptionEntryOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total_cents": {
+      "type": "integer",
+      "title": "Total Cents",
+      "description": "Soma dos lançamentos não cancelados do período"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total_cents"
+    ],
+    "title": "ConsumptionList"
+   },
    "DayOut": {
     "properties": {
      "date": {
@@ -5327,6 +6024,11 @@
       "type": "integer",
       "title": "Pay Period Missing Minutes"
      },
+     "pay_period_consumption_cents": {
+      "type": "integer",
+      "title": "Pay Period Consumption Cents",
+      "description": "Consumo do funcionário no ciclo (descontado no pagamento)"
+     },
      "days": {
       "items": {
        "$ref": "#/components/schemas/KioskDay"
@@ -5351,6 +6053,7 @@
      "pay_period_end",
      "pay_period_overtime_minutes",
      "pay_period_missing_minutes",
+     "pay_period_consumption_cents",
      "days",
      "screen_seconds"
     ],
@@ -5774,6 +6477,11 @@
       "type": "integer",
       "title": "Absences"
      },
+     "consumption_cents": {
+      "type": "integer",
+      "title": "Consumption Cents",
+      "description": "Consumo do funcionário no ciclo, em centavos: descontar do pagamento"
+     },
      "incomplete_days": {
       "type": "integer",
       "title": "Incomplete Days",
@@ -5802,6 +6510,7 @@
      "payable_minutes",
      "payable_hours",
      "absences",
+     "consumption_cents",
      "incomplete_days"
     ],
     "title": "PayrollOut"
@@ -5858,6 +6567,11 @@
       "maxItems": 7,
       "minItems": 1,
       "title": "Days"
+     },
+     "weekly_day_off": {
+      "type": "boolean",
+      "title": "Weekly Day Off",
+      "default": false
      },
      "valid_from": {
       "type": "string",
@@ -5955,6 +6669,11 @@
       "maxItems": 7,
       "minItems": 1,
       "title": "Days"
+     },
+     "weekly_day_off": {
+      "type": "boolean",
+      "title": "Weekly Day Off",
+      "default": false
      }
     },
     "type": "object",
@@ -5987,6 +6706,10 @@
       ],
       "title": "Valid To"
      },
+     "weekly_day_off": {
+      "type": "boolean",
+      "title": "Weekly Day Off"
+     },
      "days": {
       "items": {
        "$ref": "#/components/schemas/ScheduleDayOut"
@@ -6004,6 +6727,7 @@
      "id",
      "valid_from",
      "valid_to",
+     "weekly_day_off",
      "days",
      "created_at"
     ],
@@ -6434,6 +7158,14 @@
   {
    "name": "pagamento",
    "description": "Horas do ciclo de pagamento (o valor é calculado à parte)."
+  },
+  {
+   "name": "consumo",
+   "description": "Itens consumidos pelo funcionário, descontados no pagamento (em centavos)."
+  },
+  {
+   "name": "consumo",
+   "description": "Itens consumidos pelo funcionário, descontados no pagamento (em centavos)."
   },
   {
    "name": "feriados",

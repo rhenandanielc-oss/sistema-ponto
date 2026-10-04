@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDate, formatDateTime, formatDecimalHours, formatMinutes, formatTime, weekdayOf } from "./format";
+import {
+  formatDate,
+  formatDateTime,
+  formatDecimalHours,
+  formatMinutes,
+  formatMoney,
+  formatTime,
+  parseMoney,
+  weekdayOf,
+} from "./format";
 
 describe("formatação", () => {
   it("formata minutos como horas", () => {
@@ -26,5 +35,20 @@ describe("formatação", () => {
   it("lê a hora do instante já no fuso da empresa", () => {
     expect(formatTime("2026-09-01T08:02:13-03:00")).toBe("08:02");
     expect(formatDateTime("2026-09-01T23:30:00-03:00")).toBe("01/09/2026 23:30");
+  });
+});
+
+describe("dinheiro", () => {
+  it("formata centavos em reais", () => {
+    expect(formatMoney(600).replace(/\s/g, " ")).toBe("R$ 6,00");
+    expect(formatMoney(123456).replace(/\s/g, " ")).toBe("R$ 1.234,56");
+  });
+
+  it("lê o valor digitado", () => {
+    expect(parseMoney("6")).toBe(600);
+    expect(parseMoney("6,5")).toBe(650);
+    expect(parseMoney("R$ 1.234,56")).toBe(123456);
+    expect(parseMoney("abc")).toBeNull();
+    expect(parseMoney("6,555")).toBeNull();
   });
 });

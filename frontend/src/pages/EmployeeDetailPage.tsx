@@ -4,9 +4,18 @@ import { Link, useParams } from "react-router";
 
 import { api, type Schemas } from "../api/client";
 import { BiometricsPanel } from "../components/BiometricsPanel";
+import { ConsumptionPanel } from "../components/ConsumptionPanel";
 import { DEFAULT_SCHEDULE, ScheduleFields, scheduleToApi, type ScheduleForm } from "../components/ScheduleFields";
 import { Badge, ErrorMessage, Loading, Modal, PageHeader } from "../components/ui";
-import { WEEKDAYS, formatDate, formatDateTime, formatDecimalHours, formatMinutes, shortTime } from "../lib/format";
+import {
+  WEEKDAYS,
+  formatDate,
+  formatDateTime,
+  formatDecimalHours,
+  formatMinutes,
+  formatMoney,
+  shortTime,
+} from "../lib/format";
 import { toIsoDate } from "../lib/period";
 
 type Employee = Schemas["EmployeeDetail"];
@@ -19,6 +28,8 @@ const ACTION_LABELS: Record<string, string> = {
   "employee.deactivate": "Desativação",
   "employee.schedule_create": "Novo horário",
   "hour_bank.entry_create": "Lançamento no banco de horas",
+  "consumption.create": "Consumo lançado",
+  "consumption.cancel": "Consumo cancelado",
 };
 
 export function EmployeeDetailPage() {
@@ -119,6 +130,11 @@ export function EmployeeDetailPage() {
               <p className="text-lg font-semibold text-indigo-900">
                 {formatDecimalHours(payroll.data.payable_hours)} h a pagar
               </p>
+              {payroll.data.consumption_cents > 0 && (
+                <p className="text-xs text-indigo-800">
+                  Descontar consumo: {formatMoney(payroll.data.consumption_cents)}
+                </p>
+              )}
               <Link className="text-xs text-indigo-700 hover:underline" to="/pagamento">
                 Ver pagamento
               </Link>
@@ -143,6 +159,7 @@ export function EmployeeDetailPage() {
                     {formatDate(s.valid_from)} até {s.valid_to ? formatDate(s.valid_to) : "hoje"} —{" "}
                     {s.days.map((d) => WEEKDAYS[d.weekday]?.short).join(", ")}{" "}
                     {s.days[0] && `${shortTime(s.days[0].start_time)}–${shortTime(s.days[0].end_time)}`}
+                    {s.weekly_day_off && " · folga semanal em qualquer dia"}
                   </li>
                 ))}
               </ul>
@@ -150,6 +167,8 @@ export function EmployeeDetailPage() {
           )}
         </section>
       </div>
+
+      <ConsumptionPanel employeeId={e.id} />
 
       <BiometricsPanel employeeId={e.id} active={active} />
 
@@ -180,6 +199,9 @@ function ScheduleTable({ schedule }: { schedule: Schedule }) {
       <p className="mb-2 text-sm text-slate-500">
         Vigente desde {formatDate(schedule.valid_from)}
         {schedule.valid_to ? ` até ${formatDate(schedule.valid_to)}` : ""}
+        {schedule.weekly_day_off && (
+          <span className="ml-2 font-medium text-indigo-700">· Folga semanal em qualquer dia (1 por semana)</span>
+        )}
       </p>
       <div className="overflow-x-auto">
         <table className="table">
@@ -313,6 +335,7 @@ function NewScheduleModal({ employee, onClose }: { employee: Employee; onClose: 
           start_time: shortTime(first.start_time),
           end_time: shortTime(first.end_time),
           lunch_minutes: first.lunch_minutes,
+          weekly_day_off: current.weekly_day_off,
         }
       : DEFAULT_SCHEDULE,
   );

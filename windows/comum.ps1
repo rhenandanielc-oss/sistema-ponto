@@ -54,3 +54,30 @@ function Wait-System([int]$Seconds) {
     }
     return $false
 }
+
+function ConvertTo-PlainText([Security.SecureString]$Secure) {
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
+    try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+}
+
+# Pede a senha no próprio PowerShell (aparece como *****), duas vezes, até ser válida.
+function Read-NewPassword {
+    while ($true) {
+        $first = ConvertTo-PlainText (Read-Host 'Nova senha (mínimo 10 caracteres)' -AsSecureString)
+        $second = ConvertTo-PlainText (Read-Host 'Repita a mesma senha' -AsSecureString)
+        if ($first -cne $second) {
+            Write-Host 'As senhas não conferem. Vamos de novo.' -ForegroundColor Yellow
+        } elseif ($first.Length -lt 10) {
+            Write-Host 'A senha precisa ter no mínimo 10 caracteres. Vamos de novo.' -ForegroundColor Yellow
+        } else {
+            return $first
+        }
+    }
+}
+
+# Envia a senha ao comando pela entrada padrão (sem terminal interativo do Docker, que pode travar no Windows).
+function Invoke-CliWithPassword([string]$Password, [string[]]$CliArgs) {
+    $OutputEncoding = New-Object Text.UTF8Encoding $false  # acentos chegam corretos ao comando
+    $Password | docker @ComposeArgs exec -T backend python -m app.cli @CliArgs --password-stdin
+}

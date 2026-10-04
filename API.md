@@ -99,7 +99,7 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | Método | Rota | Descrição | Fase |
 |---|---|---|---|
 | GET | `/employees` | Filtros: `q` (nome/matrícula), `status`. Ordenação: `name`, `registration_number`, `hire_date` | 1 |
-| POST | `/employees` | Cadastro **com horário fixo inicial**: `{name, registration_number, cpf?, hire_date, schedule}`. `schedule` na forma simples `{weekdays?: ["segunda", …, "sexta"], start_time: "08:00", end_time: "16:00", lunch_minutes?: 60}` (dias por nome ou número; padrão segunda a sexta) ou dia a dia `{days: [{weekday, start_time, end_time, lunch_minutes?}]}` (o rosto é cadastrado na mesma tela — endpoint de biometria, Fase 5) | 1 |
+| POST | `/employees` | Cadastro **com horário fixo inicial**: `{name, registration_number, cpf?, hire_date, schedule}`. `schedule` na forma simples `{weekdays?: ["segunda", …, "sexta"], start_time: "08:00", end_time: "16:00", lunch_minutes?: 60}` (dias por nome ou número; padrão segunda a sexta) ou dia a dia `{days: [{weekday, start_time, end_time, lunch_minutes?}]}`; em ambas, `weekly_day_off: true` ativa a folga semanal em qualquer dia (`BUSINESS-RULES.md` §3.2) (o rosto é cadastrado na mesma tela — endpoint de biometria, Fase 5) | 1 |
 | GET / PATCH | `/employees/{id}` | Detalhe (inclui horário vigente e carga diária calculada) / edição cadastral | 1 |
 | POST | `/employees/{id}/activate`, `/employees/{id}/deactivate` | | 1 |
 | GET | `/employees/{id}/history` | Alterações cadastrais (auditoria) | 1 |
@@ -113,6 +113,18 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 | GET | `/payroll?payment_month&reference_date&q&status` | Mesmo cálculo para todos os funcionários, cada um no seu ciclo (paginado) | 4 |
 
 O cadastro (`POST /employees`) exige `payday` (1 a 31); `PATCH /employees/{id}` permite alterá-lo.
+
+### Consumo do funcionário (valores em centavos)
+| Método | Rota | Descrição | Fase |
+|---|---|---|---|
+| GET / POST | `/consumption-items` | Itens com preço (`?include_inactive=false` só ativos) | 6 |
+| PATCH | `/consumption-items/{id}` | Nome, preço, ativo | 6 |
+| GET | `/employees/{id}/consumption?date_from&date_to` | Lançamentos e `total_cents` (padrão: ciclo de pagamento atual) | 6 |
+| POST | `/employees/{id}/consumption` | `{item_id, quantity?, entry_date?}` ou `{description, unit_price_cents, quantity?, entry_date?}` | 6 |
+| POST | `/consumption/{entry_id}/cancel` | `{reason}` | 6 |
+
+`/payroll` e `/employees/{id}/payroll` trazem `consumption_cents` (consumo do ciclo, a descontar); `/kiosk/hour-bank`
+traz `pay_period_consumption_cents`.
 
 ### Feriados
 | Método | Rota | Fase |
