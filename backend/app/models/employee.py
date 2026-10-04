@@ -2,6 +2,7 @@ from datetime import date, datetime, time
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -64,6 +65,10 @@ class EmployeeSchedule(Base):
     )
     valid_from: Mapped[date] = mapped_column(Date, nullable=False)
     valid_to: Mapped[date | None] = mapped_column(Date)
+    # Folga semanal em qualquer dia (BUSINESS-RULES.md §3.2).
+    weekly_day_off: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     created_by_admin_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("admins.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

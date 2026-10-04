@@ -143,6 +143,7 @@ export function EmployeeDetailPage() {
                     {formatDate(s.valid_from)} até {s.valid_to ? formatDate(s.valid_to) : "hoje"} —{" "}
                     {s.days.map((d) => WEEKDAYS[d.weekday]?.short).join(", ")}{" "}
                     {s.days[0] && `${shortTime(s.days[0].start_time)}–${shortTime(s.days[0].end_time)}`}
+                    {s.weekly_day_off && " · folga semanal em qualquer dia"}
                   </li>
                 ))}
               </ul>
@@ -180,6 +181,9 @@ function ScheduleTable({ schedule }: { schedule: Schedule }) {
       <p className="mb-2 text-sm text-slate-500">
         Vigente desde {formatDate(schedule.valid_from)}
         {schedule.valid_to ? ` até ${formatDate(schedule.valid_to)}` : ""}
+        {schedule.weekly_day_off && (
+          <span className="ml-2 font-medium text-indigo-700">· Folga semanal em qualquer dia (1 por semana)</span>
+        )}
       </p>
       <div className="overflow-x-auto">
         <table className="table">
@@ -313,6 +317,7 @@ function NewScheduleModal({ employee, onClose }: { employee: Employee; onClose: 
           start_time: shortTime(first.start_time),
           end_time: shortTime(first.end_time),
           lunch_minutes: first.lunch_minutes,
+          weekly_day_off: current.weekly_day_off,
         }
       : DEFAULT_SCHEDULE,
   );

@@ -37,6 +37,7 @@ export const FLAG_LABELS: Record<string, string> = {
   INSUFFICIENT_BREAK: "Intervalo insuficiente",
   HOLIDAY_WORK: "Trabalho em feriado",
   DAY_OFF_WORK: "Trabalho em folga",
+  WEEKLY_DAY_OFF: "Folga da semana",
 };
 
 /** 480 → "8h00"; com `signed`, 90 → "+1h30" e -20 → "-0h20". */

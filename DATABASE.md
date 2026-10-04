@@ -94,6 +94,7 @@ Vigência do horário fixo do funcionário.
 | employee_id | FK employees | |
 | valid_from | date | not null |
 | valid_to | date | null = vigente; `>= valid_from` |
+| weekly_day_off | boolean | default false — folga semanal em qualquer dia (`BUSINESS-RULES.md` §3.2; migration `0007`) |
 | created_by_admin_id | FK admins | null (criado por comando de linha) |
 | created_at | timestamptz | |
 

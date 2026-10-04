@@ -346,6 +346,14 @@ backup diário, restauração, limpeza agendada.
 
 **Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly, só para administradores; kiosk com token de dispositivo; funcionário identificado por token de identificação de 60 s emitido após o reconhecimento facial. `SECURITY.md`.
 
+### 2026-10-04 — Folga semanal em qualquer dia (definição do responsável)
+
+**Contexto:** funcionário folga um dia por semana em dia variável (quinta numa semana, domingo na outra); com o
+horário fixo, o dia de folga virava falta e o dia trabalhado fora da escala virava hora extra.
+**Decisão:** opção no horário "Folga semanal em qualquer dia": o sistema considera folga o primeiro dia sem batida
+de cada semana (segunda a domingo); trabalhando a semana toda, o último dia vira hora extra
+(`BUSINESS-RULES.md` §3.2). Migration `0007`.
+
 ### 2026-10-01 — Instalação: notebook Windows único (definição do responsável)
 
 **Contexto:** restaurante, uma unidade, 3–4 funcionários, notebook Windows com câmera, sem custo de URL; o notebook

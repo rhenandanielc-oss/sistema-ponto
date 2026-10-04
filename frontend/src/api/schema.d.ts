@@ -1620,6 +1620,11 @@ export interface components {
             /** Days */
             days: components["schemas"]["ScheduleDayIn"][];
             /**
+             * Weekly Day Off
+             * @default false
+             */
+            weekly_day_off: boolean;
+            /**
              * Valid From
              * Format: date
              */
@@ -1686,6 +1691,11 @@ export interface components {
         ScheduleDaysIn: {
             /** Days */
             days: components["schemas"]["ScheduleDayIn"][];
+            /**
+             * Weekly Day Off
+             * @default false
+             */
+            weekly_day_off: boolean;
         };
         /** ScheduleOut */
         ScheduleOut: {
@@ -1698,6 +1708,8 @@ export interface components {
             valid_from: string;
             /** Valid To */
             valid_to: string | null;
+            /** Weekly Day Off */
+            weekly_day_off: boolean;
             /** Days */
             days: components["schemas"]["ScheduleDayOut"][];
             /** Created At */

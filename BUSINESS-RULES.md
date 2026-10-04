@@ -76,6 +76,27 @@ Para cada dia da semana trabalhado, o horário define:
 * O cálculo de um dia usa o horário vigente **naquele dia** — alterar o horário hoje não muda o passado.
 * A primeira vigência começa na data de admissão (obrigatória no cadastro).
 
+### 3.2 Folga semanal em qualquer dia (decisão do responsável, 2026-10-04)
+
+Para quem folga **um dia por semana, em dia variável** (ex.: numa semana na quinta, na outra no domingo), o horário
+tem a opção **"Folga semanal em qualquer dia"** (`weekly_day_off`). Nesse caso os dias marcados no horário são os
+dias em que ele **pode** trabalhar (normalmente todos os 7), e em cada semana — **segunda a domingo** — o sistema
+escolhe a folga sozinho:
+
+1. a folga é o **primeiro dia de trabalho da semana sem nenhuma batida** (o dia não conta como falta nem tem horas
+   previstas);
+2. outro dia sem batida na mesma semana é **falta** normal;
+3. se ele não folgou até o **último dia de trabalho da semana**, esse último dia é a folga: trabalhando nele, todo o
+   tempo é **hora extra** (`DAY_OFF_WORK`). Assim a carga da semana é sempre de 6 dias (num horário de 7 dias);
+4. feriados não contam como a folga da semana;
+5. a escolha segue a ordem dos dias: um dia já classificado não muda depois. Na semana em andamento, o último dia
+   aparece previsto como folga até alguém folgar antes.
+
+No resultado diário, o dia escolhido traz o aviso `WEEKLY_DAY_OFF` ("Folga da semana").
+
+Exemplo (horário 08:00–16:00 todos os dias): semana 07–13/09 sem batida na quinta (10) e semana 14–20/09 sem batida
+no domingo (20) ⇒ nenhuma falta, nenhuma hora extra, 12 dias × 8 h previstos.
+
 ---
 
 ## 4. Registros de ponto

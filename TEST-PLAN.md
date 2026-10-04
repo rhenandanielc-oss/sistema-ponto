@@ -184,3 +184,17 @@ Salvo indicação, os exemplos usam:
 | S09 | Desempenho (manual) | `DEPLOY.md` §9 | 200 funcionários: relatórios em até ~1,6 s |
 | S10 | Aviso de relógio do servidor diferente do aparelho | `src/kiosk/clock.test.ts` + manual | aviso acima de 2 min; nenhum aviso até 2 min |
 | S11 | Modo de um computador só (manual, Linux equivalente) | `docker-compose.local.yml`, `windows/*.ps1` (PowerShell 7) | sistema só em `localhost`; sessão mantida com cookie seguro em `http://localhost`; câmera abre; backup em pasta com espaços; primeiro backup já com tabelas; restauração com `restaurar-backup.ps1` |
+
+## 11. Folga semanal em qualquer dia (BUSINESS-RULES.md §3.2)
+
+| # | Caso | Esperado |
+|---|---|---|
+| F01 | Horário 7 dias, sem batida na quinta | quinta = folga da semana; sem falta; semana com 6 × 8 h previstas |
+| F02 | Sem batida no domingo | domingo = folga |
+| F03 | Dois dias sem batida | o primeiro é folga, o segundo é falta |
+| F04 | Trabalhou os 7 dias | domingo vira folga trabalhada: 8 h extras |
+| F05 | Duas semanas (quinta e depois domingo) | uma folga por semana; saldo zero |
+| F06 | Feriado na semana | não conta como a folga |
+| F07 | Semana em andamento | dias passados mantêm a carga; domingo previsto como folga |
+| F08 | Período começando no meio da semana | a folga já tirada antes do início continua valendo |
+| F09 | Sem a opção | comportamento anterior (dia sem batida = falta) |

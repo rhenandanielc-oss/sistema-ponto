@@ -5859,6 +5859,11 @@
       "minItems": 1,
       "title": "Days"
      },
+     "weekly_day_off": {
+      "type": "boolean",
+      "title": "Weekly Day Off",
+      "default": false
+     },
      "valid_from": {
       "type": "string",
       "format": "date",
@@ -5955,6 +5960,11 @@
       "maxItems": 7,
       "minItems": 1,
       "title": "Days"
+     },
+     "weekly_day_off": {
+      "type": "boolean",
+      "title": "Weekly Day Off",
+      "default": false
      }
     },
     "type": "object",
@@ -5987,6 +5997,10 @@
       ],
       "title": "Valid To"
      },
+     "weekly_day_off": {
+      "type": "boolean",
+      "title": "Weekly Day Off"
+     },
      "days": {
       "items": {
        "$ref": "#/components/schemas/ScheduleDayOut"
@@ -6004,6 +6018,7 @@
      "id",
      "valid_from",
      "valid_to",
+     "weekly_day_off",
      "days",
      "created_at"
     ],
