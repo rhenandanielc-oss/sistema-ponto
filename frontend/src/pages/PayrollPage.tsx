@@ -4,7 +4,7 @@ import { Link } from "react-router";
 
 import { api, type Schemas } from "../api/client";
 import { Badge, Empty, ErrorMessage, Loading, PageHeader, Pagination } from "../components/ui";
-import { formatDate, formatDecimalHours, formatMinutes } from "../lib/format";
+import { formatDate, formatDecimalHours, formatMinutes, formatMoney } from "../lib/format";
 
 const PAGE_SIZE = 50;
 
@@ -65,7 +65,7 @@ export function PayrollPage() {
         <p className="mb-4 text-sm text-slate-500">
           Cada funcionário tem o seu ciclo: do dia seguinte ao pagamento anterior até o dia do pagamento.{" "}
           <strong>Horas a pagar = horas fixas (salário) + extras − faltantes.</strong> Multiplique as horas a pagar
-          pelo valor da hora (as horas estão em decimal: 7h30 = 7,50).
+          pelo valor da hora (as horas estão em decimal: 7h30 = 7,50) e desconte o consumo do funcionário no ciclo.
         </p>
         <ErrorMessage error={query.error} />
         {query.isLoading ? (
@@ -85,6 +85,7 @@ export function PayrollPage() {
                     <th>= Horas a pagar</th>
                     <th>Trabalhadas</th>
                     <th>Faltas</th>
+                    <th>Consumo (descontar)</th>
                     <th />
                   </tr>
                 </thead>
@@ -108,6 +109,9 @@ export function PayrollPage() {
                       </td>
                       <td className="tabular-nums text-slate-600">{formatDecimalHours(p.worked_hours)} h</td>
                       <td>{p.absences}</td>
+                      <td className="tabular-nums" data-testid="consumption">
+                        {p.consumption_cents > 0 ? formatMoney(p.consumption_cents) : "—"}
+                      </td>
                       <td className="space-x-2">
                         {p.incomplete_days > 0 && (
                           <Badge tone="amber">

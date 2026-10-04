@@ -72,6 +72,9 @@ apontam para o endereço certo.
 6. Na ficha de cada funcionário: **Registrar consentimento** (com o termo assinado) e **Cadastrar rosto**.
    **Feche o terminal antes (Alt + F4)**: a câmera só pode ser usada por uma janela de cada vez.
 7. Abra de novo o "Ponto - Terminal" e faça uma batida de teste com cada funcionário.
+8. Se os funcionários consomem itens (ex.: refrigerante): cadastre-os com preço em **Administração → Consumo**.
+   Para lançar, abra a ficha do funcionário → **Consumo** → escolha o item e a quantidade → **Lançar consumo**.
+   O total do ciclo aparece em **Pagamento**, na coluna "Consumo (descontar)".
 
 ## 6. Uso no dia a dia
 

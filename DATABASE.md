@@ -263,3 +263,34 @@ Migration `0006`. Triggers `BEFORE UPDATE OR DELETE` levantam erro (`insufficien
 
 `TRUNCATE` não é bloqueado (usado só pelos testes). Limpezas automáticas (`maintenance`) apagam apenas
 `biometric_templates` expurgáveis, `kiosk_identifications` e `refresh_tokens` vencidos há mais de 7 dias.
+
+---
+
+## 7. Consumo do funcionário — migration `0008`
+
+Regras em `BUSINESS-RULES.md` §12. Valores em centavos.
+
+### consumption_items
+| Coluna | Tipo | Regras |
+|---|---|---|
+| id | bigint PK | |
+| name | text | único (índice em `lower(name)`) |
+| price_cents | integer | `> 0` |
+| is_active | boolean | default true |
+| created_at / updated_at | timestamptz | |
+
+### consumption_entries
+| Coluna | Tipo | Regras |
+|---|---|---|
+| id | bigint PK | |
+| employee_id | FK employees | |
+| entry_date | date | data do consumo (define o ciclo de pagamento) |
+| item_id | FK consumption_items | null em consumo avulso |
+| description | text | nome do item no momento do lançamento |
+| quantity | integer | `> 0` |
+| unit_price_cents | integer | `> 0`; copiado do item |
+| created_by_admin_id | FK admins | not null |
+| created_at | timestamptz | |
+| canceled_at / canceled_by_admin_id / cancel_reason | | cancelamento; `canceled_at` e `cancel_reason` juntos |
+
+Índice `(employee_id, entry_date)`. Lançamentos não são apagados.

@@ -128,6 +128,22 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await page.getByRole("tab", { name: "Auditoria" }).click();
   await expect(page.getByText("device.create")).toBeVisible();
 
+  // Consumo: item com preço e lançamento na ficha do funcionário, descontado no pagamento.
+  await page.getByRole("tab", { name: "Consumo" }).click();
+  await page.getByLabel("Nome", { exact: true }).fill("Refrigerante lata");
+  await page.getByLabel("Preço (R$)").fill("6,00");
+  await page.getByRole("button", { name: "Adicionar item" }).click();
+  await expect(page.getByText(/Refrigerante lata — R\$\s6,00/)).toBeVisible();
+
+  await page.getByRole("link", { name: "Funcionários" }).click();
+  await page.getByRole("link", { name: "João da Silva" }).click();
+  await page.getByLabel("Item").selectOption({ label: "Refrigerante lata — R$\u00a06,00" });
+  await page.getByLabel("Qtd.").fill("2");
+  await page.getByRole("button", { name: "Lançar consumo" }).click();
+  await expect(page.getByText(/Total do ciclo: R\$\s12,00/)).toBeVisible();
+  await expect(page.getByText(/Descontar consumo: R\$\s12,00/)).toBeVisible();
+  await page.getByRole("link", { name: "Administração" }).click();
+
   // Sessão sobrevive a recarregar a página (cookie de refresh) e termina ao sair.
   await page.reload();
   await expect(page.getByRole("heading", { name: "Administração" })).toBeVisible();

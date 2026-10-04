@@ -5,6 +5,7 @@ from app.api import (
     admins,
     auth,
     biometrics,
+    consumption,
     devices,
     employees,
     health,
@@ -48,6 +49,14 @@ TAGS = [
     {
         "name": "pagamento",
         "description": "Horas do ciclo de pagamento (o valor é calculado à parte).",
+    },
+    {
+        "name": "consumo",
+        "description": "Itens consumidos pelo funcionário, descontados no pagamento (em centavos).",
+    },
+    {
+        "name": "consumo",
+        "description": "Itens consumidos pelo funcionário, descontados no pagamento (em centavos).",
     },
     {"name": "feriados", "description": "Feriados fixos e recorrentes."},
     {"name": "dispositivos", "description": "Terminais de ponto autorizados."},
@@ -103,6 +112,7 @@ def create_app() -> FastAPI:
         devices,
         settings_api,
         payroll,
+        consumption,
         kiosk,
     ):
         api.include_router(module.router)

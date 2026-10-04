@@ -4,9 +4,18 @@ import { Link, useParams } from "react-router";
 
 import { api, type Schemas } from "../api/client";
 import { BiometricsPanel } from "../components/BiometricsPanel";
+import { ConsumptionPanel } from "../components/ConsumptionPanel";
 import { DEFAULT_SCHEDULE, ScheduleFields, scheduleToApi, type ScheduleForm } from "../components/ScheduleFields";
 import { Badge, ErrorMessage, Loading, Modal, PageHeader } from "../components/ui";
-import { WEEKDAYS, formatDate, formatDateTime, formatDecimalHours, formatMinutes, shortTime } from "../lib/format";
+import {
+  WEEKDAYS,
+  formatDate,
+  formatDateTime,
+  formatDecimalHours,
+  formatMinutes,
+  formatMoney,
+  shortTime,
+} from "../lib/format";
 import { toIsoDate } from "../lib/period";
 
 type Employee = Schemas["EmployeeDetail"];
@@ -19,6 +28,8 @@ const ACTION_LABELS: Record<string, string> = {
   "employee.deactivate": "Desativação",
   "employee.schedule_create": "Novo horário",
   "hour_bank.entry_create": "Lançamento no banco de horas",
+  "consumption.create": "Consumo lançado",
+  "consumption.cancel": "Consumo cancelado",
 };
 
 export function EmployeeDetailPage() {
@@ -119,6 +130,11 @@ export function EmployeeDetailPage() {
               <p className="text-lg font-semibold text-indigo-900">
                 {formatDecimalHours(payroll.data.payable_hours)} h a pagar
               </p>
+              {payroll.data.consumption_cents > 0 && (
+                <p className="text-xs text-indigo-800">
+                  Descontar consumo: {formatMoney(payroll.data.consumption_cents)}
+                </p>
+              )}
               <Link className="text-xs text-indigo-700 hover:underline" to="/pagamento">
                 Ver pagamento
               </Link>
@@ -151,6 +167,8 @@ export function EmployeeDetailPage() {
           )}
         </section>
       </div>
+
+      <ConsumptionPanel employeeId={e.id} />
 
       <BiometricsPanel employeeId={e.id} active={active} />
 

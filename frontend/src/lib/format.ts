@@ -81,3 +81,15 @@ export function shortTime(time: string): string {
 export function formatDecimalHours(hours: number): string {
   return hours.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+/** 1250 centavos → "R$ 12,50". */
+export function formatMoney(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/** "6", "6,5", "6,50", "R$ 1.234,56" → centavos; null se não for um valor válido. */
+export function parseMoney(text: string): number | null {
+  const clean = text.replace(/R\$|\s/g, "").replace(/\./g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return null;
+  return Math.round(Number(clean) * 100);
+}

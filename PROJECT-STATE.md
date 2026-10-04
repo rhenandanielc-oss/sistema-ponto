@@ -346,6 +346,13 @@ backup diário, restauração, limpeza agendada.
 
 **Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly, só para administradores; kiosk com token de dispositivo; funcionário identificado por token de identificação de 60 s emitido após o reconhecimento facial. `SECURITY.md`.
 
+### 2026-10-04 — Consumo do funcionário (definição do responsável)
+
+**Contexto:** funcionário pega itens do restaurante (ex.: refrigerante) e o valor deve somar na conta dele.
+**Decisão:** itens com preço (Administração → Consumo) e lançamentos na ficha do funcionário, pelo administrador;
+o total do ciclo de pagamento aparece em Pagamento para descontar e no terminal para o próprio funcionário.
+Cancelamento com motivo em vez de exclusão. Valores em centavos (`BUSINESS-RULES.md` §12). Migration `0008`.
+
 ### 2026-10-04 — Folga semanal em qualquer dia (definição do responsável)
 
 **Contexto:** funcionário folga um dia por semana em dia variável (quinta numa semana, domingo na outra); com o

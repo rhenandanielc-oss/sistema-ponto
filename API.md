@@ -114,6 +114,18 @@ Todos exigem administrador autenticado, exceto `/health/*` e `/auth/login|refres
 
 O cadastro (`POST /employees`) exige `payday` (1 a 31); `PATCH /employees/{id}` permite alterá-lo.
 
+### Consumo do funcionário (valores em centavos)
+| Método | Rota | Descrição | Fase |
+|---|---|---|---|
+| GET / POST | `/consumption-items` | Itens com preço (`?include_inactive=false` só ativos) | 6 |
+| PATCH | `/consumption-items/{id}` | Nome, preço, ativo | 6 |
+| GET | `/employees/{id}/consumption?date_from&date_to` | Lançamentos e `total_cents` (padrão: ciclo de pagamento atual) | 6 |
+| POST | `/employees/{id}/consumption` | `{item_id, quantity?, entry_date?}` ou `{description, unit_price_cents, quantity?, entry_date?}` | 6 |
+| POST | `/consumption/{entry_id}/cancel` | `{reason}` | 6 |
+
+`/payroll` e `/employees/{id}/payroll` trazem `consumption_cents` (consumo do ciclo, a descontar); `/kiosk/hour-bank`
+traz `pay_period_consumption_cents`.
+
 ### Feriados
 | Método | Rota | Fase |
 |---|---|---|

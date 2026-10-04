@@ -49,6 +49,9 @@ class PayrollOut(BaseModel):
         description="Horas a pagar em decimal (multiplicar pelo valor da hora)"
     )
     absences: int
+    consumption_cents: int = Field(
+        description="Consumo do funcionário no ciclo, em centavos: descontar do pagamento"
+    )
     incomplete_days: int = Field(description="Dias com batida faltando: corrija antes de pagar")
 
 
@@ -77,6 +80,7 @@ def _out(p: payroll_service.Payroll) -> PayrollOut:
         payable_minutes=payable,
         payable_hours=_hours(payable),
         absences=t.absences,
+        consumption_cents=p.consumption_cents,
         incomplete_days=t.incomplete_days,
     )
 

@@ -16,6 +16,7 @@ from app.schemas.common import LocalDatetime
 from app.services import (
     audit,
     biometric_service,
+    consumption_service,
     hour_bank_service,
     record_service,
     settings_service,
@@ -131,6 +132,9 @@ class KioskHourBankOut(BaseModel):
     pay_period_end: date
     pay_period_overtime_minutes: int
     pay_period_missing_minutes: int
+    pay_period_consumption_cents: int = Field(
+        description="Consumo do funcionário no ciclo (descontado no pagamento)"
+    )
     days: list[KioskDay]
     screen_seconds: int
 
@@ -166,6 +170,9 @@ def own_hour_bank(data: KioskHourBankIn, device: CurrentDevice, db: DbSession) -
         pay_period_end=period.end,
         pay_period_overtime_minutes=pay_totals.overtime_minutes,
         pay_period_missing_minutes=pay_totals.missing_minutes,
+        pay_period_consumption_cents=consumption_service.total_cents(
+            db, employee.id, period.start, period.end
+        ),
         days=[
             KioskDay(
                 date=d.day,

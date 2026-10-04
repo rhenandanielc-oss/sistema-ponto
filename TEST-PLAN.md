@@ -198,3 +198,17 @@ Salvo indicação, os exemplos usam:
 | F07 | Semana em andamento | dias passados mantêm a carga; domingo previsto como folga |
 | F08 | Período começando no meio da semana | a folga já tirada antes do início continua valendo |
 | F09 | Sem a opção | comportamento anterior (dia sem batida = falta) |
+
+## 12. Consumo do funcionário (BUSINESS-RULES.md §12)
+
+| # | Caso | Esperado |
+|---|---|---|
+| K01 | 2 refrigerantes de R$ 6,00 | lançamento de R$ 12,00 com a data de hoje |
+| K02 | Preço do item muda | lançamentos antigos mantêm o preço da época |
+| K03 | Consumo avulso (descrição + valor) | aceito |
+| K04 | Cancelamento | sai do total; cancelar de novo ⇒ 409 |
+| K05 | Consumo fora do ciclo | não entra no pagamento do ciclo |
+| K06 | Pagamento e resumo | `consumption_cents` do ciclo de cada funcionário |
+| K07 | Validação | nem item nem avulso, os dois, quantidade 0, preço 0, nome repetido, item desativado ⇒ erro |
+| K08 | Terminal | o funcionário vê o próprio consumo do ciclo |
+| K09 | Navegador (E2E) | item cadastrado em Administração → Consumo, lançado na ficha, total no ciclo |

@@ -3,12 +3,13 @@ import { useState, type FormEvent } from "react";
 
 import { api, type Schemas } from "../api/client";
 import { Badge, Empty, ErrorMessage, Loading, PageHeader, Pagination } from "../components/ui";
-import { formatDate, formatDateTime, shortTime } from "../lib/format";
+import { formatDate, formatDateTime, formatMoney, parseMoney, shortTime } from "../lib/format";
 import { useAuth } from "../lib/auth";
 
 const TABS = [
   { id: "holidays", label: "Feriados" },
   { id: "devices", label: "Terminais" },
+  { id: "consumption", label: "Consumo" },
   { id: "admins", label: "Administradores" },
   { id: "settings", label: "Configurações" },
   { id: "audit", label: "Auditoria" },
@@ -39,6 +40,7 @@ export function AdminPage() {
       </div>
       {tab === "holidays" && <HolidaysTab />}
       {tab === "devices" && <DevicesTab />}
+      {tab === "consumption" && <ConsumptionItemsTab />}
       {tab === "admins" && <AdminsTab />}
       {tab === "settings" && <SettingsTab />}
       {tab === "audit" && <AuditTab />}
@@ -130,6 +132,124 @@ function HolidaysTab() {
           </ul>
         ) : (
           <Empty>Nenhum feriado cadastrado.</Empty>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ConsumptionItemsTab() {
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const items = useQuery({
+    queryKey: ["consumption-items", "all"],
+    queryFn: () => api<Schemas["ConsumptionItemOut"][]>("/consumption-items"),
+  });
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: ["consumption-items"] });
+  const create = useMutation({
+    mutationFn: (body: { name: string; price_cents: number }) =>
+      api("/consumption-items", { method: "POST", body }),
+    onSuccess: () => {
+      refresh();
+      setName("");
+      setPrice("");
+    },
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Record<string, unknown> }) =>
+      api(`/consumption-items/${id}`, { method: "PATCH", body }),
+    onSuccess: refresh,
+  });
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      <form
+        className="card space-y-3"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          const cents = parseMoney(price);
+          if (cents === null || cents <= 0) {
+            setFormError("Preço inválido. Exemplo: 6,00");
+            return;
+          }
+          setFormError(null);
+          create.mutate({ name, price_cents: cents });
+        }}
+      >
+        <h2 className="font-semibold">Novo item</h2>
+        <p className="text-xs text-slate-500">
+          Itens que o funcionário pode pegar (ex.: refrigerante). O consumo é lançado na ficha do funcionário e
+          aparece em Pagamento para descontar.
+        </p>
+        {formError && (
+          <p role="alert" className="text-sm text-red-700">
+            {formError}
+          </p>
+        )}
+        <ErrorMessage error={create.error} />
+        <div>
+          <label className="label" htmlFor="item-name">
+            Nome
+          </label>
+          <input id="item-name" required className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label className="label" htmlFor="item-price">
+            Preço (R$)
+          </label>
+          <input
+            id="item-price"
+            required
+            inputMode="decimal"
+            placeholder="6,00"
+            className="input"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+        </div>
+        <button type="submit" className="btn-primary" disabled={create.isPending}>
+          Adicionar item
+        </button>
+      </form>
+      <div className="card lg:col-span-2">
+        <h2 className="mb-3 font-semibold">Itens</h2>
+        <ErrorMessage error={update.error} />
+        {items.isLoading ? (
+          <Loading />
+        ) : items.data && items.data.length > 0 ? (
+          <ul className="divide-y divide-slate-100 text-sm">
+            {items.data.map((i) => (
+              <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className={i.is_active ? "" : "text-slate-400"}>
+                  {i.name} — {formatMoney(i.price_cents)} {!i.is_active && <Badge tone="slate">desativado</Badge>}
+                </span>
+                <span className="flex gap-3">
+                  <button
+                    type="button"
+                    className="text-indigo-700 hover:underline"
+                    onClick={() => {
+                      const typed = window.prompt(`Novo preço de "${i.name}" (R$):`, (i.price_cents / 100).toFixed(2).replace(".", ","));
+                      const cents = typed === null ? null : parseMoney(typed);
+                      if (cents) update.mutate({ id: i.id, body: { price_cents: cents } });
+                    }}
+                  >
+                    Alterar preço
+                  </button>
+                  <button
+                    type="button"
+                    className={i.is_active ? "text-red-700 hover:underline" : "text-indigo-700 hover:underline"}
+                    onClick={() => update.mutate({ id: i.id, body: { is_active: !i.is_active } })}
+                  >
+                    {i.is_active ? "Desativar" : "Ativar"}
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>Nenhum item cadastrado.</Empty>
         )}
       </div>
     </div>

@@ -294,3 +294,21 @@ Nenhum valor em dinheiro é guardado ou calculado.
 * Ciclo ainda não encerrado aparece como "em andamento" (as horas ainda podem mudar).
 * Dias antes da admissão não contam (`NOT_EMPLOYED`).
 
+
+---
+
+## 12. Consumo do funcionário (decisão do responsável, 2026-10-04)
+
+O funcionário pode consumir itens do estabelecimento (ex.: um refrigerante); o valor é **descontado no pagamento**.
+
+* **Itens** (Administração → Consumo): nome e preço (ex.: "Refrigerante lata", R$ 6,00). Podem ser desativados;
+  mudar o preço não altera lançamentos já feitos (o preço é copiado no lançamento).
+* **Lançamento** (ficha do funcionário): item cadastrado ou avulso (descrição + valor), quantidade e data (padrão:
+  hoje). Só o administrador lança.
+* **Cancelamento:** um lançamento errado é cancelado com motivo; continua visível (riscado) e auditado, mas sai do
+  total.
+* **Total a descontar** = soma dos lançamentos não cancelados com data dentro do **ciclo de pagamento** (§11). Aparece
+  em Pagamento (coluna "Consumo (descontar)"), na ficha do funcionário e, para o próprio funcionário, na consulta do
+  banco de horas no terminal.
+* Como nas horas, o sistema não calcula o salário: mostra o valor em reais para o administrador descontar.
+* Valores guardados em centavos (inteiros).

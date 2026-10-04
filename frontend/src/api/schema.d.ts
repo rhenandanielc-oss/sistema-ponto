@@ -629,6 +629,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/consumption-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Items */
+        get: operations["list_items_api_v1_consumption_items_get"];
+        put?: never;
+        /** Create Item */
+        post: operations["create_item_api_v1_consumption_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/consumption-items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Item */
+        patch: operations["update_item_api_v1_consumption_items__item_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/employees/{employee_id}/consumption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Entries
+         * @description Padrão: o ciclo de pagamento atual do funcionário.
+         */
+        get: operations["list_entries_api_v1_employees__employee_id__consumption_get"];
+        put?: never;
+        /** Add Entry */
+        post: operations["add_entry_api_v1_employees__employee_id__consumption_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/consumption/{entry_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Entry */
+        post: operations["cancel_entry_api_v1_consumption__entry_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kiosk/ping": {
         parameters: {
             query?: never;
@@ -981,6 +1054,101 @@ export interface components {
              * @default v1
              */
             term_version: string;
+        };
+        /** ConsumptionCancelIn */
+        ConsumptionCancelIn: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ConsumptionEntryIn
+         * @description Um item cadastrado (`item_id`) ou um consumo avulso (`description` + `unit_price_cents`).
+         */
+        ConsumptionEntryIn: {
+            /** Item Id */
+            item_id?: number | null;
+            /** Description */
+            description?: string | null;
+            /** Unit Price Cents */
+            unit_price_cents?: number | null;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /**
+             * Entry Date
+             * @description Padrão: hoje
+             */
+            entry_date?: string | null;
+        };
+        /** ConsumptionEntryOut */
+        ConsumptionEntryOut: {
+            /** Id */
+            id: number;
+            /** Employee Id */
+            employee_id: number;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Item Id */
+            item_id: number | null;
+            /** Description */
+            description: string;
+            /** Quantity */
+            quantity: number;
+            /** Unit Price Cents */
+            unit_price_cents: number;
+            /** Total Cents */
+            total_cents: number;
+            /** Created At */
+            created_at: string;
+            /** Canceled At */
+            canceled_at: string | null;
+            /** Cancel Reason */
+            cancel_reason: string | null;
+        };
+        /** ConsumptionItemIn */
+        ConsumptionItemIn: {
+            /** Name */
+            name: string;
+            /**
+             * Price Cents
+             * @description Valor em centavos (R$ 6,00 = 600)
+             */
+            price_cents: number;
+        };
+        /** ConsumptionItemOut */
+        ConsumptionItemOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Price Cents */
+            price_cents: number;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** ConsumptionItemUpdate */
+        ConsumptionItemUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Price Cents */
+            price_cents?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /** ConsumptionList */
+        ConsumptionList: {
+            /** Items */
+            items: components["schemas"]["ConsumptionEntryOut"][];
+            /**
+             * Total Cents
+             * @description Soma dos lançamentos não cancelados do período
+             */
+            total_cents: number;
         };
         /** DayOut */
         DayOut: {
@@ -1396,6 +1564,11 @@ export interface components {
             pay_period_overtime_minutes: number;
             /** Pay Period Missing Minutes */
             pay_period_missing_minutes: number;
+            /**
+             * Pay Period Consumption Cents
+             * @description Consumo do funcionário no ciclo (descontado no pagamento)
+             */
+            pay_period_consumption_cents: number;
             /** Days */
             days: components["schemas"]["KioskDay"][];
             /** Screen Seconds */
@@ -1592,6 +1765,11 @@ export interface components {
             payable_hours: number;
             /** Absences */
             absences: number;
+            /**
+             * Consumption Cents
+             * @description Consumo do funcionário no ciclo, em centavos: descontar do pagamento
+             */
+            consumption_cents: number;
             /**
              * Incomplete Days
              * @description Dias com batida faltando: corrija antes de pagar
@@ -3469,6 +3647,221 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_PayrollOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_api_v1_consumption_items_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_item_api_v1_consumption_items_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsumptionItemIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_api_v1_consumption_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsumptionItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_entries_api_v1_employees__employee_id__consumption_get: {
+        parameters: {
+            query?: {
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_entry_api_v1_employees__employee_id__consumption_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsumptionEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_entry_api_v1_consumption__entry_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsumptionCancelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionEntryOut"];
                 };
             };
             /** @description Validation Error */
