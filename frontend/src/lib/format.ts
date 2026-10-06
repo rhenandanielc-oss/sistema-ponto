@@ -31,6 +31,7 @@ export const DAY_TYPE_LABELS: Record<string, string> = {
   DAY_OFF: "Folga",
   HOLIDAY: "Feriado",
   NOT_EMPLOYED: "Fora do contrato",
+  BEFORE_TRACKING: "Antes do início do controle",
 };
 
 export const FLAG_LABELS: Record<string, string> = {

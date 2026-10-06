@@ -68,7 +68,11 @@ apontam para o endereço certo.
 3. Abra **"Ponto - Terminal"**, cole a chave e toque em **Ativar terminal**. Na primeira vez, o navegador pergunta
    sobre a câmera: clique em **Permitir**.
 4. Para sair do terminal (tela cheia): **Alt + F4**.
-5. **Funcionários → Novo funcionário**: nome, dias de trabalho, horário fixo, tempo de almoço e dia do pagamento.
+5. **Antes de cadastrar os funcionários:** em **Administração → Configurações**, preencha **"Início do uso do
+   sistema"** com o dia em que o ponto começa a valer e clique em **Salvar configurações**. Sem isso, quem foi
+   admitido antes aparece com falta em todos os dias desde a admissão.
+   Depois, **Funcionários → Novo funcionário**: nome, dias de trabalho, horário fixo, tempo de almoço e dia do
+   pagamento (para o ciclo do dia 1 ao fim do mês, use **31**).
 6. Na ficha de cada funcionário: **Registrar consentimento** (com o termo assinado) e **Cadastrar rosto**.
    **Feche o terminal antes (Alt + F4)**: a câmera só pode ser usada por uma janela de cada vez.
 7. Abra de novo o "Ponto - Terminal" e faça uma batida de teste com cada funcionário.

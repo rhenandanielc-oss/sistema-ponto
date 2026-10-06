@@ -2,9 +2,11 @@ from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 
 from app.api.deps import Actor, DbSession, PageParams, get_current_admin
 from app.calculation.workday import DayResult
+from app.core.clock import today_local
 from app.schemas.common import Page
 from app.schemas.timekeeping import (
     DayOut,
@@ -93,6 +95,24 @@ def add_entry(
     return HourBankEntryOut.model_validate(
         hour_bank_service.add_entry(db, employee_id, data, actor)
     )
+
+
+class HourBankResetIn(BaseModel):
+    reset_date: date | None = Field(
+        default=None, description="Zera o saldo até esta data (padrão: hoje)"
+    )
+    reason: str | None = Field(default=None, min_length=10, max_length=1000)
+
+
+@router.post("/hour-bank/reset", response_model=HourBankEntryOut, status_code=201)
+def reset_hour_bank(
+    employee_id: int, data: HourBankResetIn, db: DbSession, actor: Actor
+) -> HourBankEntryOut:
+    """Zera o saldo com um lançamento de correção; o histórico não é apagado."""
+    entry = hour_bank_service.reset_balance(
+        db, employee_id, data.reset_date or today_local(), data.reason, actor
+    )
+    return HourBankEntryOut.model_validate(entry)
 
 
 summary_router = APIRouter(

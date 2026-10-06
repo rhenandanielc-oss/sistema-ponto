@@ -23,7 +23,13 @@ def week_start(day: date) -> date:
 
 
 def _is_candidate(inp: DayInput, rotating: Callable[[date], bool]) -> bool:
-    return inp.employed and not inp.holiday and inp.schedule is not None and rotating(inp.day)
+    return (
+        inp.employed
+        and inp.tracked
+        and not inp.holiday
+        and inp.schedule is not None
+        and rotating(inp.day)
+    )
 
 
 def calculate_days(

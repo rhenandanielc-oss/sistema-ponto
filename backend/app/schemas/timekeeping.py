@@ -139,7 +139,7 @@ class PunchOut(BaseModel):
 
 class DayOut(BaseModel):
     date: Date
-    day_type: Literal["WORKDAY", "DAY_OFF", "HOLIDAY", "NOT_EMPLOYED"]
+    day_type: Literal["WORKDAY", "DAY_OFF", "HOLIDAY", "NOT_EMPLOYED", "BEFORE_TRACKING"]
     status: Literal["OK", "ABSENT", "INCOMPLETE", "IN_PROGRESS", "FUTURE", "NONE"]
     flags: list[str]
     expected_start: LocalDatetime | None

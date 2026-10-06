@@ -61,12 +61,15 @@ class CalcContext:
 
     rules: Rules
     holidays: Sequence[Holiday]
+    tracking_start: date | None = None
 
 
 def load_context(db: Session) -> CalcContext:
+    company = settings_service.load(db)
     return CalcContext(
-        rules=settings_service.rules(settings_service.load(db)),
+        rules=settings_service.rules(company),
         holidays=db.scalars(select(Holiday)).all(),
+        tracking_start=company.tracking_start_date,
     )
 
 
@@ -101,6 +104,11 @@ def _calculate(
             employee.termination_date is None or day <= employee.termination_date
         )
 
+    tracking_start = ctx.tracking_start
+
+    def tracked(day: date) -> bool:
+        return tracking_start is None or day >= tracking_start
+
     def rotating(day: date) -> bool:
         schedule = table.vigente(day)
         return schedule is not None and schedule.weekly_day_off
@@ -108,6 +116,7 @@ def _calculate(
     def is_candidate_day(day: date) -> bool:
         return (
             employed(day)
+            and tracked(day)
             and day not in holidays
             and table.day_schedule(day) is not None
             and rotating(day)
@@ -123,6 +132,7 @@ def _calculate(
                 employed=employed(day),
                 holiday=day in holidays,
                 punches=tuple(punches.get(day, ())),
+                tracked=tracked(day),
             )
         )
         day += timedelta(days=1)
@@ -249,6 +259,32 @@ def add_entry(
     )
     db.commit()
     return entry
+
+
+RESET_REASON = "Banco de horas zerado pelo administrador"
+
+
+def reset_balance(
+    db: Session, employee_id: int, reset_date: date, reason: str | None, actor: audit.Actor
+) -> HourBankEntry:
+    """Zera o saldo acumulado até `reset_date` com um lançamento de correção (BUSINESS-RULES §9.3).
+
+    Não apaga nada: o histórico continua igual e o lançamento fica registrado e auditado.
+    """
+    balance = hour_bank(db, employee_id, reset_date, reset_date).closing_balance_minutes
+    if balance == 0:
+        raise AppError(409, "CONFLICT", "O saldo do banco de horas já está zerado nesta data.")
+    return add_entry(
+        db,
+        employee_id,
+        HourBankEntryIn(
+            entry_date=reset_date,
+            minutes=-balance,
+            kind="CORRECTION",
+            reason=reason or f"{RESET_REASON} (saldo anterior {balance:+d} min)",
+        ),
+        actor,
+    )
 
 
 def summary(

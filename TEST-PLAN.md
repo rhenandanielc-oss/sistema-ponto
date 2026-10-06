@@ -212,3 +212,14 @@ Salvo indicação, os exemplos usam:
 | K07 | Validação | nem item nem avulso, os dois, quantidade 0, preço 0, nome repetido, item desativado ⇒ erro |
 | K08 | Terminal | o funcionário vê o próprio consumo do ciclo |
 | K09 | Navegador (E2E) | item cadastrado em Administração → Consumo, lançado na ficha, total no ciclo |
+
+## 13. Início do uso do sistema e zerar banco (BUSINESS-RULES.md §9.2 e §9.3)
+
+| # | Caso | Esperado |
+|---|---|---|
+| Z01 | Admitido em 01/09, início do uso 06/10, sem batidas antes | nenhuma falta nem horas previstas antes de 06/10 |
+| Z02 | Dia antes do início com batida | ignorado (sem extra) |
+| Z03 | Pagamento dia 1 | ciclo 02/10–01/11; só conta a partir do início do uso |
+| Z04 | Zerar banco com saldo negativo | lançamento de correção; saldo 0; dias seguintes voltam a contar |
+| Z05 | Zerar com saldo zero | 409 |
+| Z06 | Navegador (E2E) | botão "Zerar banco de horas" e configuração "Início do uso do sistema" |

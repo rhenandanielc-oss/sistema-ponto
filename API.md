@@ -146,6 +146,7 @@ traz `pay_period_consumption_cents`.
 | GET | `/employees/{id}/workdays?date_from&date_to` | Resultado diário (`BUSINESS-RULES.md` §5) | 2 |
 | GET | `/employees/{id}/hour-bank?date_from&date_to` | Saldo anterior, dias, totais, saldo final | 2 |
 | GET / POST | `/employees/{id}/hour-bank/entries` | Lançamentos manuais | 2 |
+| POST | `/employees/{id}/hour-bank/reset` | `{reset_date?, reason?}` — zera o saldo com um lançamento de correção (409 se já for zero) | 6 |
 | GET | `/hour-bank/summary?date_from&date_to&q&status` | Saldo de todos os funcionários no período, ordenado por nome (paginado) | 3 |
 
 ### Auditoria, dispositivos e configurações
@@ -154,7 +155,7 @@ traz `pay_period_consumption_cents`.
 | GET | `/audit-logs` (filtros: `entity_type`, `entity_id`, `action` exata ou prefixo terminado em `.` — ex.: `employee.` —, `actor_admin_id`, `date_from`, `date_to`; ordenação `occurred_at`) | 3 |
 | GET / POST | `/devices` (POST devolve o token **uma vez**) | 2 |
 | POST | `/devices/{id}/activate`, `/devices/{id}/deactivate`, `/devices/{id}/rotate-token` | 2 |
-| GET / PATCH | `/settings` (tolerâncias, intervalo mínimo entre batidas, turno máximo, janela de entrada antecipada, período noturno, tempo da tela do kiosk) | 2 |
+| GET / PATCH | `/settings` (tolerâncias, intervalo mínimo entre batidas, turno máximo, janela de entrada antecipada, período noturno, tempo da tela do kiosk, `tracking_start_date` — início do uso do sistema) | 2 |
 
 ### Biometria
 | Método | Rota | Fase |

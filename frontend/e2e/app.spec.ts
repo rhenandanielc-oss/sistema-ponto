@@ -111,6 +111,12 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await expect(page.getByRole("heading", { name: /Banco de horas — João da Silva/ })).toBeVisible();
   await expect(page.getByLabel("Data inicial")).toBeVisible(); // período do ciclo já aplicado
 
+  // Zerar o banco de horas: lançamento de correção, sem apagar o histórico.
+  page.once("dialog", (d) => void d.accept());
+  const resetResponse = page.waitForResponse((r) => r.url().endsWith("/hour-bank/reset"));
+  await page.getByRole("button", { name: "Zerar banco de horas" }).click();
+  expect((await resetResponse).status()).toBe(201);
+
   // Administração: feriado e terminal (chave exibida uma única vez).
   await page.getByRole("link", { name: "Administração" }).click();
   await expect(page.getByRole("heading", { name: "Administração" })).toBeVisible();
@@ -143,6 +149,12 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await expect(page.getByText(/Total do ciclo: R\$\s12,00/)).toBeVisible();
   await expect(page.getByText(/Descontar consumo: R\$\s12,00/)).toBeVisible();
   await page.getByRole("link", { name: "Administração" }).click();
+
+  // Início do uso do sistema: dias anteriores não contam faltas.
+  await page.getByRole("tab", { name: "Configurações" }).click();
+  await page.getByLabel("Início do uso do sistema").fill(isoDay(0));
+  await page.getByRole("button", { name: "Salvar configurações" }).click();
+  await expect(page.getByText("Configurações salvas.")).toBeVisible();
 
   // Sessão sobrevive a recarregar a página (cookie de refresh) e termina ao sair.
   await page.reload();

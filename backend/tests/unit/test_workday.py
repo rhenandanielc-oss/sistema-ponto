@@ -249,3 +249,30 @@ def test_night_minutes(start: str, end: str, expected: int) -> None:
     p = punches(1, start, end, next_day_from=next_day)
     r = calc(1, p, schedule=None)
     assert r.night_minutes == expected
+
+
+def test_days_before_tracking_start_are_ignored() -> None:
+    """Antes do início do uso do sistema: sem falta, sem carga e sem extra (BUSINESS-RULES §9.2)."""
+    tz = ZoneInfo("America/Sao_Paulo")
+    day = date(2026, 10, 1)
+    schedule = DaySchedule(day.weekday(), time(8), time(16), 0)
+    now = datetime(2026, 10, 6, 12, tzinfo=tz)
+    for punches in ((), (Punch("ENTRY", datetime(2026, 10, 1, 8, tzinfo=tz)),)):
+        result = w.calculate_day(
+            w.DayInput(
+                day=day,
+                schedule=schedule,
+                employed=True,
+                holiday=False,
+                punches=punches,
+                tracked=False,
+            ),
+            w.Rules(tz=tz),
+            now,
+        )
+        assert result.day_type == w.BEFORE_TRACKING
+        assert (result.planned_minutes, result.balance_minutes, result.counts_for_bank) == (
+            0,
+            0,
+            False,
+        )
