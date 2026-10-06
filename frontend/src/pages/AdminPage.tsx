@@ -445,7 +445,13 @@ function AdminsTab() {
 
 type Settings = Schemas["CompanySettings"];
 
-const SETTING_FIELDS: { key: keyof Settings; label: string; help: string; type: "number" | "time" }[] = [
+const SETTING_FIELDS: { key: keyof Settings; label: string; help: string; type: "number" | "time" | "date" }[] = [
+  {
+    key: "tracking_start_date",
+    label: "Início do uso do sistema",
+    help: "Dias antes desta data não contam faltas, horas previstas nem extras (ex.: o dia em que começou a usar o ponto).",
+    type: "date",
+  },
   { key: "tolerance_per_mark_minutes", label: "Tolerância por batida (min)", help: "CLT: até 5 min.", type: "number" },
   { key: "tolerance_daily_minutes", label: "Tolerância diária (min)", help: "CLT: até 10 min.", type: "number" },
   { key: "min_minutes_between_records", label: "Intervalo mínimo entre batidas (min)", help: "Evita batida duplicada.", type: "number" },
@@ -465,7 +471,7 @@ function SettingsTab() {
       const body: Record<string, string | number> = {};
       for (const field of SETTING_FIELDS) {
         const value = draft[field.key];
-        if (value !== undefined) body[field.key] = field.type === "number" ? Number(value) : value;
+        if (value !== undefined && value !== "") body[field.key] = field.type === "number" ? Number(value) : value;
       }
       return api<Settings>("/settings", { method: "PATCH", body });
     },
@@ -489,7 +495,7 @@ function SettingsTab() {
       {save.isSuccess && <p className="text-sm text-green-700">Configurações salvas.</p>}
       <div className="grid gap-4 md:grid-cols-2">
         {SETTING_FIELDS.map((field) => {
-          const original = String(current[field.key]);
+          const original = current[field.key] == null ? "" : String(current[field.key]);
           const value = draft[field.key] ?? (field.type === "time" ? shortTime(original) : original);
           return (
             <div key={field.key}>

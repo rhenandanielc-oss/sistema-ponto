@@ -14,6 +14,9 @@ WORKDAY = "WORKDAY"
 DAY_OFF = "DAY_OFF"
 HOLIDAY = "HOLIDAY"
 NOT_EMPLOYED = "NOT_EMPLOYED"
+BEFORE_TRACKING = (
+    "BEFORE_TRACKING"  # antes do início do uso do sistema: não entra em nenhum cálculo
+)
 
 OK = "OK"
 ABSENT = "ABSENT"
@@ -46,6 +49,7 @@ class DayInput:
     employed: bool
     holiday: bool
     punches: tuple[Punch, ...] = ()
+    tracked: bool = True  # False = antes do início do controle de ponto (configuração da empresa)
 
 
 @dataclass(frozen=True)
@@ -78,6 +82,8 @@ def _minutes(delta: timedelta) -> int:
 def _day_type(inp: DayInput) -> str:
     if not inp.employed:
         return NOT_EMPLOYED
+    if not inp.tracked:
+        return BEFORE_TRACKING
     if inp.holiday:
         return HOLIDAY
     if inp.schedule is None:
@@ -118,6 +124,8 @@ def calculate_day(inp: DayInput, rules: Rules, now: datetime) -> DayResult:
         expected_end=expected_end,
         punches=tuple(sorted(inp.punches, key=lambda p: p.at)),
     )
+    if day_type == BEFORE_TRACKING:
+        return base  # sem horas previstas, faltas ou extras: o sistema ainda não era usado
     by_type = {p.type: p.at for p in inp.punches}
     today = now.astimezone(rules.tz).date()
 

@@ -258,6 +258,23 @@ Para cada dia `d` do período consultado (**inclusivo** nas duas pontas):
 * A tela fecha sozinha após **30 segundos** (configurável) ou ao tocar em "Sair".
 * Cada consulta é auditada.
 
+### 9.2 Início do uso do sistema (decisão do responsável, 2026-10-06)
+
+Quem começa a usar o sistema com funcionários já contratados não tem batidas dos dias anteriores, e o cálculo
+mostraria falta desde a admissão. A configuração **"Início do uso do sistema"** (`tracking_start_date`,
+Administração → Configurações) resolve isso para todos os funcionários:
+
+* dias **anteriores** a essa data não têm horas previstas, faltas nem extras (tipo de dia `BEFORE_TRACKING`,
+  "Antes do início do controle"), mesmo que haja batidas lançadas;
+* vale para banco de horas, pagamento (horas fixas do primeiro ciclo contam só a partir dessa data) e terminal;
+* a data de admissão continua a real.
+
+### 9.3 Zerar o banco de horas
+
+Botão **"Zerar banco de horas"** (página do banco de horas do funcionário): grava um lançamento de correção com o
+saldo acumulado até hoje com sinal trocado, deixando o saldo em zero. Nada é apagado; o lançamento aparece na lista e
+na auditoria. Se o saldo já for zero, o sistema avisa. Uso típico: depois de pagar ou compensar as horas.
+
 ---
 
 ## 10. Períodos de consulta
@@ -294,6 +311,10 @@ Nenhum valor em dinheiro é guardado ou calculado.
 * Ciclo ainda não encerrado aparece como "em andamento" (as horas ainda podem mudar).
 * Dias antes da admissão não contam (`NOT_EMPLOYED`).
 
+
+
+**Dica do dia do pagamento:** o campo é o dia em que o ciclo **fecha**. Pagamento dia 1 ⇒ ciclo de 02 a 01 do mês
+seguinte. Para o ciclo do **dia 1 ao último dia do mês**, use **31** (vale como último dia em meses mais curtos).
 
 ---
 

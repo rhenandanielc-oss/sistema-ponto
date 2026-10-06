@@ -394,6 +394,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/employees/{employee_id}/hour-bank/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Hour Bank
+         * @description Zera o saldo com um lançamento de correção; o histórico não é apagado.
+         */
+        post: operations["reset_hour_bank_api_v1_employees__employee_id__hour_bank_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/time-records": {
         parameters: {
             query?: never;
@@ -1027,6 +1047,8 @@ export interface components {
              * @default 30
              */
             kiosk_hour_bank_screen_seconds: number;
+            /** Tracking Start Date */
+            tracking_start_date?: string | null;
         };
         /** CompanySettingsUpdate */
         CompanySettingsUpdate: {
@@ -1046,6 +1068,8 @@ export interface components {
             night_end?: string | null;
             /** Kiosk Hour Bank Screen Seconds */
             kiosk_hour_bank_screen_seconds?: number | null;
+            /** Tracking Start Date */
+            tracking_start_date?: string | null;
         };
         /** ConsentIn */
         ConsentIn: {
@@ -1161,7 +1185,7 @@ export interface components {
              * Day Type
              * @enum {string}
              */
-            day_type: "WORKDAY" | "DAY_OFF" | "HOLIDAY" | "NOT_EMPLOYED";
+            day_type: "WORKDAY" | "DAY_OFF" | "HOLIDAY" | "NOT_EMPLOYED" | "BEFORE_TRACKING";
             /**
              * Status
              * @enum {string}
@@ -1450,6 +1474,16 @@ export interface components {
              * @description Saldo acumulado até date_to
              */
             closing_balance_minutes: number;
+        };
+        /** HourBankResetIn */
+        HourBankResetIn: {
+            /**
+             * Reset Date
+             * @description Zera o saldo até esta data (padrão: hoje)
+             */
+            reset_date?: string | null;
+            /** Reason */
+            reason?: string | null;
         };
         /** HourBankSummaryItem */
         HourBankSummaryItem: {
@@ -3000,6 +3034,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["HourBankEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HourBankEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_hour_bank_api_v1_employees__employee_id__hour_bank_reset_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                employee_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HourBankResetIn"];
             };
         };
         responses: {

@@ -1,6 +1,6 @@
 """Parâmetros configuráveis da empresa (tabela `settings`). Valores ausentes usam o padrão."""
 
-from datetime import time, timedelta
+from datetime import date, time, timedelta
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
@@ -23,6 +23,8 @@ class CompanySettings(BaseModel):
     night_start: time = time(22)
     night_end: time = time(5)
     kiosk_hour_bank_screen_seconds: int = Field(default=30, ge=5, le=600)
+    # Dias anteriores não entram em nenhum cálculo (BUSINESS-RULES.md §9.2).
+    tracking_start_date: date | None = None
 
 
 class CompanySettingsUpdate(BaseModel):
@@ -34,6 +36,7 @@ class CompanySettingsUpdate(BaseModel):
     night_start: time | None = None
     night_end: time | None = None
     kiosk_hour_bank_screen_seconds: int | None = Field(default=None, ge=5, le=600)
+    tracking_start_date: date | None = None
 
 
 def load(db: Session) -> CompanySettings:

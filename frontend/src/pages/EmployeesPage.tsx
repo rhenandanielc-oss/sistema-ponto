@@ -195,7 +195,8 @@ function CreateEmployeeModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setPayday(Number(e.target.value))}
             />
             <p className="mt-1 text-xs text-slate-500">
-              As horas são somadas do dia seguinte ao pagamento anterior até este dia.
+              As horas são somadas do dia seguinte ao pagamento anterior até este dia. Para o ciclo do dia 1 ao
+              fim do mês, use 31 (último dia do mês).
             </p>
           </div>
         </div>

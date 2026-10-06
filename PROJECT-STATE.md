@@ -346,6 +346,13 @@ backup diário, restauração, limpeza agendada.
 
 **Decisão:** JWT de acesso (15 min, em memória) + refresh opaco rotacionado em cookie HttpOnly, só para administradores; kiosk com token de dispositivo; funcionário identificado por token de identificação de 60 s emitido após o reconhecimento facial. `SECURITY.md`.
 
+### 2026-10-06 — Início do uso do sistema e zerar banco de horas (definição do responsável)
+
+**Contexto:** ao começar a usar o sistema, os funcionários já contratados apareciam com falta desde a admissão.
+**Decisão:** configuração "Início do uso do sistema" — dias anteriores não entram em nenhum cálculo — e botão
+"Zerar banco de horas" (lançamento de correção, sem apagar histórico). `BUSINESS-RULES.md` §9.2–§9.3. Sem migration
+(configuração na tabela `settings`).
+
 ### 2026-10-04 — Consumo do funcionário (definição do responsável)
 
 **Contexto:** funcionário pega itens do restaurante (ex.: refrigerante) e o valor deve somar na conta dele.

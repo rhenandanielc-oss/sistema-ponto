@@ -1760,6 +1760,75 @@
     }
    }
   },
+  "/api/v1/employees/{employee_id}/hour-bank/reset": {
+   "post": {
+    "tags": [
+     "cálculo e banco de horas"
+    ],
+    "summary": "Reset Hour Bank",
+    "description": "Zera o saldo com um lançamento de correção; o histórico não é apagado.",
+    "operationId": "reset_hour_bank_api_v1_employees__employee_id__hour_bank_reset_post",
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HourBankResetIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HourBankEntryOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/time-records": {
    "get": {
     "tags": [
@@ -4604,6 +4673,18 @@
       "minimum": 5.0,
       "title": "Kiosk Hour Bank Screen Seconds",
       "default": 30
+     },
+     "tracking_start_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tracking Start Date"
      }
     },
     "type": "object",
@@ -4712,6 +4793,18 @@
        }
       ],
       "title": "Kiosk Hour Bank Screen Seconds"
+     },
+     "tracking_start_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tracking Start Date"
      }
     },
     "type": "object",
@@ -5024,7 +5117,8 @@
        "WORKDAY",
        "DAY_OFF",
        "HOLIDAY",
-       "NOT_EMPLOYED"
+       "NOT_EMPLOYED",
+       "BEFORE_TRACKING"
       ],
       "title": "Day Type"
      },
@@ -5796,6 +5890,38 @@
      "closing_balance_minutes"
     ],
     "title": "HourBankOut"
+   },
+   "HourBankResetIn": {
+    "properties": {
+     "reset_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reset Date",
+      "description": "Zera o saldo até esta data (padrão: hoje)"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 1000,
+        "minLength": 10
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     }
+    },
+    "type": "object",
+    "title": "HourBankResetIn"
    },
    "HourBankSummaryItem": {
     "properties": {

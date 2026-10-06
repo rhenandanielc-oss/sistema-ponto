@@ -42,6 +42,11 @@ export function HourBankEmployeePage() {
   const [preset, setPreset] = useState<PeriodPreset>(linked ? "custom" : "month");
   const [period, setPeriod] = useState(() => linked ?? presetPeriod("month"));
   const [addingEntry, setAddingEntry] = useState(false);
+  const queryClient = useQueryClient();
+  const reset = useMutation({
+    mutationFn: () => api(`/employees/${id}/hour-bank/reset`, { method: "POST", body: {} }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["hour-bank"] }),
+  });
 
   const employee = useQuery({
     queryKey: ["employee", id],
@@ -64,6 +69,18 @@ export function HourBankEmployeePage() {
             <Link className="btn-secondary" to={`/funcionarios/${id}`}>
               Cadastro
             </Link>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={reset.isPending}
+              onClick={() =>
+                window.confirm(
+                  "Zerar o banco de horas até hoje? O saldo atual é compensado por um lançamento de correção; o histórico não é apagado.",
+                ) && reset.mutate()
+              }
+            >
+              Zerar banco de horas
+            </button>
             <button type="button" className="btn-primary" onClick={() => setAddingEntry(true)}>
               Lançamento manual
             </button>
@@ -80,7 +97,7 @@ export function HourBankEmployeePage() {
           }}
         />
       </div>
-      <ErrorMessage error={bank.error} />
+      <ErrorMessage error={bank.error ?? reset.error} />
       {bank.isLoading || !bank.data ? (
         <Loading />
       ) : (
