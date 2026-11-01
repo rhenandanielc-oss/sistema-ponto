@@ -223,3 +223,12 @@ Salvo indicação, os exemplos usam:
 | Z04 | Zerar banco com saldo negativo | lançamento de correção; saldo 0; dias seguintes voltam a contar |
 | Z05 | Zerar com saldo zero | 409 |
 | Z06 | Navegador (E2E) | botão "Zerar banco de horas" e configuração "Início do uso do sistema" |
+
+## 14. Horário diferente em um dia da semana
+
+| # | Caso | Esperado |
+|---|---|---|
+| H01 | Segunda a sexta 08:00–17:00 e sábado 07:30–14:30 sem almoço | API recebe a forma dia a dia; sábado com carga de 7 h |
+| H02 | Voltar o sábado ao horário padrão | volta à forma simples |
+| H03 | Abrir "Alterar horário" de um horário salvo | o horário mais comum vira o padrão; o diferente aparece como exceção |
+| H04 | Navegador (E2E) | sábado salvo como 07:30–14:30 (7h00) e segunda 7h30 |

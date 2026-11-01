@@ -56,6 +56,21 @@ test("fluxo do administrador: cadastro, histórico, banco de horas e administra�
   await expect(scheduleDialog.getByRole("alert")).toContainText("almoço");
   await scheduleDialog.getByRole("button", { name: "Cancelar" }).click();
 
+  // Horário diferente em um dia: sábado 07:30–14:30 sem almoço, demais dias 08:00–16:00.
+  await page.getByRole("button", { name: "Alterar horário" }).click();
+  const saturdayDialog = page.getByRole("dialog", { name: "Alterar horário" });
+  await saturdayDialog.getByRole("button", { name: "Sábado: horário diferente" }).click();
+  await saturdayDialog.getByLabel("Entrada (Sábado)").fill("07:30");
+  await saturdayDialog.getByLabel("Saída (Sábado)").fill("14:30");
+  await saturdayDialog.getByLabel("Almoço em minutos (Sábado)").fill("0");
+  await saturdayDialog.getByRole("button", { name: "Salvar horário" }).click();
+  await expect(saturdayDialog).toBeHidden();
+  const saturdayRow = page.locator("tr", { hasText: "Sábado" });
+  await expect(saturdayRow).toContainText("07:30");
+  await expect(saturdayRow).toContainText("14:30");
+  await expect(saturdayRow).toContainText("7h00");
+  await expect(page.locator("tr", { hasText: "Segunda" })).toContainText("7h30");
+
   // Histórico: inclui entrada e saída esquecidas de ontem.
   await page.getByRole("link", { name: "Histórico" }).click();
   await expect(page.getByRole("heading", { name: "Histórico de batidas" })).toBeVisible();

@@ -5,7 +5,13 @@ import { Link, useParams } from "react-router";
 import { api, type Schemas } from "../api/client";
 import { BiometricsPanel } from "../components/BiometricsPanel";
 import { ConsumptionPanel } from "../components/ConsumptionPanel";
-import { DEFAULT_SCHEDULE, ScheduleFields, scheduleToApi, type ScheduleForm } from "../components/ScheduleFields";
+import {
+  DEFAULT_SCHEDULE,
+  ScheduleFields,
+  scheduleFromApi,
+  scheduleToApi,
+  type ScheduleForm,
+} from "../components/ScheduleFields";
 import { Badge, ErrorMessage, Loading, Modal, PageHeader } from "../components/ui";
 import {
   WEEKDAYS,
@@ -329,15 +335,7 @@ function NewScheduleModal({ employee, onClose }: { employee: Employee; onClose: 
   const first = current?.days[0];
   const [validFrom, setValidFrom] = useState(() => toIsoDate(new Date()));
   const [schedule, setSchedule] = useState<ScheduleForm>(
-    current && first
-      ? {
-          weekdays: current.days.map((d) => d.weekday),
-          start_time: shortTime(first.start_time),
-          end_time: shortTime(first.end_time),
-          lunch_minutes: first.lunch_minutes,
-          weekly_day_off: current.weekly_day_off,
-        }
-      : DEFAULT_SCHEDULE,
+    current && first ? scheduleFromApi(current) : DEFAULT_SCHEDULE,
   );
   const mutation = useMutation({
     mutationFn: () =>
