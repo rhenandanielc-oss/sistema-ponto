@@ -58,6 +58,8 @@ Para cada dia da semana trabalhado, o horário define:
   para calcular a carga do dia.
 * Na tela de cadastro o administrador digita o horário uma vez e marca os dias da semana trabalhados
   (padrão: segunda a sexta); se algum dia for diferente (ex.: sábado 08:00–12:00 sem almoço), ajusta só aquele dia.
+  Na tela: **"Algum dia tem horário diferente?"** → botão do dia (ex.: "Sábado: horário diferente") → entrada, saída
+  e almoço só daquele dia (ex.: sábado 07:30–14:30 sem almoço = 7 h).
 * O administrador digita os **dias de trabalho** pelo nome ("segunda", "terça-feira", "sáb"…) ou número
   (0 = segunda … 6 = domingo). Dias não informados são folga.
 * **Trabalho em dia fora da escala conta inteiro como hora extra** (ex.: funcionário de segunda a sexta que trabalha
