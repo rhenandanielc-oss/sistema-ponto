@@ -283,3 +283,32 @@ def test_daily_maintenance_purges_templates_and_old_identifications(
         db.scalar(select(AuditLog).where(AuditLog.action == "system.maintenance").limit(1))
         is not None
     )
+
+
+def test_template_from_another_key_is_ignored_not_an_internal_error(
+    client: TestClient, setup, auth_headers, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Caso real: o .env foi recriado com outra BIOMETRIC_KEY; os rostos antigos ficam ilegíveis."""
+    import base64
+
+    from app.core.config import get_settings
+
+    other_key = base64.b64encode(b"k" * 32).decode()
+    monkeypatch.setattr(get_settings(), "biometric_key", other_key)
+
+    # Ninguém consegue ser lido: o terminal responde "não reconhecido", não erro interno.
+    response = identify(client, setup["kiosk"], b"FACE:joao#camera")
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "FACE_NOT_RECOGNIZED"
+
+    status = client.get(
+        f"/api/v1/employees/{setup['joao']}/biometric-status", headers=auth_headers
+    ).json()
+    assert (status["templates"], status["unreadable_templates"], status["ready"]) == (0, 1, False)
+
+    # Recadastrado com a chave atual, ele volta a ser reconhecido mesmo com a Maria ainda ilegível.
+    client.delete(f"/api/v1/employees/{setup['joao']}/biometric-templates", headers=auth_headers)
+    assert enroll(client, auth_headers, setup["joao"], "joao").status_code == 201
+    again = identify(client, setup["kiosk"], b"FACE:joao#camera")
+    assert again.status_code == 200, again.text
+    assert again.json()["employee_name"] == "João"

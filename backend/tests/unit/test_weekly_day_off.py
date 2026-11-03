@@ -1,5 +1,6 @@
 """Folga semanal em qualquer dia (BUSINESS-RULES.md §3.2)."""
 
+from dataclasses import replace
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -108,3 +109,18 @@ def test_without_the_option_nothing_changes() -> None:
     )
     assert results[3].status == ABSENT
     assert all(WEEKLY_DAY_OFF not in r.flags for r in results)
+
+
+def test_first_week_partially_before_tracking_does_not_force_the_day_off() -> None:
+    """Sistema começou no domingo: a folga daquela semana pode ter sido antes; domingo é normal."""
+    inputs = [replace(inp, tracked=inp.day.weekday() == 6) for inp in week(off={0, 1, 2, 3, 4, 5})]
+    sunday = run(inputs)[6]
+    assert WEEKLY_DAY_OFF not in sunday.flags
+    assert (sunday.status, sunday.planned_minutes, sunday.balance_minutes) == (OK, 480, 0)
+
+
+def test_first_week_absence_still_counts_as_the_day_off() -> None:
+    inputs = [replace(inp, tracked=inp.day.weekday() >= 4) for inp in week(off={0, 1, 2, 3, 5})]
+    results = run(inputs)
+    assert summary(results)[5] == (NONE, 0, 0, True)  # sábado sem batida = folga
+    assert results[6].status == OK and results[6].planned_minutes == 480

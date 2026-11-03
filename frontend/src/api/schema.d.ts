@@ -986,6 +986,12 @@ export interface components {
              * @description Pode bater ponto pelo rosto
              */
             ready: boolean;
+            /**
+             * Unreadable Templates
+             * @description Fotos cifradas com outra chave (.env trocado): excluir e cadastrar de novo
+             * @default 0
+             */
+            unreadable_templates: number;
         };
         /** Body_enroll_api_v1_employees__employee_id__biometric_templates_post */
         Body_enroll_api_v1_employees__employee_id__biometric_templates_post: {

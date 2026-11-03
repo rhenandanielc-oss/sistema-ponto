@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from tests.integration.helpers import create_employee, full_day, local
+from tests.integration.helpers import create_employee, full_day, local, punch
 
 EVERY_DAY = {
     "weekdays": ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"],
@@ -70,3 +70,19 @@ def test_second_day_without_punches_is_an_absence_and_full_week_is_overtime(
     assert "DAY_OFF_WORK" in sunday_worked["flags"]
     assert "WEEKLY_DAY_OFF" in days["2026-09-15"]["flags"]
     assert days["2026-09-20"]["status"] == "ABSENT"
+
+
+def test_system_starting_on_sunday_keeps_sunday_as_a_workday(
+    client: TestClient, auth_headers, db: Session
+) -> None:
+    """Caso real: início do uso em 01/11 (domingo); ela trabalhou sem folga nesse domingo."""
+    employee = create_employee(client, auth_headers, hire_date="2026-09-01", schedule=EVERY_DAY)
+    client.patch(
+        "/api/v1/settings", json={"tracking_start_date": "2026-11-01"}, headers=auth_headers
+    )
+    punch(db, employee, "ENTRY", local(1, "08:00", month=11))
+    punch(db, employee, "EXIT", local(1, "16:00", month=11))
+    clock.freeze(local(2, "07:00", month=11))
+    sunday = bank(client, auth_headers, employee, "2026-11-01", "2026-11-01")["days"][0]
+    assert "WEEKLY_DAY_OFF" not in sunday["flags"]
+    assert (sunday["planned_minutes"], sunday["balance_minutes"]) == (480, 0)

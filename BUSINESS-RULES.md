@@ -91,6 +91,9 @@ escolhe a folga sozinho:
 3. se ele não folgou até o **último dia de trabalho da semana**, esse último dia é a folga: trabalhando nele, todo o
    tempo é **hora extra** (`DAY_OFF_WORK`). Assim a carga da semana é sempre de 6 dias (num horário de 7 dias);
 4. feriados não contam como a folga da semana;
+   **semana incompleta** (parte dela antes do início do uso do sistema ou da admissão): o último dia não é forçado
+   como folga — a folga pode ter sido nos dias que o sistema não conhece (caso real: sistema começou num domingo
+   trabalhado);
 5. a escolha segue a ordem dos dias: um dia já classificado não muda depois. Na semana em andamento, o último dia
    aparece previsto como folga até alguém folgar antes.
 
