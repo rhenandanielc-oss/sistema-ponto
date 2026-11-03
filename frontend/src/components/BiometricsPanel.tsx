@@ -42,6 +42,12 @@ export function BiometricsPanel({ employeeId, active }: { employeeId: number; ac
         {s && (s.ready ? <Badge tone="green">Pronto para bater ponto</Badge> : <Badge tone="amber">Não cadastrado</Badge>)}
       </div>
       <ErrorMessage error={status.error ?? consent.error ?? revoke.error ?? remove.error} />
+      {s && (s.unreadable_templates ?? 0) > 0 && (
+        <p role="alert" className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+          {s.unreadable_templates} foto(s) deste funcionário foram cadastradas com uma chave antiga e não podem ser usadas
+          no terminal. Clique em <strong>Excluir fotos</strong> e cadastre o rosto de novo.
+        </p>
+      )}
       {s && !s.consent && (
         <div className="space-y-3 text-sm">
           <p className="text-slate-600">
@@ -74,7 +80,7 @@ export function BiometricsPanel({ employeeId, active }: { employeeId: number; ac
             >
               {s.templates ? "Adicionar foto" : "Cadastrar rosto"}
             </button>
-            {s.templates > 0 && (
+            {(s.templates > 0 || (s.unreadable_templates ?? 0) > 0) && (
               <button
                 type="button"
                 className="btn-secondary"

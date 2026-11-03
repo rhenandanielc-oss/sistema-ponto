@@ -8,13 +8,16 @@ Regras de privacidade aplicadas aqui:
 * a auditoria registra os eventos, nunca a imagem nem o template.
 """
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+import numpy as np
+from cryptography.exceptions import InvalidTag
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from app.biometrics.crypto import SealedTemplate, TemplateCipher, parse_key
+from app.biometrics.crypto import BiometricKeyError, SealedTemplate, TemplateCipher, parse_key
 from app.biometrics.engine import FaceEngine, FaceError
 from app.biometrics.matcher import best_match
 from app.core.clock import now_utc
@@ -34,10 +37,22 @@ MAX_TEMPLATES = 5
 CURRENT_TERM_VERSION = "v1"
 PURGE_AFTER_DAYS = 30
 
+logger = logging.getLogger(__name__)
+
 
 def _cipher() -> TemplateCipher:
     settings = get_settings()
     return TemplateCipher(parse_key(settings.biometric_key), settings.biometric_key_id)
+
+
+def _open_or_none(cipher: TemplateCipher, t: BiometricTemplate) -> np.ndarray | None:
+    """Decifra o template; None se ele foi cifrado com outra chave (ex.: `.env` trocado)."""
+    try:
+        return cipher.open(
+            SealedTemplate(t.ciphertext, t.nonce, t.key_id), employee_id=t.employee_id
+        )
+    except (InvalidTag, BiometricKeyError, ValueError):
+        return None
 
 
 def _face_error(error: FaceError) -> AppError:
@@ -193,18 +208,21 @@ class BiometricStatus:
     consent: BiometricConsent | None
     templates: int
     model_version: str | None
+    unreadable: int = 0  # cadastrados com outra chave: precisam ser cadastrados de novo
 
 
 def status(db: Session, employee_id: int, engine_version: str) -> BiometricStatus:
     employee_service.get(db, employee_id)
-    count = db.scalar(
-        select(func.count()).select_from(
-            _active_templates_query(employee_id)
-            .where(BiometricTemplate.model_version == engine_version)
-            .subquery()
+    rows = db.scalars(
+        _active_templates_query(employee_id).where(
+            BiometricTemplate.model_version == engine_version
         )
+    ).all()
+    cipher = _cipher()
+    unreadable = sum(1 for t in rows if _open_or_none(cipher, t) is None)
+    return BiometricStatus(
+        active_consent(db, employee_id), len(rows) - unreadable, engine_version, unreadable
     )
-    return BiometricStatus(active_consent(db, employee_id), int(count or 0), engine_version)
 
 
 def purge_deleted(db: Session, older_than_days: int = PURGE_AFTER_DAYS) -> int:
@@ -271,13 +289,16 @@ def identify(db: Session, image: bytes, engine: FaceEngine, device: Device) -> I
         .all()
     )
     cipher = _cipher()
-    candidates = [
-        (
-            t.employee_id,
-            cipher.open(SealedTemplate(t.ciphertext, t.nonce, t.key_id), employee_id=t.employee_id),
-        )
-        for t in rows
-    ]
+    candidates = []
+    unreadable = 0
+    for t in rows:
+        vector = _open_or_none(cipher, t)
+        if vector is None:
+            unreadable += 1  # um cadastro ilegível não pode impedir o reconhecimento dos outros
+        else:
+            candidates.append((t.employee_id, vector))
+    if unreadable:
+        logger.warning("templates biométricos ilegíveis ignorados: %s", unreadable)
     result = best_match(
         probe,
         candidates,

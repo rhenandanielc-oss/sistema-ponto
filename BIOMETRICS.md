@@ -197,6 +197,10 @@ detecção correta e similaridade 0,84 entre a imagem original e uma versão alt
 * **Imagens enormes:** o OpenCV recusa decodificar imagens acima de 4096 × 4096 pixels
   (`app/biometrics/__init__.py`), evitando que um arquivo pequeno ocupe gigabytes de memória (Fase 6).
 
+* **Cadastro cifrado com outra chave** (ex.: `.env` recriado com outra `BIOMETRIC_KEY`): o template é ignorado
+  na identificação — os demais continuam funcionando, sem "erro interno" — e a ficha do funcionário avisa que as
+  fotos precisam ser excluídas e cadastradas de novo (`unreadable_templates` no status).
+
 ---
 
 ## 11. Pendências

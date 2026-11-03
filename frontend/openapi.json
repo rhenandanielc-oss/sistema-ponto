@@ -4576,6 +4576,12 @@
       "type": "boolean",
       "title": "Ready",
       "description": "Pode bater ponto pelo rosto"
+     },
+     "unreadable_templates": {
+      "type": "integer",
+      "title": "Unreadable Templates",
+      "description": "Fotos cifradas com outra chave (.env trocado): excluir e cadastrar de novo",
+      "default": 0
      }
     },
     "type": "object",

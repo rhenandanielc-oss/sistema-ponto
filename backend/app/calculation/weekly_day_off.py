@@ -7,6 +7,9 @@ Para funcionários com essa opção no horário, cada semana (segunda a domingo)
 
 A escolha é feita em ordem cronológica, então um dia já classificado não muda depois.
 Feriados não contam como a folga da semana.
+
+Semana incompleta (parte antes do início do uso do sistema ou da admissão): a folga pode ter
+acontecido nos dias que o sistema não conhece, então o último dia **não** é forçado como folga.
 """
 
 from collections.abc import Callable, Sequence
@@ -46,17 +49,21 @@ def calculate_days(
     para datas além de `inputs` (necessário para achar o último dia da semana).
     """
     used: set[date] = set()
+    partial: set[date] = set()  # semanas com dias antes do início do controle ou da admissão
     results: list[DayResult] = []
     for inp in inputs:
         normal = calculate_day(inp, rules, now)
         week = week_start(inp.day)
+        if not inp.employed or not inp.tracked:
+            partial.add(week)
         if not _is_candidate(inp, rotating) or week in used:
             results.append(normal)
             continue
         later_candidates = any(
             is_candidate_day(inp.day + timedelta(days=n)) for n in range(1, 7 - inp.day.weekday())
         )
-        if normal.status == ABSENT or not later_candidates:
+        last_day = not later_candidates and week not in partial
+        if normal.status == ABSENT or last_day:
             used.add(week)
             off = calculate_day(replace(inp, schedule=None), rules, now)
             results.append(replace(off, flags=(*off.flags, WEEKLY_DAY_OFF)))

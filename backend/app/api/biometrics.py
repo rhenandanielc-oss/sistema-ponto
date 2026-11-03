@@ -43,6 +43,10 @@ class BiometricStatusOut(BaseModel):
     )
     max_templates: int = biometric_service.MAX_TEMPLATES
     ready: bool = Field(description="Pode bater ponto pelo rosto")
+    unreadable_templates: int = Field(
+        default=0,
+        description="Fotos cifradas com outra chave (.env trocado): excluir e cadastrar de novo",
+    )
 
 
 def _status(db: DbSession, employee_id: int, engine: FaceEngine) -> BiometricStatusOut:
@@ -53,6 +57,7 @@ def _status(db: DbSession, employee_id: int, engine: FaceEngine) -> BiometricSta
         term_version=s.consent.term_version if s.consent else None,
         templates=s.templates,
         ready=s.consent is not None and s.templates > 0,
+        unreadable_templates=s.unreadable,
     )
 
 
