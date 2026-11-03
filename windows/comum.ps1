@@ -81,3 +81,44 @@ function Invoke-CliWithPassword([string]$Password, [string[]]$CliArgs) {
     $OutputEncoding = New-Object Text.UTF8Encoding $false  # acentos chegam corretos ao comando
     $Password | docker @ComposeArgs exec -T backend python -m app.cli @CliArgs --password-stdin
 }
+
+# Um .env do sistema de ponto tem estas chaves (evita pegar o .env de outro projeto por engano).
+function Test-PontoEnv([string]$Path) {
+    if (-not (Test-Path $Path)) { return $false }
+    $text = Get-Content $Path -Raw -Encoding UTF8
+    foreach ($key in 'POSTGRES_PASSWORD', 'JWT_SECRET', 'BIOMETRIC_KEY', 'BIOMETRIC_KEY_ID') {
+        if ($text -notmatch "(?m)^$key=\S") { return $false }
+    }
+    return $true
+}
+
+# .env de uma instalação anterior: cópia salva na Área de Trabalho ou a pasta usada da última vez.
+function Find-PreviousEnv {
+    $candidates = @(Join-Path ([Environment]::GetFolderPath('Desktop')) '.env')
+    foreach ($name in 'ponto-db-1', 'ponto-backend-1') {
+        $json = docker inspect $name --format '{{json .Config.Labels}}' 2>$null
+        if ($LASTEXITCODE -eq 0 -and $json) {
+            $dir = ($json | ConvertFrom-Json).'com.docker.compose.project.working_dir'
+            if ($dir -and $dir -ne $Root) { $candidates += (Join-Path $dir '.env') }
+        }
+    }
+    foreach ($path in $candidates) { if (Test-PontoEnv $path) { return $path } }
+    return $null
+}
+
+# Deixa a senha do banco igual à do .env (o banco guarda a senha de quando foi criado).
+function Sync-DatabasePassword {
+    docker @ComposeArgs up -d db
+    if ($LASTEXITCODE -ne 0) { return $false }
+    $deadline = (Get-Date).AddSeconds(90)
+    while ((Get-Date) -lt $deadline) {
+        $health = docker inspect ponto-db-1 --format '{{.State.Health.Status}}' 2>$null
+        if ("$health".Trim() -eq 'healthy') { break }
+        Start-Sleep -Seconds 3
+    }
+    $password = (Read-EnvFile)['POSTGRES_PASSWORD']
+    if (-not $password) { return $false }
+    $OutputEncoding = New-Object Text.UTF8Encoding $false
+    $null = "ALTER USER ponto WITH PASSWORD '$($password -replace "'", "''")';" | docker exec -i ponto-db-1 psql -U ponto -d ponto -q 2>&1
+    return $LASTEXITCODE -eq 0
+}

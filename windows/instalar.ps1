@@ -18,6 +18,18 @@ if ($ramGb -lt 8) {
 
 # 2. Configuração (.env) com senhas e chaves geradas aqui. Nunca é sobrescrita.
 $envPath = Join-Path $Root '.env'
+$hadDatabase = $false
+$null = docker volume inspect ponto_postgres-data 2>&1
+if ($LASTEXITCODE -eq 0) { $hadDatabase = $true }
+if (-not (Test-Path $envPath)) {
+    # Pasta nova (ex.: ZIP extraído em outro lugar): reaproveita a configuração da instalação anterior.
+    $previous = Find-PreviousEnv
+    if ($previous) {
+        Copy-Item $previous $envPath
+        Write-Host "Configuração da instalação anterior reaproveitada: $previous" -ForegroundColor Green
+    }
+}
+$createdEnv = $false
 if (Test-Path $envPath) {
     Write-Host 'Configuração (.env) já existe: mantida. As senhas e a chave da biometria não mudam.'
 } else {
@@ -34,11 +46,9 @@ if (Test-Path $envPath) {
     $backupDir = Join-Path $backupBase 'Ponto-Backups'
     New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
 
-    $port = '80'
-    if (Get-NetTCPConnection -LocalPort 80 -State Listen -ErrorAction SilentlyContinue) {
-        $port = '8080'
-        Write-Host 'A porta 80 já está em uso por outro programa; o sistema usará a porta 8080.' -ForegroundColor Yellow
-    }
+    # Porta própria (8090 a 8099), para não disputar com outros sistemas do computador.
+    $port = 8090..8099 | Where-Object { -not (Get-NetTCPConnection -LocalPort $_ -State Listen -ErrorAction SilentlyContinue) } | Select-Object -First 1
+    if (-not $port) { $port = 8090 }
 
     $content = @(
         '# Gerado por windows\instalar.ps1. NÃO apague e NÃO compartilhe este arquivo.',
@@ -53,6 +63,7 @@ if (Test-Path $envPath) {
         'BACKUP_KEEP_DAYS=60'
     ) -join "`n"
     [IO.File]::WriteAllText($envPath, $content + "`n", (New-Object Text.UTF8Encoding $false))
+    $createdEnv = $true
 
     Write-Host ''
     Write-Host 'Configuração criada.' -ForegroundColor Green
@@ -69,6 +80,16 @@ if (Test-Path $envPath) {
 # 3. Montar e ligar (a primeira vez demora de 10 a 20 minutos)
 Write-Host ''
 Write-Host 'Montando e ligando o sistema (a primeira vez demora de 10 a 20 minutos)...' -ForegroundColor Cyan
+if ($hadDatabase) {
+    # Banco já existente: garante que ele aceite a senha deste .env.
+    if (-not (Sync-DatabasePassword)) {
+        Write-Host 'Aviso: não foi possível conferir a senha do banco. Se o sistema não ligar, mande uma foto desta tela.' -ForegroundColor Yellow
+    }
+    if ($createdEnv) {
+        Write-Host 'Os dados foram mantidos, mas a chave da biometria é nova: se algum rosto não for reconhecido,' -ForegroundColor Yellow
+        Write-Host 'abra a ficha do funcionário, clique em "Excluir fotos" e cadastre o rosto de novo.' -ForegroundColor Yellow
+    }
+}
 docker @ComposeArgs up -d --build
 if ($LASTEXITCODE -ne 0) { Stop-WithError 'Falha ao montar o sistema. Confira a internet e rode de novo.' }
 if (-not (Wait-System 300)) {
