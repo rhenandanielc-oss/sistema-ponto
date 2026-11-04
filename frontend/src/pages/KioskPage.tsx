@@ -1,11 +1,33 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 
 import { ApiError, type Schemas } from "../api/client";
-import { CameraError, captureFrame, openCamera, stopCamera } from "../kiosk/camera";
+import {
+  CameraError,
+  captureFrame,
+  openCamera,
+  stopCamera,
+} from "../kiosk/camera";
 import { clockSkewMinutes, clockWarning } from "../kiosk/clock";
-import { analyzeFrame, framingMessage, loadFaceDetector } from "../kiosk/faceDetector";
+import {
+  analyzeFrame,
+  framingMessage,
+  loadFaceDetector,
+} from "../kiosk/faceDetector";
 import { getDeviceToken, kioskApi, setDeviceToken } from "../kiosk/api";
-import { RECORD_TYPE_LABELS, formatDate, formatMinutes, formatMoney, formatTime, weekdayOf } from "../lib/format";
+import {
+  RECORD_TYPE_LABELS,
+  formatDate,
+  formatMinutes,
+  formatMoney,
+  formatTime,
+  weekdayOf,
+} from "../lib/format";
 
 type Identified = Schemas["IdentifyOut"];
 type Bank = Schemas["KioskHourBankOut"];
@@ -47,22 +69,37 @@ function friendly(error: unknown): string {
 export function KioskPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [state, setState] = useState<State>(() => (getDeviceToken() ? { kind: "scanning", hint: "Iniciando câmera…" } : { kind: "setup" }));
+  const [state, setState] = useState<State>(() =>
+    getDeviceToken()
+      ? { kind: "scanning", hint: "Iniciando câmera…" }
+      : { kind: "setup" },
+  );
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState<string | null>(null);
   const [clock, setClock] = useState(() => new Date());
   const [clockAlert, setClockAlert] = useState<string | null>(null);
   const busy = useRef(false);
 
-  const reset = useCallback(() => setState({ kind: "scanning", hint: "Olhe para a câmera" }), []);
+  const reset = useCallback(
+    () => setState({ kind: "scanning", hint: "Olhe para a câmera" }),
+    [],
+  );
 
   const handleError = useCallback((error: unknown) => {
     if (error instanceof ApiError && error.code === "DEVICE_NOT_AUTHORIZED") {
       setDeviceToken(null);
-      setState({ kind: "setup", message: "Este terminal não está mais autorizado. Informe uma nova chave." });
+      setState({
+        kind: "setup",
+        message:
+          "Este terminal não está mais autorizado. Informe uma nova chave.",
+      });
       return;
     }
-    setState({ kind: "error", message: friendly(error), retryInMs: ERROR_RETRY_MS });
+    setState({
+      kind: "error",
+      message: friendly(error),
+      retryInMs: ERROR_RETRY_MS,
+    });
   }, []);
 
   // Relógio exibido (o horário oficial da batida é sempre o do servidor).
@@ -78,7 +115,9 @@ export function KioskPage() {
     const check = () =>
       kioskApi.ping().then((p) => {
         setDeviceName(p.device);
-        setClockAlert(clockWarning(clockSkewMinutes(p.server_time, Date.now())));
+        setClockAlert(
+          clockWarning(clockSkewMinutes(p.server_time, Date.now())),
+        );
       }, handleError);
     void check();
     const id = window.setInterval(() => void check(), CLOCK_CHECK_MS);
@@ -98,7 +137,10 @@ export function KioskPage() {
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) setCameraError(err instanceof CameraError ? err.message : "Câmera indisponível.");
+        if (!cancelled)
+          setCameraError(
+            err instanceof CameraError ? err.message : "Câmera indisponível.",
+          );
       });
     return () => {
       cancelled = true;
@@ -138,13 +180,21 @@ export function KioskPage() {
         if (detector && video && video.readyState >= 2) {
           const hint = framingMessage(analyzeFrame(detector, video));
           stable = hint ? 0 : stable + 1;
-          setState((s) => (s.kind === "scanning" ? { kind: "scanning", hint: hint ?? "Não se mova…" } : s));
+          setState((s) =>
+            s.kind === "scanning"
+              ? { kind: "scanning", hint: hint ?? "Não se mova…" }
+              : s,
+          );
           if (stable >= STABLE_FRAMES) {
             void identify();
             return;
           }
         } else if (!detector) {
-          setState((s) => (s.kind === "scanning" ? { kind: "scanning", hint: "Toque em Identificar" } : s));
+          setState((s) =>
+            s.kind === "scanning"
+              ? { kind: "scanning", hint: "Toque em Identificar" }
+              : s,
+          );
         }
         timer = window.setTimeout(tick, 250);
       };
@@ -189,7 +239,10 @@ export function KioskPage() {
   async function showBank(data: Identified) {
     setState({ kind: "saving", data });
     try {
-      setState({ kind: "bank", data: await kioskApi.hourBank(data.identification_token) });
+      setState({
+        kind: "bank",
+        data: await kioskApi.hourBank(data.identification_token),
+      });
     } catch (error) {
       handleError(error);
     }
@@ -211,21 +264,39 @@ export function KioskPage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-900 text-white">
       <header className="flex items-center justify-between px-6 py-4 text-slate-300">
-        <span className="font-semibold">Ponto{deviceName ? ` — ${deviceName}` : ""}</span>
-        <span className="text-3xl font-bold tabular-nums text-white" aria-label="Hora atual">
-          {clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        <span className="font-semibold">
+          Ponto{deviceName ? ` — ${deviceName}` : ""}
+        </span>
+        <span
+          className="text-3xl font-bold tabular-nums text-white"
+          aria-label="Hora atual"
+        >
+          {clock.toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </span>
       </header>
       <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 pb-8">
-        <div className={`relative w-full max-w-xl overflow-hidden rounded-2xl bg-black ${showCamera ? "" : "hidden"}`}>
-          <video ref={videoRef} muted playsInline className="aspect-video w-full -scale-x-100 object-cover" />
+        <div
+          className={`relative w-full max-w-xl overflow-hidden rounded-2xl bg-black ${showCamera ? "" : "hidden"}`}
+        >
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="aspect-video w-full -scale-x-100 object-cover"
+          />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="h-3/4 w-2/5 rounded-[50%] border-4 border-white/60" />
           </div>
         </div>
 
         {clockAlert && (
-          <p role="alert" className="max-w-xl rounded-lg bg-amber-500 px-6 py-3 text-center text-lg text-black">
+          <p
+            role="alert"
+            className="max-w-xl rounded-lg bg-amber-500 px-6 py-3 text-center text-lg text-black"
+          >
             {clockAlert}
           </p>
         )}
@@ -241,18 +312,26 @@ export function KioskPage() {
             <p className="text-2xl" aria-live="polite">
               {state.hint}
             </p>
-            <button type="button" className="rounded-xl bg-white/10 px-6 py-3 text-lg hover:bg-white/20" onClick={() => void identify()}>
+            <button
+              type="button"
+              className="rounded-xl bg-white/10 px-6 py-3 text-lg hover:bg-white/20"
+              onClick={() => void identify()}
+            >
               Identificar
             </button>
           </>
         )}
 
-        {state.kind === "identifying" && <p className="text-2xl">Identificando…</p>}
+        {state.kind === "identifying" && (
+          <p className="text-2xl">Identificando…</p>
+        )}
 
         {(state.kind === "identified" || state.kind === "saving") && (
           <div className="w-full max-w-2xl text-center">
             <p className="text-lg text-slate-300">Olá,</p>
-            <h1 className="mb-8 text-4xl font-bold">{state.data.employee_name}</h1>
+            <h1 className="mb-8 text-4xl font-bold">
+              {state.data.employee_name}
+            </h1>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {RECORD_TYPES.map((type) => {
                 const allowed = state.data.allowed_types.includes(type);
@@ -278,7 +357,11 @@ export function KioskPage() {
               >
                 Ver meu banco de horas
               </button>
-              <button type="button" onClick={reset} className="rounded-xl px-6 py-4 text-lg text-slate-300 hover:bg-white/10">
+              <button
+                type="button"
+                onClick={reset}
+                className="rounded-xl px-6 py-4 text-lg text-slate-300 hover:bg-white/10"
+              >
                 Cancelar
               </button>
             </div>
@@ -293,61 +376,95 @@ export function KioskPage() {
             className="rounded-2xl bg-green-600 px-10 py-8 text-center text-3xl font-semibold"
           >
             ✔ {state.message}
-            <span className="mt-2 block text-lg font-normal">Toque para o próximo</span>
+            <span className="mt-2 block text-lg font-normal">
+              Toque para o próximo
+            </span>
           </button>
         )}
 
         {state.kind === "error" && (
-          <p role="alert" className="rounded-2xl bg-amber-600 px-10 py-8 text-center text-2xl font-semibold">
+          <p
+            role="alert"
+            className="rounded-2xl bg-amber-600 px-10 py-8 text-center text-2xl font-semibold"
+          >
             {state.message}
           </p>
         )}
 
-        {state.kind === "bank" && <BankScreen data={state.data} onClose={reset} />}
+        {state.kind === "bank" && (
+          <BankScreen data={state.data} onClose={reset} />
+        )}
       </main>
     </div>
+  );
+}
+
+/** Cabeçalho abreviado no celular, completo em telas maiores (leitores de tela sempre ouvem o nome completo). */
+function ColHead({ short, full }: { short: string; full: string }) {
+  return (
+    <th>
+      <span className="sm:hidden" aria-hidden="true">
+        {short}
+      </span>
+      <span className="sr-only sm:not-sr-only">{full}</span>
+    </th>
   );
 }
 
 function BankScreen({ data, onClose }: { data: Bank; onClose: () => void }) {
   const signed = (m: number) => formatMinutes(m, true);
   const time = (t: string | null | undefined) => (t ? formatTime(t) : "—");
-  const balanceClass = (m: number) => (m < 0 ? "text-red-700" : m > 0 ? "text-green-700" : "");
+  const balanceClass = (m: number) =>
+    m < 0 ? "text-red-700" : m > 0 ? "text-green-700" : "";
   return (
     <div className="w-full max-w-3xl rounded-2xl bg-white p-6 text-slate-900">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">{data.employee_name}</h1>
-        <button type="button" onClick={onClose} className="rounded-lg bg-slate-200 px-4 py-2 text-lg">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg bg-slate-200 px-4 py-2 text-lg"
+        >
           Sair
         </button>
       </div>
 
       <h2 className="mb-2 font-semibold">Esta semana</h2>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" aria-label="Horários da semana">
-          <thead className="text-left text-xs uppercase text-slate-500">
-            <tr>
+        <table
+          className="w-full text-xs sm:text-sm"
+          aria-label="Horários da semana"
+        >
+          <thead className="text-left text-[11px] uppercase leading-tight text-slate-500 sm:text-xs">
+            <tr className="[&>th]:pr-1.5 [&>th]:align-bottom">
               <th className="py-1">Dia</th>
-              <th>Entrada</th>
-              <th>Saída almoço</th>
-              <th>Retorno</th>
-              <th>Saída</th>
-              <th>Trabalhado</th>
+              <ColHead short="Ent." full="Entrada" />
+              <ColHead short="Alm." full="Saída almoço" />
+              <ColHead short="Ret." full="Retorno" />
+              <ColHead short="Saí." full="Saída" />
+              <ColHead short="Trab." full="Trabalhado" />
               <th>Saldo</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 tabular-nums">
             {(data.week ?? []).map((d) => (
-              <tr key={d.date}>
-                <td className="py-1.5">
-                  {weekdayOf(d.date)} {formatDate(d.date).slice(0, 5)}
+              <tr key={d.date} className="[&>td]:pr-1.5">
+                <td className="py-1.5 pr-1.5 leading-tight">
+                  {weekdayOf(d.date)}{" "}
+                  <span className="block text-slate-500 sm:inline">
+                    {formatDate(d.date).slice(0, 5)}
+                  </span>
                 </td>
                 <td>{time(d.entry)}</td>
                 <td>{time(d.lunch_exit)}</td>
                 <td>{time(d.lunch_return)}</td>
                 <td>{time(d.exit)}</td>
-                <td>{d.worked_minutes ? formatMinutes(d.worked_minutes) : "—"}</td>
-                <td className={balanceClass(d.balance_minutes)}>{d.counts_for_bank ? signed(d.balance_minutes) : "—"}</td>
+                <td>
+                  {d.worked_minutes ? formatMinutes(d.worked_minutes) : "—"}
+                </td>
+                <td className={balanceClass(d.balance_minutes)}>
+                  {d.counts_for_bank ? signed(d.balance_minutes) : "—"}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -356,8 +473,14 @@ function BankScreen({ data, onClose }: { data: Bank; onClose: () => void }) {
               <td className="pt-2" colSpan={5}>
                 Total da semana
               </td>
-              <td className="pt-2">{formatMinutes(data.week_worked_minutes ?? 0)}</td>
-              <td className={`pt-2 ${balanceClass(data.week_balance_minutes ?? 0)}`}>{signed(data.week_balance_minutes ?? 0)}</td>
+              <td className="pt-2">
+                {formatMinutes(data.week_worked_minutes ?? 0)}
+              </td>
+              <td
+                className={`pt-2 ${balanceClass(data.week_balance_minutes ?? 0)}`}
+              >
+                {signed(data.week_balance_minutes ?? 0)}
+              </td>
             </tr>
           </tfoot>
         </table>
@@ -365,20 +488,38 @@ function BankScreen({ data, onClose }: { data: Bank; onClose: () => void }) {
 
       <h2 className="mb-2 mt-5 font-semibold">Mês até agora</h2>
       <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-        <Stat label="Trabalhado" value={formatMinutes(data.month_worked_minutes ?? 0)} />
-        <Stat label="Extras" value={formatMinutes(data.month_overtime_minutes)} />
-        <Stat label="Faltantes" value={formatMinutes(data.month_missing_minutes)} />
-        <Stat label="Saldo do mês" value={signed(data.month_balance_minutes ?? 0)} />
+        <Stat
+          label="Trabalhado"
+          value={formatMinutes(data.month_worked_minutes ?? 0)}
+        />
+        <Stat
+          label="Extras"
+          value={formatMinutes(data.month_overtime_minutes)}
+        />
+        <Stat
+          label="Faltantes"
+          value={formatMinutes(data.month_missing_minutes)}
+        />
+        <Stat
+          label="Saldo do mês"
+          value={signed(data.month_balance_minutes ?? 0)}
+        />
       </div>
       <p className="mt-3 text-sm text-slate-600">
-        Saldo do banco de horas: <strong>{signed(data.balance_minutes)}</strong>. Faltas no mês: {data.month_absences}.
+        Saldo do banco de horas: <strong>{signed(data.balance_minutes)}</strong>
+        . Faltas no mês: {data.month_absences}.
       </p>
       <p className="mt-1 text-sm text-slate-600">
-        Ciclo de pagamento {formatDate(data.pay_period_start)} a {formatDate(data.pay_period_end)}: extras{" "}
-        {formatMinutes(data.pay_period_overtime_minutes)}, faltantes {formatMinutes(data.pay_period_missing_minutes)}.
-        {data.pay_period_consumption_cents > 0 && ` Consumo: ${formatMoney(data.pay_period_consumption_cents)}.`}
+        Ciclo de pagamento {formatDate(data.pay_period_start)} a{" "}
+        {formatDate(data.pay_period_end)}: extras{" "}
+        {formatMinutes(data.pay_period_overtime_minutes)}, faltantes{" "}
+        {formatMinutes(data.pay_period_missing_minutes)}.
+        {data.pay_period_consumption_cents > 0 &&
+          ` Consumo: ${formatMoney(data.pay_period_consumption_cents)}.`}
       </p>
-      <p className="mt-3 text-xs text-slate-500">Esta tela fecha sozinha em {data.screen_seconds} segundos.</p>
+      <p className="mt-3 text-xs text-slate-500">
+        Esta tela fecha sozinha em {data.screen_seconds} segundos.
+      </p>
     </div>
   );
 }
@@ -392,7 +533,13 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SetupScreen({ message, onReady }: { message?: string; onReady: (deviceName: string) => void }) {
+function SetupScreen({
+  message,
+  onReady,
+}: {
+  message?: string;
+  onReady: (deviceName: string) => void;
+}) {
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(message ?? null);
   const [checking, setChecking] = useState(false);
@@ -406,7 +553,11 @@ function SetupScreen({ message, onReady }: { message?: string; onReady: (deviceN
       setDeviceToken(token.trim());
       onReady(ping.device);
     } catch (err) {
-      setError(err instanceof ApiError && err.code === "DEVICE_NOT_AUTHORIZED" ? "Chave inválida ou terminal desativado." : friendly(err));
+      setError(
+        err instanceof ApiError && err.code === "DEVICE_NOT_AUTHORIZED"
+          ? "Chave inválida ou terminal desativado."
+          : friendly(err),
+      );
     } finally {
       setChecking(false);
     }
@@ -414,21 +565,38 @@ function SetupScreen({ message, onReady }: { message?: string; onReady: (deviceN
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-900 px-6">
-      <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6"
+      >
         <h1 className="text-2xl font-bold">Configurar terminal de ponto</h1>
         <p className="text-sm text-slate-600">
-          Cole a chave gerada em Administração → Terminais. Ela fica guardada só neste navegador.
+          Cole a chave gerada em Administração → Terminais. Ela fica guardada só
+          neste navegador.
         </p>
         {error && (
-          <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+          <p
+            role="alert"
+            className="rounded-md bg-red-50 p-3 text-sm text-red-800"
+          >
             {error}
           </p>
         )}
         <label className="label" htmlFor="device-token">
           Chave do terminal
         </label>
-        <input id="device-token" required className="input font-mono" value={token} onChange={(e) => setToken(e.target.value)} />
-        <button type="submit" className="btn-primary w-full" disabled={checking}>
+        <input
+          id="device-token"
+          required
+          className="input font-mono"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="btn-primary w-full"
+          disabled={checking}
+        >
           {checking ? "Verificando…" : "Ativar terminal"}
         </button>
       </form>
