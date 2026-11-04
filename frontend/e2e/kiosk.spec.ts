@@ -83,6 +83,11 @@ test("cadastro do rosto e batida no terminal", async ({ page, context }) => {
   await expect(kiosk.getByRole("button", { name: "Entrada" })).toBeDisabled();
   await kiosk.getByRole("button", { name: "Ver meu banco de horas" }).click();
   await expect(kiosk.getByText("Saldo do banco")).toBeVisible();
+  // Horários da semana (entrada já batida hoje) e total do mês até agora.
+  await expect(kiosk.getByRole("heading", { name: "Esta semana" })).toBeVisible();
+  await expect(kiosk.getByRole("table", { name: "Horários da semana" })).toContainText(/\d{2}:\d{2}/);
+  await expect(kiosk.getByRole("heading", { name: "Mês até agora" })).toBeVisible();
+  if (process.env.KIOSK_SHOT) await kiosk.screenshot({ path: process.env.KIOSK_SHOT });
   await expect(kiosk.getByRole("heading", { name: "Rosa Terminal" })).toBeVisible();
   await kiosk.getByRole("button", { name: "Sair" }).click();
 

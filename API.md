@@ -174,7 +174,7 @@ traz `pay_period_consumption_cents`.
 | GET | `/kiosk/ping` | Valida o dispositivo; retorna horário do servidor para exibição | 2 |
 | POST | `/kiosk/identify` | `multipart` (campo `image`, 1 quadro JPEG/PNG) → `{identification_token, expires_in, employee_name, workday_date, allowed_types, hour_bank_screen_seconds}` | 5 |
 | POST | `/kiosk/records` | `{identification_token, type}` → batida criada com horário oficial; consome o token | 5 |
-| POST | `/kiosk/hour-bank` | `{identification_token}` → saldo acumulado, extras/faltantes/faltas do mês, extras/faltantes do ciclo de pagamento e dias do mês — **só do funcionário identificado**; não consome o token | 5 |
+| POST | `/kiosk/hour-bank` | `{identification_token}` → saldo acumulado; mês até agora (trabalhado, extras, faltantes, saldo, faltas); **semana atual com entrada, saída/retorno do almoço e saída de cada dia**; extras/faltantes e consumo do ciclo de pagamento — **só do funcionário identificado**; não consome o token | 5 |
 
 Nenhum endpoint do kiosk recebe id de funcionário.
 

@@ -5,7 +5,7 @@ import { CameraError, captureFrame, openCamera, stopCamera } from "../kiosk/came
 import { clockSkewMinutes, clockWarning } from "../kiosk/clock";
 import { analyzeFrame, framingMessage, loadFaceDetector } from "../kiosk/faceDetector";
 import { getDeviceToken, kioskApi, setDeviceToken } from "../kiosk/api";
-import { RECORD_TYPE_LABELS, formatDate, formatMinutes, formatMoney, formatTime } from "../lib/format";
+import { RECORD_TYPE_LABELS, formatDate, formatMinutes, formatMoney, formatTime, weekdayOf } from "../lib/format";
 
 type Identified = Schemas["IdentifyOut"];
 type Bank = Schemas["KioskHourBankOut"];
@@ -311,36 +311,73 @@ export function KioskPage() {
 
 function BankScreen({ data, onClose }: { data: Bank; onClose: () => void }) {
   const signed = (m: number) => formatMinutes(m, true);
+  const time = (t: string | null | undefined) => (t ? formatTime(t) : "—");
+  const balanceClass = (m: number) => (m < 0 ? "text-red-700" : m > 0 ? "text-green-700" : "");
   return (
-    <div className="w-full max-w-2xl rounded-2xl bg-white p-6 text-slate-900">
+    <div className="w-full max-w-3xl rounded-2xl bg-white p-6 text-slate-900">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">{data.employee_name}</h1>
         <button type="button" onClick={onClose} className="rounded-lg bg-slate-200 px-4 py-2 text-lg">
           Sair
         </button>
       </div>
+
+      <h2 className="mb-2 font-semibold">Esta semana</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" aria-label="Horários da semana">
+          <thead className="text-left text-xs uppercase text-slate-500">
+            <tr>
+              <th className="py-1">Dia</th>
+              <th>Entrada</th>
+              <th>Saída almoço</th>
+              <th>Retorno</th>
+              <th>Saída</th>
+              <th>Trabalhado</th>
+              <th>Saldo</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 tabular-nums">
+            {(data.week ?? []).map((d) => (
+              <tr key={d.date}>
+                <td className="py-1.5">
+                  {weekdayOf(d.date)} {formatDate(d.date).slice(0, 5)}
+                </td>
+                <td>{time(d.entry)}</td>
+                <td>{time(d.lunch_exit)}</td>
+                <td>{time(d.lunch_return)}</td>
+                <td>{time(d.exit)}</td>
+                <td>{d.worked_minutes ? formatMinutes(d.worked_minutes) : "—"}</td>
+                <td className={balanceClass(d.balance_minutes)}>{d.counts_for_bank ? signed(d.balance_minutes) : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="font-semibold tabular-nums">
+            <tr>
+              <td className="pt-2" colSpan={5}>
+                Total da semana
+              </td>
+              <td className="pt-2">{formatMinutes(data.week_worked_minutes ?? 0)}</td>
+              <td className={`pt-2 ${balanceClass(data.week_balance_minutes ?? 0)}`}>{signed(data.week_balance_minutes ?? 0)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <h2 className="mb-2 mt-5 font-semibold">Mês até agora</h2>
       <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-        <Stat label="Saldo do banco" value={signed(data.balance_minutes)} />
-        <Stat label="Extras no mês" value={formatMinutes(data.month_overtime_minutes)} />
-        <Stat label="Faltantes no mês" value={formatMinutes(data.month_missing_minutes)} />
-        <Stat label="Faltas no mês" value={String(data.month_absences)} />
+        <Stat label="Trabalhado" value={formatMinutes(data.month_worked_minutes ?? 0)} />
+        <Stat label="Extras" value={formatMinutes(data.month_overtime_minutes)} />
+        <Stat label="Faltantes" value={formatMinutes(data.month_missing_minutes)} />
+        <Stat label="Saldo do mês" value={signed(data.month_balance_minutes ?? 0)} />
       </div>
       <p className="mt-3 text-sm text-slate-600">
+        Saldo do banco de horas: <strong>{signed(data.balance_minutes)}</strong>. Faltas no mês: {data.month_absences}.
+      </p>
+      <p className="mt-1 text-sm text-slate-600">
         Ciclo de pagamento {formatDate(data.pay_period_start)} a {formatDate(data.pay_period_end)}: extras{" "}
         {formatMinutes(data.pay_period_overtime_minutes)}, faltantes {formatMinutes(data.pay_period_missing_minutes)}.
         {data.pay_period_consumption_cents > 0 && ` Consumo: ${formatMoney(data.pay_period_consumption_cents)}.`}
       </p>
-      <ul className="mt-4 max-h-64 divide-y divide-slate-100 overflow-y-auto text-sm">
-        {[...data.days].reverse().map((d) => (
-          <li key={d.date} className="flex justify-between py-1.5">
-            <span>{formatDate(d.date)}</span>
-            <span className="tabular-nums">
-              {d.worked_minutes ? formatMinutes(d.worked_minutes) : "—"}{" "}
-              {d.counts_for_bank && <span className={d.balance_minutes < 0 ? "text-red-700" : "text-green-700"}>({signed(d.balance_minutes)})</span>}
-            </span>
-          </li>
-        ))}
-      </ul>
       <p className="mt-3 text-xs text-slate-500">Esta tela fecha sozinha em {data.screen_seconds} segundos.</p>
     </div>
   );

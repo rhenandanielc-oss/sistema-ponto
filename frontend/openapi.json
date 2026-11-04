@@ -6072,6 +6072,11 @@
       "type": "string",
       "title": "Status"
      },
+     "planned_minutes": {
+      "type": "integer",
+      "title": "Planned Minutes",
+      "default": 0
+     },
      "worked_minutes": {
       "type": "integer",
       "title": "Worked Minutes"
@@ -6083,6 +6088,54 @@
      "counts_for_bank": {
       "type": "boolean",
       "title": "Counts For Bank"
+     },
+     "entry": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entry",
+      "description": "Entrada"
+     },
+     "lunch_exit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lunch Exit",
+      "description": "Saída para almoço"
+     },
+     "lunch_return": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lunch Return",
+      "description": "Retorno do almoço"
+     },
+     "exit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Exit",
+      "description": "Saída"
      }
     },
     "type": "object",
@@ -6137,6 +6190,50 @@
      "month_absences": {
       "type": "integer",
       "title": "Month Absences"
+     },
+     "month_worked_minutes": {
+      "type": "integer",
+      "title": "Month Worked Minutes",
+      "description": "Horas trabalhadas no mês até agora",
+      "default": 0
+     },
+     "month_balance_minutes": {
+      "type": "integer",
+      "title": "Month Balance Minutes",
+      "description": "Extras − faltantes do mês até agora",
+      "default": 0
+     },
+     "week_start": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Week Start",
+      "description": "Segunda-feira da semana atual"
+     },
+     "week": {
+      "items": {
+       "$ref": "#/components/schemas/KioskDay"
+      },
+      "type": "array",
+      "title": "Week",
+      "description": "Dias da semana atual até hoje, com horários",
+      "default": []
+     },
+     "week_worked_minutes": {
+      "type": "integer",
+      "title": "Week Worked Minutes",
+      "default": 0
+     },
+     "week_balance_minutes": {
+      "type": "integer",
+      "title": "Week Balance Minutes",
+      "default": 0
      },
      "pay_period_start": {
       "type": "string",

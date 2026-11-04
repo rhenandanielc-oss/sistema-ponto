@@ -312,3 +312,33 @@ def test_template_from_another_key_is_ignored_not_an_internal_error(
     again = identify(client, setup["kiosk"], b"FACE:joao#camera")
     assert again.status_code == 200, again.text
     assert again.json()["employee_name"] == "João"
+
+
+def test_kiosk_hour_bank_shows_week_times_and_month_totals(
+    client: TestClient, setup, db: Session
+) -> None:
+    """Pelo rosto: entrada, almoço e saída da semana e o total do mês até agora."""
+    from tests.integration.helpers import full_day, punch
+
+    full_day(db, setup["joao"], 1, "08:00", "12:00", "13:00", "17:00")  # terça 01/09
+    punch(db, setup["joao"], "ENTRY", local(2, "08:05"))  # quarta 02/09, em andamento
+    clock.freeze(local(2, "10:00"))
+
+    token = identify(client, setup["kiosk"], b"FACE:joao#camera").json()["identification_token"]
+    bank = client.post(
+        f"{KIOSK}/hour-bank", json={"identification_token": token}, headers=setup["kiosk"]
+    ).json()
+
+    assert bank["week_start"] == "2026-08-31"  # segunda-feira
+    week = {d["date"]: d for d in bank["week"]}
+    assert list(week) == ["2026-08-31", "2026-09-01", "2026-09-02"]
+    tuesday = week["2026-09-01"]
+    assert tuesday["entry"] == "2026-09-01T08:00:00-03:00"
+    assert tuesday["lunch_exit"] == "2026-09-01T12:00:00-03:00"
+    assert tuesday["lunch_return"] == "2026-09-01T13:00:00-03:00"
+    assert tuesday["exit"] == "2026-09-01T17:00:00-03:00"
+    assert (tuesday["worked_minutes"], tuesday["planned_minutes"]) == (480, 480)
+    assert week["2026-09-02"]["entry"] == "2026-09-02T08:05:00-03:00"
+    assert week["2026-09-02"]["exit"] is None
+    assert bank["week_worked_minutes"] == 480
+    assert (bank["month_worked_minutes"], bank["month_balance_minutes"]) == (480, 0)
