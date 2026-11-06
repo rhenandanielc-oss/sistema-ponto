@@ -165,7 +165,7 @@ export function EmployeeDetailPage() {
                     {formatDate(s.valid_from)} até {s.valid_to ? formatDate(s.valid_to) : "hoje"} —{" "}
                     {s.days.map((d) => WEEKDAYS[d.weekday]?.short).join(", ")}{" "}
                     {s.days[0] && `${shortTime(s.days[0].start_time)}–${shortTime(s.days[0].end_time)}`}
-                    {s.weekly_day_off && " · folga semanal em qualquer dia"}
+                    {s.weekly_day_off && (s.double_off_week ? " · folga semanal (alterna 2 e 1)" : " · folga semanal em qualquer dia")}
                   </li>
                 ))}
               </ul>
@@ -206,7 +206,11 @@ function ScheduleTable({ schedule }: { schedule: Schedule }) {
         Vigente desde {formatDate(schedule.valid_from)}
         {schedule.valid_to ? ` até ${formatDate(schedule.valid_to)}` : ""}
         {schedule.weekly_day_off && (
-          <span className="ml-2 font-medium text-indigo-700">· Folga semanal em qualquer dia (1 por semana)</span>
+          <span className="ml-2 font-medium text-indigo-700">
+            {schedule.double_off_week
+              ? "· Folga semanal em qualquer dia (semanas alternadas com 2 e 1 folgas)"
+              : "· Folga semanal em qualquer dia (1 por semana)"}
+          </span>
         )}
       </p>
       <div className="overflow-x-auto">

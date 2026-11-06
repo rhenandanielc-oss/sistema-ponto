@@ -86,3 +86,42 @@ def test_system_starting_on_sunday_keeps_sunday_as_a_workday(
     sunday = bank(client, auth_headers, employee, "2026-11-01", "2026-11-01")["days"][0]
     assert "WEEKLY_DAY_OFF" not in sunday["flags"]
     assert (sunday["planned_minutes"], sunday["balance_minutes"]) == (480, 0)
+
+
+def test_alternating_weeks_with_two_days_off_then_one(
+    client: TestClient, auth_headers, db: Session
+) -> None:
+    # Qualquer data da semana 07–13/09 marca essa semana como a de 2 folgas.
+    schedule = {**EVERY_DAY, "double_off_week": "2026-09-10"}
+    employee = create_employee(client, auth_headers, hire_date="2026-09-07", schedule=schedule)
+    detail = client.get(f"/api/v1/employees/{employee}", headers=auth_headers).json()
+    assert detail["current_schedule"]["double_off_week"] == "2026-09-07"  # a segunda-feira
+
+    # Semana 07–13/09: folga na sexta (11) e no domingo (13). Semana 14–20/09: só quinta (17).
+    work(db, employee, [7, 8, 9, 10, 12, 14, 15, 16, 18, 19, 20])
+    clock.freeze(local(21, "10:00"))
+
+    result = bank(client, auth_headers, employee, "2026-09-07", "2026-09-20")
+    totals = result["totals"]
+    assert (totals["absences"], totals["missing_minutes"], totals["overtime_minutes"]) == (0, 0, 0)
+    assert totals["planned_minutes"] == 11 * 480
+    day_offs = [d["date"] for d in result["days"] if "WEEKLY_DAY_OFF" in d["flags"]]
+    assert day_offs == ["2026-09-11", "2026-09-13", "2026-09-17"]
+
+
+def test_two_days_off_week_requires_the_weekly_day_off_option(
+    client: TestClient, auth_headers
+) -> None:
+    schedule = {**EVERY_DAY, "weekly_day_off": False, "double_off_week": "2026-09-07"}
+    response = client.post(
+        "/api/v1/employees",
+        json={
+            "name": "Teste",
+            "registration_number": "X1",
+            "hire_date": "2026-09-07",
+            "payday": 5,
+            "schedule": schedule,
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 422

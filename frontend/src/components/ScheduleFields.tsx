@@ -15,6 +15,8 @@ export interface ScheduleForm {
   end_time: string;
   lunch_minutes: number;
   weekly_day_off: boolean;
+  /** Qualquer data da semana que tem 2 folgas (as seguintes alternam 1 e 2); vazio = sempre 1 folga. */
+  double_off_week: string;
   /** Dias com horário diferente do padrão, por dia da semana (0 = segunda). */
   overrides: Record<number, DayTimes>;
 }
@@ -25,6 +27,7 @@ export const DEFAULT_SCHEDULE: ScheduleForm = {
   end_time: "17:00",
   lunch_minutes: 60,
   weekly_day_off: false,
+  double_off_week: "",
   overrides: {},
 };
 
@@ -32,12 +35,14 @@ export const DEFAULT_SCHEDULE: ScheduleForm = {
 export function scheduleToApi(form: ScheduleForm) {
   const weekdays = [...form.weekdays].sort((a, b) => a - b);
   const common: DayTimes = { start_time: form.start_time, end_time: form.end_time, lunch_minutes: form.lunch_minutes };
+  const double_off_week = form.weekly_day_off && form.double_off_week ? form.double_off_week : null;
   if (!weekdays.some((d) => form.overrides[d])) {
-    return { weekdays, ...common, weekly_day_off: form.weekly_day_off };
+    return { weekdays, ...common, weekly_day_off: form.weekly_day_off, double_off_week };
   }
   return {
     days: weekdays.map((weekday) => ({ weekday, ...(form.overrides[weekday] ?? common) })),
     weekly_day_off: form.weekly_day_off,
+    double_off_week,
   };
 }
 
@@ -51,7 +56,9 @@ export function scheduleFromApi(schedule: Schemas["ScheduleOut"]): ScheduleForm 
   const counts = new Map<string, number>();
   for (const d of days) counts.set(key(d.times), (counts.get(key(d.times)) ?? 0) + 1);
   let mostCommon = days[0];
-  if (!mostCommon) return { ...DEFAULT_SCHEDULE, weekly_day_off: schedule.weekly_day_off };
+  if (!mostCommon) {
+    return { ...DEFAULT_SCHEDULE, weekly_day_off: schedule.weekly_day_off, double_off_week: schedule.double_off_week ?? "" };
+  }
   for (const d of days) {
     if ((counts.get(key(d.times)) ?? 0) > (counts.get(key(mostCommon.times)) ?? 0)) mostCommon = d;
   }
@@ -62,8 +69,16 @@ export function scheduleFromApi(schedule: Schemas["ScheduleOut"]): ScheduleForm 
     weekdays: days.map((d) => d.weekday),
     ...standard,
     weekly_day_off: schedule.weekly_day_off,
+    double_off_week: schedule.double_off_week ?? "",
     overrides,
   };
+}
+
+/** Segunda-feira da semana de `date`, no formato AAAA-MM-DD. */
+function mondayOf(date: Date): string {
+  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - ((date.getDay() + 6) % 7));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
 }
 
 export function ScheduleFields({
@@ -122,6 +137,36 @@ export function ScheduleFields({
             </span>
           </span>
         </label>
+        {value.weekly_day_off && (
+          <div className="ml-6 mt-3 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={value.double_off_week !== ""}
+                onChange={(e) => onChange({ ...value, double_off_week: e.target.checked ? mondayOf(new Date()) : "" })}
+              />
+              <span className="font-medium">Alternar: uma semana com 2 folgas, a outra com 1</span>
+            </label>
+            {value.double_off_week !== "" && (
+              <div className="mt-2">
+                <label className="label" htmlFor="double_off_week">
+                  Uma semana com 2 folgas (qualquer dia dela)
+                </label>
+                <input
+                  id="double_off_week"
+                  type="date"
+                  className="input max-w-48"
+                  value={value.double_off_week}
+                  onChange={(e) => onChange({ ...value, double_off_week: e.target.value })}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  A semana dessa data tem 2 folgas, a seguinte tem 1, e assim por diante. Vale também para as semanas
+                  anteriores.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </fieldset>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>

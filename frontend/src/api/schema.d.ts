@@ -1900,6 +1900,8 @@ export interface components {
              * @default false
              */
             weekly_day_off: boolean;
+            /** Double Off Week */
+            double_off_week?: string | null;
             /**
              * Valid From
              * Format: date
@@ -1972,6 +1974,8 @@ export interface components {
              * @default false
              */
             weekly_day_off: boolean;
+            /** Double Off Week */
+            double_off_week?: string | null;
         };
         /** ScheduleOut */
         ScheduleOut: {
@@ -1986,6 +1990,8 @@ export interface components {
             valid_to: string | null;
             /** Weekly Day Off */
             weekly_day_off: boolean;
+            /** Double Off Week */
+            double_off_week?: string | null;
             /** Days */
             days: components["schemas"]["ScheduleDayOut"][];
             /** Created At */

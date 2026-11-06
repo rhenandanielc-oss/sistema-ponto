@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -41,6 +41,7 @@ describe("ScheduleFields", () => {
       end_time: "16:00",
       lunch_minutes: 30,
       weekly_day_off: false,
+      double_off_week: null,
     });
   });
 
@@ -100,5 +101,19 @@ describe("ScheduleFields", () => {
     });
     expect(form).toMatchObject({ weekdays: [0, 1, 2, 3, 4, 5], start_time: "08:00", end_time: "16:00", lunch_minutes: 60 });
     expect(form.overrides).toEqual({ 5: { start_time: "07:30", end_time: "14:30", lunch_minutes: 0 } });
+  });
+
+  it("alterna semanas com 2 e 1 folgas só com a folga semanal marcada", async () => {
+    let latest = DEFAULT_SCHEDULE;
+    render(<Harness onValue={(v) => (latest = v)} />);
+    const user = userEvent.setup();
+
+    expect(screen.queryByLabelText(/Alternar: uma semana com 2 folgas/)).toBeNull();
+    await user.click(screen.getByRole("checkbox", { name: /Folga semanal em qualquer dia/ }));
+    await user.click(screen.getByLabelText(/Alternar: uma semana com 2 folgas/));
+    fireEvent.change(screen.getByLabelText(/Uma semana com 2 folgas/), { target: { value: "2026-11-04" } });
+
+    expect(scheduleToApi(latest)).toMatchObject({ weekly_day_off: true, double_off_week: "2026-11-04" });
+    expect(scheduleToApi({ ...latest, weekly_day_off: false })).toMatchObject({ double_off_week: null });
   });
 });

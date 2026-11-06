@@ -99,6 +99,17 @@ escolhe a folga sozinho:
 
 No resultado diário, o dia escolhido traz o aviso `WEEKLY_DAY_OFF` ("Folga da semana").
 
+**Semanas alternadas com 2 e 1 folgas (decisão do responsável, 2026-11-06).** Com a opção **"Alternar: uma semana
+com 2 folgas, a outra com 1"** (`double_off_week`), o administrador informa uma data qualquer da semana que tem
+**2 folgas**; a semana seguinte tem 1, a outra 2, e assim por diante (também para trás). Nas semanas de 2 folgas:
+
+* os **dois primeiros dias de trabalho sem batida** são folga; um terceiro dia sem batida é falta;
+* se, ao chegar nos últimos dias da semana, ainda faltam folgas a dar, os **últimos dias** viram folga — se
+  trabalhar neles, todo o tempo é hora extra (folga trabalhada);
+* semana incompleta e feriados seguem as regras acima.
+
+Exemplo (caso real): semana 02–08/11 com 2 folgas (sexta e domingo) e semana 09–15/11 com 1 (quinta ou sexta).
+
 Exemplo (horário 08:00–16:00 todos os dias): semana 07–13/09 sem batida na quinta (10) e semana 14–20/09 sem batida
 no domingo (20) ⇒ nenhuma falta, nenhuma hora extra, 12 dias × 8 h previstos.
 

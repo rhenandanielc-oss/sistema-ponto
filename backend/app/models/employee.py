@@ -69,6 +69,8 @@ class EmployeeSchedule(Base):
     weekly_day_off: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
+    # Segunda-feira de uma semana com 2 folgas; as semanas seguintes alternam 1 e 2 (§3.2).
+    double_off_week: Mapped[date | None] = mapped_column(Date)
     created_by_admin_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("admins.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
