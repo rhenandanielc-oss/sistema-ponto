@@ -1558,12 +1558,37 @@ export interface components {
             date: string;
             /** Status */
             status: string;
+            /**
+             * Planned Minutes
+             * @default 0
+             */
+            planned_minutes: number;
             /** Worked Minutes */
             worked_minutes: number;
             /** Balance Minutes */
             balance_minutes: number;
             /** Counts For Bank */
             counts_for_bank: boolean;
+            /**
+             * Entry
+             * @description Entrada
+             */
+            entry?: string | null;
+            /**
+             * Lunch Exit
+             * @description Saída para almoço
+             */
+            lunch_exit?: string | null;
+            /**
+             * Lunch Return
+             * @description Retorno do almoço
+             */
+            lunch_return?: string | null;
+            /**
+             * Exit
+             * @description Saída
+             */
+            exit?: string | null;
         };
         /** KioskHourBankIn */
         KioskHourBankIn: {
@@ -1590,6 +1615,39 @@ export interface components {
             month_missing_minutes: number;
             /** Month Absences */
             month_absences: number;
+            /**
+             * Month Worked Minutes
+             * @description Horas trabalhadas no mês até agora
+             * @default 0
+             */
+            month_worked_minutes: number;
+            /**
+             * Month Balance Minutes
+             * @description Extras − faltantes do mês até agora
+             * @default 0
+             */
+            month_balance_minutes: number;
+            /**
+             * Week Start
+             * @description Segunda-feira da semana atual
+             */
+            week_start?: string | null;
+            /**
+             * Week
+             * @description Dias da semana atual até hoje, com horários
+             * @default []
+             */
+            week: components["schemas"]["KioskDay"][];
+            /**
+             * Week Worked Minutes
+             * @default 0
+             */
+            week_worked_minutes: number;
+            /**
+             * Week Balance Minutes
+             * @default 0
+             */
+            week_balance_minutes: number;
             /**
              * Pay Period Start
              * Format: date
@@ -1842,6 +1900,8 @@ export interface components {
              * @default false
              */
             weekly_day_off: boolean;
+            /** Double Off Week */
+            double_off_week?: string | null;
             /**
              * Valid From
              * Format: date
@@ -1914,6 +1974,8 @@ export interface components {
              * @default false
              */
             weekly_day_off: boolean;
+            /** Double Off Week */
+            double_off_week?: string | null;
         };
         /** ScheduleOut */
         ScheduleOut: {
@@ -1928,6 +1990,8 @@ export interface components {
             valid_to: string | null;
             /** Weekly Day Off */
             weekly_day_off: boolean;
+            /** Double Off Week */
+            double_off_week?: string | null;
             /** Days */
             days: components["schemas"]["ScheduleDayOut"][];
             /** Created At */

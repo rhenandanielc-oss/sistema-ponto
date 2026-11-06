@@ -1,6 +1,6 @@
 import re
 import unicodedata
-from datetime import date, time
+from datetime import date, time, timedelta
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -92,6 +92,9 @@ class ScheduleDaysIn(BaseModel):
     days: list[ScheduleDayIn] = Field(min_length=1, max_length=7)
     # Uma folga por semana em qualquer dos dias acima, escolhida pelo sistema (BUSINESS-RULES §3.2).
     weekly_day_off: bool = False
+    # Uma data qualquer da semana (segunda a domingo) com 2 folgas; as seguintes alternam 1 e 2.
+    # Só com `weekly_day_off`. Guardada como a segunda-feira dessa semana.
+    double_off_week: date | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -117,6 +120,12 @@ class ScheduleDaysIn(BaseModel):
             raise ValueError(str(exc)) from exc
         if self.weekly_day_off and len(self.days) < 2:
             raise ValueError("Com folga semanal, informe pelo menos 2 dias de trabalho.")
+        if self.double_off_week is not None:
+            if not self.weekly_day_off:
+                raise ValueError("Semana com 2 folgas exige a folga semanal em qualquer dia.")
+            if len(self.days) < 3:
+                raise ValueError("Com 2 folgas na semana, informe pelo menos 3 dias de trabalho.")
+            self.double_off_week -= timedelta(days=self.double_off_week.weekday())
         return self
 
 
@@ -156,6 +165,7 @@ class ScheduleOut(ORMModel):
     valid_from: date
     valid_to: date | None
     weekly_day_off: bool
+    double_off_week: date | None = None
     days: list[ScheduleDayOut]
     created_at: LocalDatetime
 

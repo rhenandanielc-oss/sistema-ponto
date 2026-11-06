@@ -122,6 +122,14 @@ def _calculate(
             and rotating(day)
         )
 
+    def quota(day: date) -> int:
+        schedule = table.vigente(day)
+        anchor = schedule.double_off_week if schedule is not None else None
+        if anchor is None:
+            return 1
+        weeks = (week_start(day) - anchor).days // 7
+        return 2 if weeks % 2 == 0 else 1
+
     inputs = []
     day = date_from
     while day <= date_to:
@@ -136,7 +144,7 @@ def _calculate(
             )
         )
         day += timedelta(days=1)
-    results = calculate_days(inputs, rules, now_utc(), rotating, is_candidate_day)
+    results = calculate_days(inputs, rules, now_utc(), rotating, is_candidate_day, quota)
     return [r for r in results if r.day >= requested_from]
 
 

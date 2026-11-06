@@ -10,6 +10,7 @@ from app.api.biometrics import read_image
 from app.api.deps import CurrentDevice, DbSession
 from app.biometrics.engine import FaceEngine, get_face_engine
 from app.calculation.payroll import period_containing
+from app.calculation.workday import DayResult
 from app.core.clock import now_utc, today_local
 from app.core.rate_limit import rate_limit
 from app.schemas.common import LocalDatetime
@@ -116,9 +117,30 @@ class KioskHourBankIn(BaseModel):
 class KioskDay(BaseModel):
     date: date
     status: str
+    planned_minutes: int = 0
     worked_minutes: int
     balance_minutes: int
     counts_for_bank: bool
+    entry: LocalDatetime | None = Field(default=None, description="Entrada")
+    lunch_exit: LocalDatetime | None = Field(default=None, description="Saída para almoço")
+    lunch_return: LocalDatetime | None = Field(default=None, description="Retorno do almoço")
+    exit: LocalDatetime | None = Field(default=None, description="Saída")
+
+
+def _kiosk_day(d: DayResult) -> KioskDay:
+    times = {p.type: p.at for p in d.punches}
+    return KioskDay(
+        date=d.day,
+        status=d.status,
+        planned_minutes=d.planned_minutes,
+        worked_minutes=d.worked_minutes,
+        balance_minutes=d.balance_minutes,
+        counts_for_bank=d.counts_for_bank,
+        entry=times.get("ENTRY"),
+        lunch_exit=times.get("LUNCH_EXIT"),
+        lunch_return=times.get("LUNCH_RETURN"),
+        exit=times.get("EXIT"),
+    )
 
 
 class KioskHourBankOut(BaseModel):
@@ -128,6 +150,14 @@ class KioskHourBankOut(BaseModel):
     month_overtime_minutes: int
     month_missing_minutes: int
     month_absences: int
+    month_worked_minutes: int = Field(default=0, description="Horas trabalhadas no mês até agora")
+    month_balance_minutes: int = Field(default=0, description="Extras − faltantes do mês até agora")
+    week_start: date | None = Field(default=None, description="Segunda-feira da semana atual")
+    week: list[KioskDay] = Field(
+        default=[], description="Dias da semana atual até hoje, com horários"
+    )
+    week_worked_minutes: int = 0
+    week_balance_minutes: int = 0
     pay_period_start: date
     pay_period_end: date
     pay_period_overtime_minutes: int
@@ -151,6 +181,8 @@ def own_hour_bank(data: KioskHourBankIn, device: CurrentDevice, db: DbSession) -
     bank = hour_bank_service.hour_bank(db, employee.id, month_start, today)
     period = period_containing(today, employee.payday)
     pay_totals = hour_bank_service.period_totals(db, employee, period.start, period.end)
+    week_start = today - timedelta(days=today.weekday())
+    week_days, week_totals = hour_bank_service.workdays(db, employee.id, week_start, today)
     audit.record(
         db,
         actor=audit.Actor("DEVICE", device_id=device.id, employee_id=employee.id),
@@ -166,6 +198,12 @@ def own_hour_bank(data: KioskHourBankIn, device: CurrentDevice, db: DbSession) -
         month_overtime_minutes=bank.totals.overtime_minutes,
         month_missing_minutes=bank.totals.missing_minutes,
         month_absences=bank.totals.absences,
+        month_worked_minutes=bank.totals.worked_minutes,
+        month_balance_minutes=bank.totals.balance_minutes,
+        week_start=week_start,
+        week=[_kiosk_day(d) for d in week_days],
+        week_worked_minutes=week_totals.worked_minutes,
+        week_balance_minutes=week_totals.balance_minutes,
         pay_period_start=period.start,
         pay_period_end=period.end,
         pay_period_overtime_minutes=pay_totals.overtime_minutes,
@@ -174,13 +212,7 @@ def own_hour_bank(data: KioskHourBankIn, device: CurrentDevice, db: DbSession) -
             db, employee.id, period.start, period.end
         ),
         days=[
-            KioskDay(
-                date=d.day,
-                status=d.status,
-                worked_minutes=d.worked_minutes,
-                balance_minutes=d.balance_minutes,
-                counts_for_bank=d.counts_for_bank,
-            )
+            _kiosk_day(d)
             for d in bank.days
             if d.day <= today and d.day >= today - timedelta(days=31)
         ],

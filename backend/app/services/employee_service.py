@@ -44,6 +44,7 @@ def _schedule_snapshot(schedule: EmployeeSchedule) -> dict[str, Any]:
         "valid_from": schedule.valid_from,
         "valid_to": schedule.valid_to,
         "weekly_day_off": schedule.weekly_day_off,
+        "double_off_week": schedule.double_off_week,
         "days": [
             {
                 "weekday": d.weekday,
@@ -151,6 +152,7 @@ def create(db: Session, data: EmployeeCreate, actor: audit.Actor) -> Employee:
         valid_from=data.hire_date,
         created_by_admin_id=actor.admin_id,
         weekly_day_off=data.schedule.weekly_day_off,
+        double_off_week=data.schedule.double_off_week,
         days=_build_days(data.schedule),
     )
     employee.schedules.append(schedule)
@@ -334,6 +336,7 @@ def add_schedule(
         valid_from=data.valid_from,
         created_by_admin_id=actor.admin_id,
         weekly_day_off=data.weekly_day_off,
+        double_off_week=data.double_off_week,
         days=_build_days(data),
     )
     db.add(schedule)

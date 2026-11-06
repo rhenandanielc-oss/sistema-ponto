@@ -127,3 +127,43 @@ de novo.
 
 Os scripts do Windows não puderam ser executados num Windows real durante o desenvolvimento. Na primeira
 instalação, se alguma etapa mostrar erro, copie a mensagem (ou tire uma foto da tela) e envie para ajuste.
+
+## 10. Celular ou tablet na parede como terminal (opcional)
+
+O notebook continua sendo o servidor; o celular só mostra o terminal. **O notebook precisa estar ligado** enquanto
+o celular for usado. A câmera do navegador só funciona em endereço `https`, por isso usamos o **Tailscale**
+(gratuito até 3 usuários e 100 aparelhos), que cria um endereço `https://….ts.net` válido e só acessível pelos
+aparelhos da sua conta.
+
+**No notebook (uma vez):**
+
+1. Baixe e instale o Tailscale em <https://tailscale.com/download/windows>. Entre com uma conta Google (ou outra).
+2. No navegador, abra <https://login.tailscale.com/admin/dns>: em **MagicDNS**, clique em **Enable**; em
+   **HTTPS Certificates**, clique em **Enable HTTPS**.
+3. Abra o **PowerShell** e rode (troque `8090` pela porta que aparece no atalho "Ponto - Terminal"):
+   `& "C:\Program Files\Tailscale\tailscale.exe" serve --bg 8090`
+   Se aparecer um link pedindo para habilitar o "Serve", abra-o, confirme e rode o comando de novo.
+   O comando mostra o endereço, por exemplo `https://notebook.tail1234.ts.net`. Ele continua valendo depois de
+   desligar e ligar o notebook.
+
+**No celular:**
+
+1. Instale o app **Tailscale** (Play Store) e entre com a **mesma conta**. Ative a conexão.
+   Em **Configurações do Android → Rede e Internet → VPN → Tailscale (engrenagem)**, ligue **"VPN sempre ativa"**.
+2. No Chrome, abra `https://notebook.tail1234.ts.net/login` (o seu endereço), entre como administrador e, em
+   **Administração → Terminais**, cadastre o terminal "Celular" e copie a chave.
+3. Abra `https://notebook.tail1234.ts.net/kiosk`, cole a chave, **Ativar terminal** e **Permitir** a câmera.
+4. No menu do Chrome (⋮) → **Adicionar à tela inicial**, para abrir o terminal com um toque.
+
+**Deixar o celular só com o ponto:**
+
+* **Fixar app:** Configurações → Segurança → Mais configurações de segurança → **Fixar app** (ligar). Com o terminal
+  aberto, abra os apps recentes, toque no ícone do Chrome → **Fixar**. Para soltar: segure Voltar + Visão geral.
+* **Tela sempre ligada no carregador:** Configurações → Sobre o telefone → toque 7 vezes em **Número da versão**;
+  depois Sistema → Opções do desenvolvedor → **Permanecer ativo**.
+* **Proteger a bateria** (ficará sempre na tomada): Configurações → Bateria → **Proteção da bateria / carregamento
+  otimizado** (limita a carga em 80%).
+* Desligue a rotação automática (fica em pé) e as notificações de outros apps.
+* Fixe na parede na altura do rosto, com luz de frente (não contra a janela) e o carregador ligado.
+
+Batidas feitas pelo celular e pelo notebook vão para o mesmo lugar; dá para usar os dois.
