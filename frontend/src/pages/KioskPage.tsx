@@ -267,6 +267,7 @@ export function KioskPage() {
         <span className="font-semibold">
           Ponto{deviceName ? ` — ${deviceName}` : ""}
         </span>
+        <FullscreenButton />
         <span
           className="text-3xl font-bold tabular-nums text-white"
           aria-label="Hora atual"
@@ -396,6 +397,26 @@ export function KioskPage() {
         )}
       </main>
     </div>
+  );
+}
+
+/** Botão "Tela cheia" (some quando já está em tela cheia ou o navegador não permite). */
+function FullscreenButton() {
+  const [full, setFull] = useState(() => document.fullscreenElement != null);
+  useEffect(() => {
+    const onChange = () => setFull(document.fullscreenElement != null);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  if (full || !document.documentElement.requestFullscreen) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => void document.documentElement.requestFullscreen().catch(() => undefined)}
+      className="rounded-lg bg-slate-700 px-3 py-1.5 text-sm text-white"
+    >
+      Tela cheia
+    </button>
   );
 }
 
