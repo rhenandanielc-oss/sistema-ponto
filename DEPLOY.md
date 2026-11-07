@@ -189,3 +189,17 @@ Servidor de teste (4 vCPU), 200 funcionários, 2 meses de batidas (34 400 regist
 
 Os resultados são calculados na hora a partir das batidas (`DATABASE.md` §4). Para milhares de funcionários,
 avaliar o cache `daily_summaries` previsto no `DATABASE.md`.
+
+## 10. Instalação rápida num VPS Ubuntu 24.04
+
+Para um servidor novo (ex.: VPS de 2 GB), `deploy/instalar-servidor.sh` faz tudo: Docker, memória extra (swap),
+firewall, `.env`, HTTPS (Let's Encrypt) e, se houver backup, a restauração dos dados.
+
+1. Aponte o endereço (registro **A**) para o IP do servidor.
+2. Do PC (Windows 10/11, PowerShell), envie os arquivos para `/root` do servidor:
+   `scp sistema-ponto.zip root@IP:/root/` — e, para trazer os dados e os rostos do notebook,
+   `scp C:\Ponto\.env root@IP:/root/env-do-notebook` e `scp ponto-AAAAMMDD-HHMMSS.dump root@IP:/root/`.
+3. No servidor, extraia só o script e rode-o: `unzip -j sistema-ponto.zip '*/deploy/instalar-servidor.sh' && bash instalar-servidor.sh ENDERECO`.
+
+Com 2 GB de memória o sistema roda para poucos funcionários, mas a montagem inicial usa o swap; se faltar memória
+no dia a dia, aumente o plano do VPS.
