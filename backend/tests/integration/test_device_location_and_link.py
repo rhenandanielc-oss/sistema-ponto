@@ -212,3 +212,16 @@ def test_locate_reads_google_maps_links_and_addresses(
 
 def test_locate_requires_an_admin(client: TestClient) -> None:
     assert client.post("/api/v1/settings/locate", json={"query": "-22.9, -46.5"}).status_code == 401
+
+
+def test_locate_refuses_points_outside_brazil_like_a_missing_minus_sign(
+    client: TestClient, auth_headers
+):
+    wrong = client.post(
+        "/api/v1/settings/locate", json={"query": "22.968140, -46.544648"}, headers=auth_headers
+    )
+    assert (wrong.status_code, wrong.json()["error"]["code"]) == (422, "LOCATION_OUTSIDE_BRAZIL")
+    right = client.post(
+        "/api/v1/settings/locate", json={"query": "-22.968140, -46.544648"}, headers=auth_headers
+    )
+    assert right.status_code == 200, right.text
