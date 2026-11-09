@@ -171,17 +171,35 @@ def _geocode(query: str) -> Located | None:
     return Located(float(first["lat"]), float(first["lon"]), str(first.get("display_name", query)))
 
 
+# Caixa que contém o Brasil (com ilhas). Protege do erro comum de esquecer o sinal de menos.
+BRAZIL_LAT = (-34.0, 5.5)
+BRAZIL_LNG = (-74.5, -34.0)
+
+
+def _inside_brazil(located: Located) -> Located:
+    lat_ok = BRAZIL_LAT[0] <= located.latitude <= BRAZIL_LAT[1]
+    lng_ok = BRAZIL_LNG[0] <= located.longitude <= BRAZIL_LNG[1]
+    if not (lat_ok and lng_ok):
+        raise AppError(
+            422,
+            "LOCATION_OUTSIDE_BRAZIL",
+            "Esse ponto fica fora do Brasil. Confira se a latitude e a longitude têm o sinal de "
+            "menos (ex.: -22.968140, -46.544648).",
+        )
+    return located
+
+
 def locate(query: str) -> Located:
     """Descobre o local por coordenadas coladas, link do Google Maps ou endereço."""
     text = query.strip()
     try:
         pair = coords_from_pair(text)
         if pair:
-            return Located(pair[0], pair[1], "Coordenadas informadas")
+            return _inside_brazil(Located(pair[0], pair[1], "Coordenadas informadas"))
         if re.match(r"^https?://", text, re.IGNORECASE):
             coords = _follow_google_link(text)
             if coords:
-                return Located(coords[0], coords[1], "Link do Google Maps")
+                return _inside_brazil(Located(coords[0], coords[1], "Link do Google Maps"))
             raise AppError(
                 422,
                 "LOCATION_NOT_FOUND",
@@ -200,4 +218,4 @@ def locate(query: str) -> Located:
             "LOCATION_NOT_FOUND",
             "Endereço não encontrado. Confira a rua e a cidade, ou use o link do Google Maps.",
         )
-    return found
+    return _inside_brazil(found)
