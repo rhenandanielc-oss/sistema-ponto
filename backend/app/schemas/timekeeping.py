@@ -54,6 +54,9 @@ class HolidayOut(ORMModel):
 
 class DeviceIn(BaseModel):
     name: str = Field(max_length=100)
+    require_location: bool = Field(
+        default=False, description="Só aceita batida perto do restaurante (Configurações)"
+    )
 
     _name = field_validator("name")(_strip_required)
 
@@ -62,8 +65,18 @@ class DeviceOut(ORMModel):
     id: int
     name: str
     is_active: bool
+    require_location: bool = False
     last_seen_at: LocalDatetime | None
     created_at: LocalDatetime
+
+
+class DeviceUpdate(BaseModel):
+    require_location: bool
+
+
+class ActivationLinkOut(BaseModel):
+    code: str = Field(description="Exibido somente agora. Vai no link /kiosk#ativar=<code>.")
+    expires_at: LocalDatetime
 
 
 class DeviceWithToken(DeviceOut):

@@ -259,16 +259,34 @@ function ConsumptionItemsTab() {
 function DevicesTab() {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
+  const [requireLocation, setRequireLocation] = useState(false);
   const [token, setToken] = useState<{ name: string; token: string } | null>(null);
+  const [link, setLink] = useState<{ name: string; url: string; expires: string } | null>(null);
   const devices = useQuery({ queryKey: ["devices"], queryFn: () => api<Schemas["DeviceOut"][]>("/devices") });
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ["devices"] });
   const create = useMutation({
-    mutationFn: () => api<Schemas["DeviceWithToken"]>("/devices", { method: "POST", body: { name } }),
+    mutationFn: () =>
+      api<Schemas["DeviceWithToken"]>("/devices", { method: "POST", body: { name, require_location: requireLocation } }),
     onSuccess: (d) => {
       setToken({ name: d.name, token: d.token });
       setName("");
+      setRequireLocation(false);
       invalidate();
     },
+  });
+  const toggleLocation = useMutation({
+    mutationFn: ({ id, required }: { id: number; required: boolean }) =>
+      api<Schemas["DeviceOut"]>(`/devices/${id}`, { method: "PATCH", body: { require_location: required } }),
+    onSuccess: invalidate,
+  });
+  const makeLink = useMutation({
+    mutationFn: (d: Schemas["DeviceOut"]) =>
+      api<{ code: string; expires_at: string }>(`/devices/${d.id}/activation-link`, { method: "POST" }).then((r) => ({
+        name: d.name,
+        url: `${window.location.origin}/kiosk#ativar=${r.code}`,
+        expires: r.expires_at,
+      })),
+    onSuccess: setLink,
   });
   const action = useMutation({
     mutationFn: ({ id, op }: { id: number; op: "activate" | "deactivate" | "rotate-token" }) =>
@@ -287,6 +305,39 @@ function DevicesTab() {
           <button type="button" className="btn-secondary mt-2" onClick={() => setToken(null)}>
             Já copiei
           </button>
+        </div>
+      )}
+      {link && (
+        <div role="status" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
+          <p className="font-semibold">
+            Link de ativação de “{link.name}” — vale uma vez só e até {formatDateTime(link.expires)}:
+          </p>
+          <code className="mt-2 block break-all rounded bg-white p-2 font-mono">{link.url}</code>
+          <p className="mt-2 text-slate-600">
+            Mande para o próprio dono do celular e peça para abrir no Chrome desse celular. Depois do primeiro uso o
+            link deixa de funcionar (e a chave antiga do terminal também).
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void navigator.clipboard?.writeText(link.url)}
+            >
+              Copiar link
+            </button>
+            {typeof navigator.share === "function" && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => void navigator.share({ title: "Ativar terminal de ponto", url: link.url }).catch(() => undefined)}
+              >
+                Compartilhar
+              </button>
+            )}
+            <button type="button" className="btn-secondary" onClick={() => setLink(null)}>
+              Fechar
+            </button>
+          </div>
         </div>
       )}
       <form
@@ -309,11 +360,15 @@ function DevicesTab() {
             onChange={(e) => setName(e.target.value)}
           />
         </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={requireLocation} onChange={(e) => setRequireLocation(e.target.checked)} />
+          <span>Exigir localização (celular do funcionário)</span>
+        </label>
         <button type="submit" className="btn-primary" disabled={create.isPending}>
           Cadastrar terminal
         </button>
         <div className="w-full">
-          <ErrorMessage error={create.error ?? action.error} />
+          <ErrorMessage error={create.error ?? action.error ?? makeLink.error ?? toggleLocation.error} />
         </div>
       </form>
       <div className="card overflow-x-auto">
@@ -323,6 +378,7 @@ function DevicesTab() {
               <tr>
                 <th>Terminal</th>
                 <th>Situação</th>
+                <th>Localização</th>
                 <th>Último contato</th>
                 <th />
               </tr>
@@ -332,8 +388,25 @@ function DevicesTab() {
                 <tr key={d.id}>
                   <td>{d.name}</td>
                   <td>{d.is_active ? <Badge tone="green">Ativo</Badge> : <Badge tone="slate">Inativo</Badge>}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="hover:underline"
+                      title="Clique para alterar"
+                      onClick={() => toggleLocation.mutate({ id: d.id, required: !d.require_location })}
+                    >
+                      {d.require_location ? <Badge tone="green">Exigida</Badge> : <Badge tone="slate">Livre</Badge>}
+                    </button>
+                  </td>
                   <td>{d.last_seen_at ? formatDateTime(d.last_seen_at) : "nunca"}</td>
                   <td className="space-x-3 text-right">
+                    <button
+                      type="button"
+                      className="text-indigo-700 hover:underline"
+                      onClick={() => makeLink.mutate(d)}
+                    >
+                      Link de ativação
+                    </button>
                     <button
                       type="button"
                       className="text-indigo-700 hover:underline"
@@ -445,12 +518,32 @@ function AdminsTab() {
 
 type Settings = Schemas["CompanySettings"];
 
-const SETTING_FIELDS: { key: keyof Settings; label: string; help: string; type: "number" | "time" | "date" }[] = [
+const SETTING_FIELDS: {
+  key: keyof Settings;
+  label: string;
+  help: string;
+  type: "number" | "time" | "date";
+  signed?: boolean;
+}[] = [
   {
     key: "tracking_start_date",
     label: "Início do uso do sistema",
     help: "Dias antes desta data não contam faltas, horas previstas nem extras (ex.: o dia em que começou a usar o ponto).",
     type: "date",
+  },
+  {
+    key: "location_latitude",
+    label: "Local do restaurante: latitude",
+    help: "Usada só por terminais com localização exigida. Use o botão abaixo, estando no restaurante.",
+    type: "number",
+    signed: true,
+  },
+  { key: "location_longitude", label: "Local do restaurante: longitude", help: "Idem.", type: "number", signed: true },
+  {
+    key: "location_radius_meters",
+    label: "Raio permitido (m)",
+    help: "Distância máxima do local para aceitar a batida. 150 m costuma bastar; o GPS dentro de prédios erra.",
+    type: "number",
   },
   { key: "tolerance_per_mark_minutes", label: "Tolerância por batida (min)", help: "CLT: até 5 min.", type: "number" },
   { key: "tolerance_daily_minutes", label: "Tolerância diária (min)", help: "CLT: até 10 min.", type: "number" },
@@ -505,7 +598,8 @@ function SettingsTab() {
               <input
                 id={`setting-${field.key}`}
                 type={field.type}
-                min={field.type === "number" ? 0 : undefined}
+                min={field.type === "number" && !field.signed ? 0 : undefined}
+                step={field.signed ? "any" : undefined}
                 className="input"
                 value={value}
                 onChange={(e) => setDraft({ ...draft, [field.key]: e.target.value })}
@@ -514,6 +608,29 @@ function SettingsTab() {
             </div>
           );
         })}
+      </div>
+      <div>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() =>
+            navigator.geolocation?.getCurrentPosition(
+              (p) =>
+                setDraft((d) => ({
+                  ...d,
+                  location_latitude: p.coords.latitude.toFixed(6),
+                  location_longitude: p.coords.longitude.toFixed(6),
+                })),
+              () => window.alert("Não foi possível obter a localização. Permita o acesso e tente de novo."),
+              { enableHighAccuracy: true, timeout: 15000 },
+            )
+          }
+        >
+          Usar a localização deste aparelho como local do restaurante
+        </button>
+        <p className="mt-1 text-xs text-slate-500">
+          Faça isso no celular (ou no notebook), estando dentro do restaurante, e depois salve.
+        </p>
       </div>
       <button type="submit" className="btn-primary" disabled={save.isPending || Object.keys(draft).length === 0}>
         Salvar configurações

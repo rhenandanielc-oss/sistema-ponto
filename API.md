@@ -192,3 +192,17 @@ Nenhum endpoint do kiosk recebe id de funcionário.
   "workday_date": "2026-09-01"
 }
 ```
+
+## Terminais: link de ativação e localização (BUSINESS-RULES.md §4.7)
+
+| Método | Rota | O que faz |
+|---|---|---|
+| PATCH | `/devices/{id}` | `{require_location: bool}` — exige localização do celular nesse terminal |
+| POST | `/devices/{id}/activation-link` | Gera o código de uso único (vale 24 h); devolve `{code, expires_at}`. O link é `/kiosk#ativar=<code>` |
+| POST | `/kiosk/activate` | Público (limite de 10/min): `{code}` → `{token, device}`; o código deixa de valer e o token anterior do terminal também |
+
+`/kiosk/identify` (campos de formulário `latitude`, `longitude`, `accuracy_m`) e `/kiosk/records` (os mesmos campos no JSON)
+recusam com `LOCATION_REQUIRED` (422), `LOCATION_IMPRECISE` (422), `LOCATION_OUT_OF_RANGE` (403) ou
+`LOCATION_NOT_CONFIGURED` (409) nos terminais com `require_location`. `/kiosk/ping` devolve `require_location`.
+Configurações novas: `location_latitude`, `location_longitude`, `location_radius_meters` (padrão 150).
+

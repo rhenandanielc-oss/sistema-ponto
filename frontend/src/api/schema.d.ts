@@ -1055,6 +1055,12 @@ export interface components {
             kiosk_hour_bank_screen_seconds: number;
             /** Tracking Start Date */
             tracking_start_date?: string | null;
+            /** Location Latitude */
+            location_latitude: number | null;
+            /** Location Longitude */
+            location_longitude: number | null;
+            /** Location Radius Meters */
+            location_radius_meters: number;
         };
         /** CompanySettingsUpdate */
         CompanySettingsUpdate: {
@@ -1076,6 +1082,12 @@ export interface components {
             kiosk_hour_bank_screen_seconds?: number | null;
             /** Tracking Start Date */
             tracking_start_date?: string | null;
+            /** Location Latitude */
+            location_latitude?: number | null;
+            /** Location Longitude */
+            location_longitude?: number | null;
+            /** Location Radius Meters */
+            location_radius_meters?: number | null;
         };
         /** ConsentIn */
         ConsentIn: {
@@ -1232,6 +1244,8 @@ export interface components {
         DeviceIn: {
             /** Name */
             name: string;
+            /** Require Location */
+            require_location?: boolean;
         };
         /** DeviceOut */
         DeviceOut: {
@@ -1241,6 +1255,8 @@ export interface components {
             name: string;
             /** Is Active */
             is_active: boolean;
+            /** Require Location */
+            require_location?: boolean;
             /** Last Seen At */
             last_seen_at: string | null;
             /** Created At */
@@ -1880,6 +1896,8 @@ export interface components {
             device: string;
             /** Server Time */
             server_time: string;
+            /** Require Location */
+            require_location: boolean;
         };
         /** PunchOut */
         PunchOut: {

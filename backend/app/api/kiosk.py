@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel, Field
 
 from app.api.biometrics import read_image
@@ -18,7 +18,9 @@ from app.services import (
     audit,
     biometric_service,
     consumption_service,
+    device_service,
     hour_bank_service,
+    location_service,
     record_service,
     settings_service,
 )
@@ -35,12 +37,35 @@ RecordType = Literal["ENTRY", "LUNCH_EXIT", "LUNCH_RETURN", "EXIT"]
 class PingOut(BaseModel):
     device: str
     server_time: LocalDatetime
+    require_location: bool = Field(description="O terminal deve enviar a localização do celular")
 
 
 @router.get("/ping", response_model=PingOut)
 def ping(device: CurrentDevice) -> PingOut:
     """Confirma que o terminal está autorizado e devolve o horário do servidor para exibição."""
-    return PingOut(device=device.name, server_time=now_utc())
+    return PingOut(
+        device=device.name, server_time=now_utc(), require_location=device.require_location
+    )
+
+
+class ActivateIn(BaseModel):
+    code: str = Field(min_length=10, max_length=200)
+
+
+class ActivateOut(BaseModel):
+    token: str = Field(description="Token do terminal: o navegador guarda e usa nas próximas vezes")
+    device: str
+
+
+@router.post(
+    "/activate",
+    response_model=ActivateOut,
+    dependencies=[Depends(rate_limit("kiosk-activate", limit=10))],
+)
+def activate(data: ActivateIn, db: DbSession) -> ActivateOut:
+    """Ativa o terminal com o código de uso único do link (sem digitar a chave)."""
+    device, token = device_service.activate_with_code(db, data.code)
+    return ActivateOut(token=token, device=device.name)
 
 
 class IdentifyOut(BaseModel):
@@ -60,8 +85,12 @@ async def identify(
     db: DbSession,
     engine: Engine,
     image: Annotated[UploadFile, File(description="Um quadro da câmera (JPEG/PNG, até 1 MB)")],
+    latitude: Annotated[float | None, Form()] = None,
+    longitude: Annotated[float | None, Form()] = None,
+    accuracy_m: Annotated[float | None, Form()] = None,
 ) -> IdentifyOut:
     """Reconhece o funcionário pelo rosto. A imagem é descartada ao fim da requisição."""
+    location_service.check(db, device, latitude, longitude, accuracy_m)
     data = await read_image(image)
     result = biometric_service.identify(db, data, engine, device)
     workday, allowed = record_service.allowed_types(db, result.employee.id)
@@ -78,6 +107,9 @@ async def identify(
 class KioskRecordIn(BaseModel):
     identification_token: str = Field(min_length=10, max_length=200)
     type: RecordType
+    latitude: float | None = None
+    longitude: float | None = None
+    accuracy_m: float | None = None
 
 
 class KioskRecordOut(BaseModel):
@@ -90,6 +122,7 @@ class KioskRecordOut(BaseModel):
 @router.post("/records", response_model=KioskRecordOut, status_code=201)
 def create_record(data: KioskRecordIn, device: CurrentDevice, db: DbSession) -> KioskRecordOut:
     """Registra a batida escolhida. O horário é o do servidor; o token é consumido."""
+    location_service.check(db, device, data.latitude, data.longitude, data.accuracy_m)
     identification = biometric_service.resolve_token(
         db, data.identification_token, device, consume=True
     )
