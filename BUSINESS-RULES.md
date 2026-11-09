@@ -200,6 +200,10 @@ Todo registro aceito **e** toda tentativa rejeitada geram auditoria.
   o celular informar uma posição a **no máximo o raio configurado** (padrão 150 m) do local do restaurante
   (Configurações → "Local do restaurante"). Sem permissão de localização, com sinal fraco (precisão pior que 150 m)
   ou fora do raio, a batida é recusada. Terminais sem a marca (ex.: o celular fixo na parede) não pedem localização.
+* **Como informar o local do restaurante** (Configurações → "Achar o local do restaurante"): digitando o endereço
+  (busca no OpenStreetMap; acha a rua, nem sempre o número exato), colando o link de compartilhar do Google Maps (usa
+  o alfinete do lugar) ou colando "latitude, longitude". O sistema mostra o que achou e um link "Conferir no mapa";
+  só vale depois de **Salvar configurações**. Só endereços de links do Google são seguidos.
 * Limite honesto: a posição vem do aparelho e pode ser falsificada por quem entende de GPS; a trava evita a batida
   "sem querer" de casa ou da rua. A posição **não é guardada**: só é comparada com o local do restaurante.
 

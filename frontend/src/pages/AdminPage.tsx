@@ -559,6 +559,20 @@ function SettingsTab() {
   const queryClient = useQueryClient();
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => api<Settings>("/settings") });
   const [draft, setDraft] = useState<Partial<Record<keyof Settings, string>>>({});
+  const [where, setWhere] = useState("");
+  const locate = useMutation({
+    mutationFn: () =>
+      api<{ latitude: number; longitude: number; label: string }>("/settings/locate", {
+        method: "POST",
+        body: { query: where },
+      }),
+    onSuccess: (r) =>
+      setDraft((d) => ({
+        ...d,
+        location_latitude: r.latitude.toFixed(6),
+        location_longitude: r.longitude.toFixed(6),
+      })),
+  });
   const save = useMutation({
     mutationFn: () => {
       const body: Record<string, string | number> = {};
@@ -609,7 +623,46 @@ function SettingsTab() {
           );
         })}
       </div>
-      <div>
+      <div className="space-y-2 rounded-md border border-slate-200 p-3">
+        <label className="label" htmlFor="locate-query">
+          Achar o local do restaurante
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <input
+            id="locate-query"
+            className="input grow"
+            placeholder="Endereço (rua, número, cidade), link do Google Maps ou latitude, longitude"
+            value={where}
+            onChange={(e) => setWhere(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={locate.isPending || where.trim().length < 3}
+            onClick={() => locate.mutate()}
+          >
+            {locate.isPending ? "Procurando…" : "Localizar"}
+          </button>
+        </div>
+        <ErrorMessage error={locate.error} />
+        {locate.data && (
+          <p className="text-sm text-green-700" role="status">
+            Encontrado: {locate.data.label}.{" "}
+            <a
+              className="underline"
+              target="_blank"
+              rel="noreferrer"
+              href={`https://www.google.com/maps?q=${locate.data.latitude},${locate.data.longitude}`}
+            >
+              Conferir no mapa
+            </a>{" "}
+            — se estiver certo, clique em Salvar configurações.
+          </p>
+        )}
+        <p className="text-xs text-slate-500">
+          O endereço acha a rua, nem sempre o número exato. Para precisão, abra o local no Google Maps, toque em
+          Compartilhar e cole o link aqui.
+        </p>
         <button
           type="button"
           className="btn-secondary"

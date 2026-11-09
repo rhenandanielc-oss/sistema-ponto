@@ -205,4 +205,4 @@ Nenhum endpoint do kiosk recebe id de funcionário.
 recusam com `LOCATION_REQUIRED` (422), `LOCATION_IMPRECISE` (422), `LOCATION_OUT_OF_RANGE` (403) ou
 `LOCATION_NOT_CONFIGURED` (409) nos terminais com `require_location`. `/kiosk/ping` devolve `require_location`.
 Configurações novas: `location_latitude`, `location_longitude`, `location_radius_meters` (padrão 150).
-
+| POST | `/settings/locate` | `{query}` (endereço, link do Google Maps ou `lat, lng`) → `{latitude, longitude, label}`; não grava nada |

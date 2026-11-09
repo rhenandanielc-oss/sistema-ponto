@@ -4,7 +4,14 @@ A posição vem do celular e pode ser falsificada por quem entende de GPS: a tra
 "sem querer" de casa ou da rua, não uma fraude deliberada.
 """
 
+import json
+import re
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -63,3 +70,134 @@ def check(
             "Você precisa estar no restaurante para bater o ponto.",
             {"distance_meters": round(distance)},
         )
+
+
+# --- Achar o local do restaurante sem digitar latitude e longitude -----------------------------
+
+# --- Achar o local do restaurante sem digitar latitude e longitude -----------------------------
+
+
+@dataclass(frozen=True)
+class Located:
+    latitude: float
+    longitude: float
+    label: str
+
+
+_NUM = r"(-?\d{1,3}(?:\.\d+)?)"
+_PAIR = re.compile(rf"^\s*{_NUM}\s*[,;\s]\s*{_NUM}\s*$")
+_GOOGLE_PIN = re.compile(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)")  # o alfinete do lugar
+_GOOGLE_AT = re.compile(r"@(-?\d+\.\d+),(-?\d+\.\d+)")  # centro da tela do mapa
+_GOOGLE_Q = re.compile(r"[?&](?:q|ll|query|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)")
+GOOGLE_HOSTS = {
+    "maps.app.goo.gl",
+    "goo.gl",
+    "maps.google.com",
+    "google.com",
+    "www.google.com",
+    "google.com.br",
+    "www.google.com.br",
+}
+NOMINATIM = "https://nominatim.openstreetmap.org/search"
+USER_AGENT = "Mozilla/5.0 (sistema-ponto)"
+
+
+def _valid(lat: float, lng: float) -> tuple[float, float] | None:
+    return (lat, lng) if -90 <= lat <= 90 and -180 <= lng <= 180 else None
+
+
+def coords_from_pair(text: str) -> tuple[float, float] | None:
+    """Aceita "-22.95, -46.54" (como o Google Maps copia) ou separado por espaço."""
+    match = _PAIR.match(text)
+    return _valid(float(match.group(1)), float(match.group(2))) if match else None
+
+
+def coords_from_google_url(url: str) -> tuple[float, float] | None:
+    decoded = urllib.parse.unquote(url)
+    for pattern in (_GOOGLE_PIN, _GOOGLE_AT, _GOOGLE_Q):
+        match = pattern.search(decoded)
+        if match:
+            return _valid(float(match.group(1)), float(match.group(2)))
+    return None
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+
+def _next_hop(url: str) -> str | None:
+    """Pede a página e devolve o endereço para onde ela redireciona (None se não redireciona)."""
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    try:
+        urllib.request.build_opener(_NoRedirect).open(request, timeout=10).close()
+    except urllib.error.HTTPError as exc:
+        location = exc.headers.get("Location")
+        if exc.code in (301, 302, 303, 307, 308) and location:
+            return urllib.parse.urljoin(url, location)
+    return None
+
+
+def _follow_google_link(url: str) -> tuple[float, float] | None:
+    """Segue link curto do Maps (só entre hosts do Google) até achar as coordenadas."""
+    for _ in range(5):
+        host = (urllib.parse.urlparse(url).hostname or "").lower()
+        if host not in GOOGLE_HOSTS:
+            return None
+        coords = coords_from_google_url(url)
+        if coords:
+            return coords
+        nxt = _next_hop(url)
+        if nxt is None:
+            return None
+        url = nxt
+    return None
+
+
+def _fetch_json(url: str) -> Any:
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return json.loads(response.read())
+
+
+def _geocode(query: str) -> Located | None:
+    params = urllib.parse.urlencode(
+        {"q": query, "format": "jsonv2", "limit": 1, "countrycodes": "br"}
+    )
+    results = _fetch_json(f"{NOMINATIM}?{params}")
+    if not results:
+        return None
+    first = results[0]
+    return Located(float(first["lat"]), float(first["lon"]), str(first.get("display_name", query)))
+
+
+def locate(query: str) -> Located:
+    """Descobre o local por coordenadas coladas, link do Google Maps ou endereço."""
+    text = query.strip()
+    try:
+        pair = coords_from_pair(text)
+        if pair:
+            return Located(pair[0], pair[1], "Coordenadas informadas")
+        if re.match(r"^https?://", text, re.IGNORECASE):
+            coords = _follow_google_link(text)
+            if coords:
+                return Located(coords[0], coords[1], "Link do Google Maps")
+            raise AppError(
+                422,
+                "LOCATION_NOT_FOUND",
+                "Não achei o local nesse link. Use o link de compartilhar do Maps ou o endereço.",
+            )
+        found = _geocode(text)
+    except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as exc:
+        raise AppError(
+            502,
+            "LOCATION_LOOKUP_FAILED",
+            "Não consegui consultar o mapa agora. Tente de novo ou cole as coordenadas.",
+        ) from exc
+    if found is None:
+        raise AppError(
+            422,
+            "LOCATION_NOT_FOUND",
+            "Endereço não encontrado. Confira a rua e a cidade, ou use o link do Google Maps.",
+        )
+    return found
