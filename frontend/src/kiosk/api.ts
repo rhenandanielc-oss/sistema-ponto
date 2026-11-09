@@ -1,5 +1,6 @@
 /** Comunicação do terminal com a API: autenticado pelo token do dispositivo, nunca por usuário. */
 import { ApiError, type Schemas } from "../api/client";
+import type { Place } from "./location";
 
 const STORAGE_KEY = "ponto-kiosk-device-token";
 const BASE = "/api/v1/kiosk";
@@ -48,16 +49,45 @@ async function call<T>(path: string, init: RequestInit, token = getDeviceToken()
 
 export const kioskApi = {
   ping: (token?: string) => call<Schemas["PingOut"]>("/ping", { method: "GET" }, token),
-  identify: (image: Blob) => {
+  /** Troca o código de uso único do link de ativação pelo token do terminal. */
+  activate: async (code: string) => {
+    let response: Response;
+    try {
+      response = await fetch(`${BASE}/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+    } catch {
+      throw new ApiError(0, "NETWORK_ERROR", "Sem conexão com o servidor.");
+    }
+    if (!response.ok) {
+      let message = "Não foi possível ativar o terminal.";
+      try {
+        const body = (await response.json()) as { error?: { message?: string } };
+        message = body.error?.message ?? message;
+      } catch {
+        /* resposta sem corpo */
+      }
+      throw new ApiError(response.status, "ACTIVATION_FAILED", message);
+    }
+    return (await response.json()) as { token: string; device: string };
+  },
+  identify: (image: Blob, place?: Place) => {
     const form = new FormData();
     form.append("image", image, "rosto.jpg");
+    if (place) {
+      form.append("latitude", String(place.latitude));
+      form.append("longitude", String(place.longitude));
+      form.append("accuracy_m", String(place.accuracy_m));
+    }
     return call<Schemas["IdentifyOut"]>("/identify", { method: "POST", body: form });
   },
-  record: (identificationToken: string, type: string) =>
+  record: (identificationToken: string, type: string, place?: Place) =>
     call<Schemas["KioskRecordOut"]>("/records", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identification_token: identificationToken, type }),
+      body: JSON.stringify({ identification_token: identificationToken, type, ...place }),
     }),
   hourBank: (identificationToken: string) =>
     call<Schemas["KioskHourBankOut"]>("/hour-bank", {

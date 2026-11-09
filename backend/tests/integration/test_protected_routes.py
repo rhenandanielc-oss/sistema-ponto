@@ -13,6 +13,8 @@ PUBLIC = {
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
     "/api/v1/auth/logout",
+    # Ativação por link de uso único: o código do link é a autorização.
+    "/api/v1/kiosk/activate",
 }
 
 # Lista a partir do OpenAPI: cobre automaticamente toda rota nova.

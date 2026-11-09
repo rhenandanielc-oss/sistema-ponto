@@ -25,6 +25,10 @@ class CompanySettings(BaseModel):
     kiosk_hour_bank_screen_seconds: int = Field(default=30, ge=5, le=600)
     # Dias anteriores não entram em nenhum cálculo (BUSINESS-RULES.md §9.2).
     tracking_start_date: date | None = None
+    # Local do restaurante, usado por terminais com "exigir localização" (BUSINESS-RULES §4.7).
+    location_latitude: float | None = Field(default=None, ge=-90, le=90)
+    location_longitude: float | None = Field(default=None, ge=-180, le=180)
+    location_radius_meters: int = Field(default=150, ge=30, le=5000)
 
 
 class CompanySettingsUpdate(BaseModel):
@@ -37,6 +41,9 @@ class CompanySettingsUpdate(BaseModel):
     night_end: time | None = None
     kiosk_hour_bank_screen_seconds: int | None = Field(default=None, ge=5, le=600)
     tracking_start_date: date | None = None
+    location_latitude: float | None = Field(default=None, ge=-90, le=90)
+    location_longitude: float | None = Field(default=None, ge=-180, le=180)
+    location_radius_meters: int | None = Field(default=None, ge=30, le=5000)
 
 
 def load(db: Session) -> CompanySettings:

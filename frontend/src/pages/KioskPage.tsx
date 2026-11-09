@@ -20,6 +20,7 @@ import {
   loadFaceDetector,
 } from "../kiosk/faceDetector";
 import { getDeviceToken, kioskApi, setDeviceToken } from "../kiosk/api";
+import { getPlace } from "../kiosk/location";
 import {
   RECORD_TYPE_LABELS,
   formatDate,
@@ -34,6 +35,7 @@ type Bank = Schemas["KioskHourBankOut"];
 
 type State =
   | { kind: "setup"; message?: string }
+  | { kind: "activating" }
   | { kind: "scanning"; hint: string }
   | { kind: "identifying" }
   | { kind: "identified"; data: Identified }
@@ -61,19 +63,30 @@ function friendly(error: unknown): string {
       return "Registro já efetuado.";
     case "EMPLOYEE_INACTIVE":
       return "Cadastro inativo. Procure o administrador.";
+    case "LOCATION_OUT_OF_RANGE":
+      return "Você precisa estar no restaurante para bater o ponto.";
     default:
       return error.message;
   }
+}
+
+/** Código de uso único do link de ativação (vai depois do # para não ficar em logs do servidor). */
+function activationCode(): string | null {
+  return new URLSearchParams(window.location.hash.replace(/^#/, "")).get("ativar");
 }
 
 export function KioskPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [state, setState] = useState<State>(() =>
-    getDeviceToken()
-      ? { kind: "scanning", hint: "Iniciando câmera…" }
-      : { kind: "setup" },
+    activationCode()
+      ? { kind: "activating" }
+      : getDeviceToken()
+        ? { kind: "scanning", hint: "Iniciando câmera…" }
+        : { kind: "setup" },
   );
+  const requireLocation = useRef(false);
+  const activationStarted = useRef(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState<string | null>(null);
   const [clock, setClock] = useState(() => new Date());
@@ -102,6 +115,22 @@ export function KioskPage() {
     });
   }, []);
 
+  // Link de ativação de uso único (/kiosk#ativar=CODIGO): ativa o terminal sem digitar a chave.
+  useEffect(() => {
+    const code = activationCode();
+    if (!code || activationStarted.current) return;
+    activationStarted.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    kioskApi.activate(code).then(
+      (result) => {
+        setDeviceToken(result.token);
+        setDeviceName(result.device);
+        reset();
+      },
+      (error: unknown) => setState({ kind: "setup", message: friendly(error) }),
+    );
+  }, [reset]);
+
   // Relógio exibido (o horário oficial da batida é sempre o do servidor).
   useEffect(() => {
     const id = window.setInterval(() => setClock(new Date()), 1000);
@@ -109,12 +138,13 @@ export function KioskPage() {
   }, []);
 
   // Confere o terminal ao iniciar e, periodicamente, se o relógio do servidor bate com o deste aparelho.
-  const active = state.kind !== "setup";
+  const active = state.kind !== "setup" && state.kind !== "activating";
   useEffect(() => {
     if (!active) return;
     const check = () =>
       kioskApi.ping().then((p) => {
         setDeviceName(p.device);
+        requireLocation.current = p.require_location;
         setClockAlert(
           clockWarning(clockSkewMinutes(p.server_time, Date.now())),
         );
@@ -155,8 +185,9 @@ export function KioskPage() {
     busy.current = true;
     setState({ kind: "identifying" });
     try {
+      const place = requireLocation.current ? await getPlace() : undefined;
       const frame = await captureFrame(video);
-      const data = await kioskApi.identify(frame);
+      const data = await kioskApi.identify(frame, place);
       setState({ kind: "identified", data });
     } catch (error) {
       handleError(error);
@@ -226,7 +257,8 @@ export function KioskPage() {
   async function punch(data: Identified, type: (typeof RECORD_TYPES)[number]) {
     setState({ kind: "saving", data });
     try {
-      const result = await kioskApi.record(data.identification_token, type);
+      const place = requireLocation.current ? await getPlace() : undefined;
+      const result = await kioskApi.record(data.identification_token, type, place);
       setState({
         kind: "done",
         message: `${RECORD_TYPE_LABELS[result.type]} registrada às ${formatTime(result.recorded_at)}`,
@@ -246,6 +278,14 @@ export function KioskPage() {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  if (state.kind === "activating") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-900 px-6 text-white">
+        <p className="text-xl">Ativando o terminal…</p>
+      </div>
+    );
   }
 
   if (state.kind === "setup") {

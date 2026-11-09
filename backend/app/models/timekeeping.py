@@ -31,6 +31,13 @@ class Device(TimestampMixin, Base):
     token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Terminal que só aceita batida dentro do raio do restaurante (BUSINESS-RULES.md §4.7).
+    require_location: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    # Link de ativação de uso único: só o hash é guardado; vale até `activation_expires_at`.
+    activation_hash: Mapped[str | None] = mapped_column(Text)
+    activation_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TimeRecord(Base):
