@@ -141,3 +141,74 @@ def test_distance_helper_is_about_right() -> None:
     assert distance_meters(-23.55052, -46.63331, -23.55052, -46.63331) == 0
     one_degree_lat = distance_meters(0, 0, 1, 0)
     assert 110_000 < one_degree_lat < 112_000
+
+
+def test_locate_accepts_pasted_coordinates_without_network(client: TestClient, auth_headers):
+    ok = client.post(
+        "/api/v1/settings/locate", json={"query": " -22.95306, -46.54222 "}, headers=auth_headers
+    )
+    assert ok.status_code == 200, ok.text
+    assert (ok.json()["latitude"], ok.json()["longitude"]) == (-22.95306, -46.54222)
+    assert client.post(
+        "/api/v1/settings/locate", json={"query": "95.0, -46.5"}, headers=auth_headers
+    ).status_code in (
+        422,
+        502,
+    )
+
+
+def test_locate_reads_google_maps_links_and_addresses(
+    monkeypatch, client: TestClient, auth_headers
+):
+    from app.services import location_service
+
+    full = "https://www.google.com/maps/place/N33/@-22.9500,-46.5400,17z/data=!3m1!4b1!4d!3d-22.9512345!4d-46.5412345"
+    pin = client.post("/api/v1/settings/locate", json={"query": full}, headers=auth_headers).json()
+    assert (pin["latitude"], pin["longitude"]) == (
+        -22.9512345,
+        -46.5412345,
+    )  # o alfinete, não o centro
+
+    short = "https://maps.app.goo.gl/abc123"
+    monkeypatch.setattr(
+        location_service,
+        "_next_hop",
+        lambda url: "https://www.google.com/maps/@-22.9,-46.5,15z" if "goo.gl" in url else None,
+    )
+    via_short = client.post(
+        "/api/v1/settings/locate", json={"query": short}, headers=auth_headers
+    ).json()
+    assert (via_short["latitude"], via_short["longitude"]) == (-22.9, -46.5)
+
+    other = client.post(
+        "/api/v1/settings/locate", json={"query": "https://exemplo.com/x"}, headers=auth_headers
+    )
+    assert other.status_code == 422  # só links do Google Maps são seguidos
+
+    monkeypatch.setattr(
+        location_service,
+        "_fetch_json",
+        lambda url: [
+            {
+                "lat": "-22.9531",
+                "lon": "-46.5422",
+                "display_name": "Av. Dr. Geraldo, Bragança Paulista",
+            }
+        ],
+    )
+    address = client.post(
+        "/api/v1/settings/locate",
+        json={"query": "Avenida Doutor Geraldo de Assis Gonçalves, Bragança Paulista"},
+        headers=auth_headers,
+    ).json()
+    assert (address["latitude"], address["longitude"]) == (-22.9531, -46.5422)
+
+    monkeypatch.setattr(location_service, "_fetch_json", lambda url: [])
+    nothing = client.post(
+        "/api/v1/settings/locate", json={"query": "lugar que não existe"}, headers=auth_headers
+    )
+    assert (nothing.status_code, nothing.json()["error"]["code"]) == (422, "LOCATION_NOT_FOUND")
+
+
+def test_locate_requires_an_admin(client: TestClient) -> None:
+    assert client.post("/api/v1/settings/locate", json={"query": "-22.9, -46.5"}).status_code == 401
