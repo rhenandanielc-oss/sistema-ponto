@@ -35,7 +35,11 @@ class Device(TimestampMixin, Base):
     require_location: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
-    # Link de ativação de uso único: só o hash é guardado; vale até `activation_expires_at`.
+    # Versão do link permanente do terminal: aumentar invalida o link anterior (§4.7).
+    link_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    # (legado do link de uso único; não é mais usado)
     activation_hash: Mapped[str | None] = mapped_column(Text)
     activation_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

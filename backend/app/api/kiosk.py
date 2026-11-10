@@ -63,9 +63,9 @@ class ActivateOut(BaseModel):
     dependencies=[Depends(rate_limit("kiosk-activate", limit=10))],
 )
 def activate(data: ActivateIn, db: DbSession) -> ActivateOut:
-    """Ativa o terminal com o código de uso único do link (sem digitar a chave)."""
-    device, token = device_service.activate_with_code(db, data.code)
-    return ActivateOut(token=token, device=device.name)
+    """Confere o código do link permanente; o terminal passa a usar o próprio código como chave."""
+    device = device_service.activate_with_code(db, data.code)
+    return ActivateOut(token=data.code, device=device.name)
 
 
 class IdentifyOut(BaseModel):

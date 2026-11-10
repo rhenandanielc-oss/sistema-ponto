@@ -1,6 +1,5 @@
-"""Link de ativação de uso único e trava por localização dos terminais (BUSINESS-RULES.md §4.7)."""
+"""Link de ativação permanente e trava por localização dos terminais (BUSINESS-RULES.md §4.7)."""
 
-from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -31,49 +30,59 @@ def setup(client: TestClient, auth_headers) -> None:
     assert enroll(client, auth_headers, joao, "joao").status_code == 201
 
 
-def test_activation_link_is_single_use_and_replaces_the_token(client: TestClient, auth_headers):
+def test_permanent_link_works_every_time_and_keeps_the_old_token(client: TestClient, auth_headers):
     device_id, old = new_device(client, auth_headers)
-    link = client.post(f"/api/v1/devices/{device_id}/activation-link", headers=auth_headers)
-    assert link.status_code == 201, link.text
-    code = link.json()["code"]
+    url = f"/api/v1/devices/{device_id}/activation-link"
+    code = client.post(url, headers=auth_headers).json()["code"]
+    assert client.post(url, headers=auth_headers).json()["code"] == code  # o mesmo link, sempre
 
-    first = client.post(f"{KIOSK}/activate", json={"code": code})
-    assert first.status_code == 200, first.text
-    new = {"Authorization": f"Device {first.json()['token']}"}
-    assert client.get(f"{KIOSK}/ping", headers=new).status_code == 200
-    assert client.get(f"{KIOSK}/ping", headers=old).status_code == 403  # token antigo não vale mais
-
-    again = client.post(f"{KIOSK}/activate", json={"code": code})
-    assert (again.status_code, again.json()["error"]["code"]) == (403, "ACTIVATION_LINK_INVALID")
-
-
-def test_activation_link_expires_and_inactive_devices_cannot_use_it(
-    client: TestClient, auth_headers
-):
-    clock.freeze(local(1, "08:00"))
-    device_id, _ = new_device(client, auth_headers)
-    code = client.post(f"/api/v1/devices/{device_id}/activation-link", headers=auth_headers).json()[
-        "code"
-    ]
-    clock.freeze(local(1, "08:00") + timedelta(hours=25))
-    assert client.post(f"{KIOSK}/activate", json={"code": code}).status_code == 403
-
-    clock.freeze(local(2, "08:00"))
-    code = client.post(f"/api/v1/devices/{device_id}/activation-link", headers=auth_headers).json()[
-        "code"
-    ]
-    client.post(f"/api/v1/devices/{device_id}/deactivate", headers=auth_headers)
-    assert client.post(f"{KIOSK}/activate", json={"code": code}).status_code == 403
-    assert client.post(f"{KIOSK}/activate", json={"code": "x" * 30}).status_code == 403
+    for _ in range(3):  # o funcionário pode abrir o link todos os dias
+        activated = client.post(f"{KIOSK}/activate", json={"code": code})
+        assert activated.status_code == 200, activated.text
+        assert activated.json()["token"] == code
+        link = {"Authorization": f"Device {code}"}
+        assert client.get(f"{KIOSK}/ping", headers=link).status_code == 200
+    # Quem já usava a chave antiga (ex.: celular da Jesi) continua funcionando.
+    assert client.get(f"{KIOSK}/ping", headers=old).status_code == 200
 
 
-def test_new_link_invalidates_the_previous_one(client: TestClient, auth_headers):
-    device_id, _ = new_device(client, auth_headers)
+def test_renewing_the_link_revokes_only_the_old_link(client: TestClient, auth_headers):
+    device_id, old = new_device(client, auth_headers)
     url = f"/api/v1/devices/{device_id}/activation-link"
     first = client.post(url, headers=auth_headers).json()["code"]
-    second = client.post(url, headers=auth_headers).json()["code"]
+    second = client.post(f"{url}/renew", headers=auth_headers).json()["code"]
+    assert second != first
     assert client.post(f"{KIOSK}/activate", json={"code": first}).status_code == 403
+    assert (
+        client.get(f"{KIOSK}/ping", headers={"Authorization": f"Device {first}"}).status_code == 403
+    )
     assert client.post(f"{KIOSK}/activate", json={"code": second}).status_code == 200
+    assert (
+        client.get(f"{KIOSK}/ping", headers=old).status_code == 200
+    )  # a chave antiga segue valendo
+
+
+def test_link_stops_working_when_the_device_is_deactivated_or_forged(
+    client: TestClient, auth_headers
+):
+    device_id, _ = new_device(client, auth_headers)
+    other_id, _ = new_device(client, auth_headers, name="Outro")
+    url = f"/api/v1/devices/{device_id}/activation-link"
+    code = client.post(url, headers=auth_headers).json()["code"]
+    mine = {"Authorization": f"Device {code}"}
+    assert client.get(f"{KIOSK}/ping", headers=mine).status_code == 200
+
+    client.post(f"/api/v1/devices/{device_id}/deactivate", headers=auth_headers)
+    assert client.get(f"{KIOSK}/ping", headers=mine).status_code == 403
+    assert client.post(f"{KIOSK}/activate", json={"code": code}).status_code == 403
+
+    forged = f"{other_id}.{code.split('.', 1)[1]}"  # assinatura de outro terminal
+    assert (
+        client.get(f"{KIOSK}/ping", headers={"Authorization": f"Device {forged}"}).status_code
+        == 403
+    )
+    for bad in ("x" * 30, f"{device_id}.zzzzzzzzzzzz", "abc.defghijklmno", "999999.zzzzzzzzzzzz"):
+        assert client.post(f"{KIOSK}/activate", json={"code": bad}).status_code == 403
 
 
 def test_device_without_location_rule_ignores_the_position(client: TestClient, auth_headers, setup):

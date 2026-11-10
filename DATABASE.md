@@ -150,7 +150,8 @@ Alterações auditadas.
 | is_active | boolean | |
 | last_seen_at | timestamptz | |
 | require_location | boolean | default false — só aceita batida perto do restaurante (`BUSINESS-RULES.md` §4.7; migration `0010`) |
-| activation_hash / activation_expires_at | text / timestamptz | nulos — link de ativação de uso único (só o hash; vale 24 h) |
+| activation_hash / activation_expires_at | text / timestamptz | nulos — legado do link de uso único (não usados) |
+| link_version | integer | default 0 — versão do link permanente do terminal; "Novo link" aumenta (migration `0011`) |
 | created_at / updated_at | timestamptz | |
 
 ### time_records

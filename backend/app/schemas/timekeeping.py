@@ -75,8 +75,7 @@ class DeviceUpdate(BaseModel):
 
 
 class ActivationLinkOut(BaseModel):
-    code: str = Field(description="Exibido somente agora. Vai no link /kiosk#ativar=<code>.")
-    expires_at: LocalDatetime
+    code: str = Field(description="Código permanente do link: /kiosk#ativar=<code>.")
 
 
 class DeviceWithToken(DeviceOut):

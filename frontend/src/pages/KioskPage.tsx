@@ -70,7 +70,7 @@ function friendly(error: unknown): string {
   }
 }
 
-/** Código de uso único do link de ativação (vai depois do # para não ficar em logs do servidor). */
+/** Código do link do terminal (vai depois do # para não ficar em logs do servidor). */
 function activationCode(): string | null {
   return new URLSearchParams(window.location.hash.replace(/^#/, "")).get("ativar");
 }
@@ -120,7 +120,8 @@ export function KioskPage() {
     const code = activationCode();
     if (!code || activationStarted.current) return;
     activationStarted.current = true;
-    window.history.replaceState(null, "", window.location.pathname);
+    // O código fica no endereço de propósito: o funcionário abre o mesmo link sempre, e um favorito
+    // ou atalho feito a partir dele também entra direto (vale no iPhone, que separa o armazenamento).
     kioskApi.activate(code).then(
       (result) => {
         setDeviceToken(result.token);
