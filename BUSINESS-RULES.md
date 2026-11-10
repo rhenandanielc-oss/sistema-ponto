@@ -193,9 +193,13 @@ Todo registro aceito **e** toda tentativa rejeitada geram auditoria.
 
 * **Um terminal por celular**: cada celular é cadastrado em Administração → Terminais (ex.: "Celular da Jesi").
   Desativar o terminal bloqueia só aquele celular.
-* **Link de ativação de uso único**: em vez de mandar a chave, o administrador gera um link
-  (`/kiosk#ativar=<código>`). Ele vale **24 horas e uma única vez**; ao ser aberto, o celular recebe um token novo
-  (o token anterior do terminal deixa de valer) e o link morre. Gerar outro link invalida o anterior.
+* **Link permanente do terminal** (decisão do responsável, 2026-11-10): o administrador pega o link do terminal
+  (`/kiosk#ativar=<código>`) em Terminais → "Ver link" e manda **uma vez** ao funcionário, que o abre **sempre que
+  for bater o ponto** (em qualquer navegador; no iPhone, evita a perda da ativação). O link **não vence** e **não
+  consome nada**: a chave antiga do terminal (ex.: a do celular já ativado) continua valendo. O código é derivado do
+  segredo do servidor e da versão do link, então não é guardado e pode ser visto de novo.
+  **"Novo link"** invalida o link anterior (celular perdido, link repassado); desativar o terminal também o bloqueia.
+  O link só abre o terminal desse celular: o rosto e, quando exigida, a localização continuam valendo para bater.
 * **Exigir localização**: terminal marcado com "Exigir localização" só identifica o rosto e só registra a batida se
   o celular informar uma posição a **no máximo o raio configurado** (padrão 150 m) do local do restaurante
   (Configurações → "Local do restaurante"). Sem permissão de localização, com sinal fraco (precisão pior que 150 m)

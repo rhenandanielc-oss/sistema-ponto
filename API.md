@@ -198,8 +198,9 @@ Nenhum endpoint do kiosk recebe id de funcionário.
 | Método | Rota | O que faz |
 |---|---|---|
 | PATCH | `/devices/{id}` | `{require_location: bool}` — exige localização do celular nesse terminal |
-| POST | `/devices/{id}/activation-link` | Gera o código de uso único (vale 24 h); devolve `{code, expires_at}`. O link é `/kiosk#ativar=<code>` |
-| POST | `/kiosk/activate` | Público (limite de 10/min): `{code}` → `{token, device}`; o código deixa de valer e o token anterior do terminal também |
+| POST | `/devices/{id}/activation-link` | Devolve o código do link permanente do terminal (`{code}`); o link é `/kiosk#ativar=<code>` |
+| POST | `/devices/{id}/activation-link/renew` | Gera um link novo e invalida o anterior |
+| POST | `/kiosk/activate` | Público (limite de 10/min): `{code}` → `{token, device}` (o `token` é o próprio código); não consome nada |
 
 `/kiosk/identify` (campos de formulário `latitude`, `longitude`, `accuracy_m`) e `/kiosk/records` (os mesmos campos no JSON)
 recusam com `LOCATION_REQUIRED` (422), `LOCATION_IMPRECISE` (422), `LOCATION_OUT_OF_RANGE` (403) ou

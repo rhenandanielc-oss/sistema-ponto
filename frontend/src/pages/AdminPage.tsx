@@ -261,7 +261,7 @@ function DevicesTab() {
   const [name, setName] = useState("");
   const [requireLocation, setRequireLocation] = useState(false);
   const [token, setToken] = useState<{ name: string; token: string } | null>(null);
-  const [link, setLink] = useState<{ name: string; url: string; expires: string } | null>(null);
+  const [link, setLink] = useState<{ name: string; url: string } | null>(null);
   const devices = useQuery({ queryKey: ["devices"], queryFn: () => api<Schemas["DeviceOut"][]>("/devices") });
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ["devices"] });
   const create = useMutation({
@@ -280,12 +280,10 @@ function DevicesTab() {
     onSuccess: invalidate,
   });
   const makeLink = useMutation({
-    mutationFn: (d: Schemas["DeviceOut"]) =>
-      api<{ code: string; expires_at: string }>(`/devices/${d.id}/activation-link`, { method: "POST" }).then((r) => ({
-        name: d.name,
-        url: `${window.location.origin}/kiosk#ativar=${r.code}`,
-        expires: r.expires_at,
-      })),
+    mutationFn: ({ d, renew }: { d: Schemas["DeviceOut"]; renew: boolean }) =>
+      api<{ code: string }>(`/devices/${d.id}/activation-link${renew ? "/renew" : ""}`, { method: "POST" }).then(
+        (r) => ({ name: d.name, url: `${window.location.origin}/kiosk#ativar=${r.code}` }),
+      ),
     onSuccess: setLink,
   });
   const action = useMutation({
@@ -309,13 +307,12 @@ function DevicesTab() {
       )}
       {link && (
         <div role="status" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
-          <p className="font-semibold">
-            Link de ativação de “{link.name}” — vale uma vez só e até {formatDateTime(link.expires)}:
-          </p>
+          <p className="font-semibold">Link do terminal “{link.name}”:</p>
           <code className="mt-2 block break-all rounded bg-white p-2 font-mono">{link.url}</code>
           <p className="mt-2 text-slate-600">
-            Mande para o próprio dono do celular e peça para abrir no Chrome desse celular. Depois do primeiro uso o
-            link deixa de funcionar (e a chave antiga do terminal também).
+            Mande só para o dono deste celular. Ele abre este link <strong>sempre que for bater o ponto</strong> (pode
+            guardar nos favoritos). O link não vence; se for repassado ou o celular for perdido, use “Novo link” ou
+            desative o terminal.
           </p>
           <div className="mt-2 flex gap-2">
             <button
@@ -403,9 +400,19 @@ function DevicesTab() {
                     <button
                       type="button"
                       className="text-indigo-700 hover:underline"
-                      onClick={() => makeLink.mutate(d)}
+                      onClick={() => makeLink.mutate({ d, renew: false })}
                     >
-                      Link de ativação
+                      Ver link
+                    </button>
+                    <button
+                      type="button"
+                      className="text-indigo-700 hover:underline"
+                      onClick={() =>
+                        window.confirm("Gerar um link novo? O link atual deixa de funcionar.") &&
+                        makeLink.mutate({ d, renew: true })
+                      }
+                    >
+                      Novo link
                     </button>
                     <button
                       type="button"

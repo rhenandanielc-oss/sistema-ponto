@@ -39,11 +39,16 @@ def update_device(device_id: int, data: DeviceUpdate, db: DbSession, actor: Acto
     )
 
 
-@router.post("/{device_id}/activation-link", response_model=ActivationLinkOut, status_code=201)
-def create_activation_link(device_id: int, db: DbSession, actor: Actor) -> ActivationLinkOut:
-    """Link de ativação de uso único: abre /kiosk#ativar=<code> no celular do terminal."""
-    code, expires_at = device_service.create_activation_link(db, device_id, actor)
-    return ActivationLinkOut.model_validate({"code": code, "expires_at": expires_at})
+@router.post("/{device_id}/activation-link", response_model=ActivationLinkOut)
+def get_activation_link(device_id: int, db: DbSession, actor: Actor) -> ActivationLinkOut:
+    """Link permanente do terminal: o funcionário abre /kiosk#ativar=<code> sempre que for bater."""
+    return ActivationLinkOut(code=device_service.get_link(db, device_id, actor))
+
+
+@router.post("/{device_id}/activation-link/renew", response_model=ActivationLinkOut)
+def renew_activation_link(device_id: int, db: DbSession, actor: Actor) -> ActivationLinkOut:
+    """Gera um link novo e invalida o anterior (celular perdido, link repassado)."""
+    return ActivationLinkOut(code=device_service.renew_link(db, device_id, actor))
 
 
 @router.post("/{device_id}/rotate-token", response_model=DeviceWithToken)

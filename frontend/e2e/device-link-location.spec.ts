@@ -10,7 +10,7 @@ async function loginAdmin(page: Page) {
   await expect(page.getByRole("heading", { name: "Funcionários" })).toBeVisible();
 }
 
-test("link de ativação de uso único e terminal com localização exigida", async ({ page, context }) => {
+test("link de ativação permanente e terminal com localização exigida", async ({ page, context }) => {
   page.on("dialog", (dialog) => void dialog.accept());
   await loginAdmin(page);
 
@@ -30,7 +30,7 @@ test("link de ativação de uso único e terminal com localização exigida", as
   await page.getByRole("button", { name: "Cadastrar terminal" }).click();
   await expect(page.locator("tr", { hasText: "Celular da Jesi" })).toContainText("Exigida");
   await page.getByRole("button", { name: "Já copiei" }).click();
-  await page.locator("tr", { hasText: "Celular da Jesi" }).getByRole("button", { name: "Link de ativação" }).click();
+  await page.locator("tr", { hasText: "Celular da Jesi" }).getByRole("button", { name: "Ver link" }).click();
   const url = (await page.locator("code").textContent())?.trim() ?? "";
   expect(url).toContain("/kiosk#ativar=");
 
@@ -40,11 +40,20 @@ test("link de ativação de uso único e terminal com localização exigida", as
   const phone = await context.newPage();
   await phone.goto(url);
   await expect(phone.getByText("Ponto — Celular da Jesi")).toBeVisible();
-  expect(phone.url()).not.toContain("ativar=");
+  expect(phone.url()).toContain("ativar="); // o código fica no endereço: favorito e atalho entram direto
 
-  // O mesmo link não serve de novo (nem em outro navegador/aba sem o token).
-  const other = await (await context.browser()!.newContext({ baseURL: undefined })).newPage();
+  // O link é permanente: abre de novo (e em outro navegador) e entra no terminal do mesmo jeito.
+  const other = await (await context.browser()!.newContext()).newPage();
+  await other.context().grantPermissions(["camera", "geolocation"], { origin: new URL(url).origin });
   await other.goto(url);
-  await expect(other.getByRole("alert")).toContainText(/inválido ou vencido/);
+  await expect(other.getByText("Ponto — Celular da Jesi")).toBeVisible();
   await other.context().close();
+
+  // "Novo link" invalida o anterior.
+  await page.locator("tr", { hasText: "Celular da Jesi" }).getByRole("button", { name: "Novo link" }).click();
+  await expect(page.locator("code")).not.toHaveText(url);
+  const stale = await (await context.browser()!.newContext()).newPage();
+  await stale.goto(url);
+  await expect(stale.getByRole("alert")).toContainText(/inválido ou desativado/);
+  await stale.context().close();
 });
