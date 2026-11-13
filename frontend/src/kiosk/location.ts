@@ -29,3 +29,17 @@ export function getPlace(): Promise<Place> {
     );
   });
 }
+
+export const LOCATION_BLOCKED =
+  "A localização está bloqueada para este site. Toque no cadeado ao lado do endereço → Permissões → Localização → Permitir. (iPhone: Ajustes → Safari → Localização → Permitir.)";
+
+/** Estado da permissão de localização, sem abrir nenhum pedido ("unknown" se o navegador não informa). */
+export async function locationPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state;
+  } catch {
+    return "unknown";
+  }
+}
+

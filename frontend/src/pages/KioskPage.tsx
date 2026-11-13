@@ -20,7 +20,7 @@ import {
   loadFaceDetector,
 } from "../kiosk/faceDetector";
 import { getDeviceToken, kioskApi, setDeviceToken } from "../kiosk/api";
-import { getPlace } from "../kiosk/location";
+import { LOCATION_BLOCKED, getPlace, locationPermission } from "../kiosk/location";
 import {
   RECORD_TYPE_LABELS,
   formatDate,
@@ -91,6 +91,8 @@ export function KioskPage() {
   const [deviceName, setDeviceName] = useState<string | null>(null);
   const [clock, setClock] = useState(() => new Date());
   const [clockAlert, setClockAlert] = useState<string | null>(null);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
+  const askedLocation = useRef(false);
   const busy = useRef(false);
 
   const reset = useCallback(
@@ -138,6 +140,20 @@ export function KioskPage() {
     return () => window.clearInterval(id);
   }, []);
 
+  // Terminal com localização exigida: pede a permissão já ao entrar (não só na hora de bater) e avisa
+  // com instruções se estiver bloqueada.
+  const checkLocation = useCallback(async () => {
+    const state = await locationPermission();
+    if (state === "granted") return setLocationNote(null);
+    if (state === "denied") return setLocationNote(LOCATION_BLOCKED);
+    if (askedLocation.current) return;
+    askedLocation.current = true;
+    getPlace().then(
+      () => setLocationNote(null),
+      (error: unknown) => setLocationNote(friendly(error)),
+    );
+  }, []);
+
   // Confere o terminal ao iniciar e, periodicamente, se o relógio do servidor bate com o deste aparelho.
   const active = state.kind !== "setup" && state.kind !== "activating";
   useEffect(() => {
@@ -146,6 +162,8 @@ export function KioskPage() {
       kioskApi.ping().then((p) => {
         setDeviceName(p.device);
         requireLocation.current = p.require_location;
+        if (p.require_location) void checkLocation();
+        else setLocationNote(null);
         setClockAlert(
           clockWarning(clockSkewMinutes(p.server_time, Date.now())),
         );
@@ -153,7 +171,7 @@ export function KioskPage() {
     void check();
     const id = window.setInterval(() => void check(), CLOCK_CHECK_MS);
     return () => window.clearInterval(id);
-  }, [active, handleError]);
+  }, [active, handleError, checkLocation]);
 
   // Câmera ligada enquanto o terminal estiver configurado.
   useEffect(() => {
@@ -334,6 +352,14 @@ export function KioskPage() {
           </div>
         </div>
 
+        {locationNote && (
+          <p
+            role="alert"
+            className="max-w-xl rounded-lg bg-amber-500 px-6 py-3 text-center text-lg text-black"
+          >
+            {locationNote}
+          </p>
+        )}
         {clockAlert && (
           <p
             role="alert"

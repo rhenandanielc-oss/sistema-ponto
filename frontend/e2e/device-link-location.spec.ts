@@ -49,6 +49,13 @@ test("link de ativação permanente e terminal com localização exigida", async
   await expect(other.getByText("Ponto — Celular da Jesi")).toBeVisible();
   await other.context().close();
 
+  // Sem permissão de localização, o terminal avisa já ao abrir (e diz como liberar).
+  const noGps = await (await context.browser()!.newContext()).newPage();
+  await noGps.context().grantPermissions(["camera"], { origin: new URL(url).origin });
+  await noGps.goto(url);
+  await expect(noGps.getByRole("alert").filter({ hasText: /localiza/i })).toBeVisible({ timeout: 15_000 });
+  await noGps.context().close();
+
   // "Novo link" invalida o anterior.
   await page.locator("tr", { hasText: "Celular da Jesi" }).getByRole("button", { name: "Novo link" }).click();
   await expect(page.locator("code")).not.toHaveText(url);
