@@ -208,6 +208,9 @@ Todo registro aceito **e** toda tentativa rejeitada geram auditoria.
   (busca no OpenStreetMap; acha a rua, nem sempre o número exato), colando o link de compartilhar do Google Maps (usa
   o alfinete do lugar) ou colando "latitude, longitude". O sistema mostra o que achou e um link "Conferir no mapa";
   só vale depois de **Salvar configurações**. Só endereços de links do Google são seguidos.
+* **Permissão de localização**: o terminal pede a permissão **já ao abrir** (não só na hora de bater) e, se estiver
+  bloqueada no navegador, mostra um aviso com o passo a passo para liberar (o navegador não pergunta de novo depois
+  de um "Bloquear").
 * Limite honesto: a posição vem do aparelho e pode ser falsificada por quem entende de GPS; a trava evita a batida
   "sem querer" de casa ou da rua. A posição **não é guardada**: só é comparada com o local do restaurante.
 
